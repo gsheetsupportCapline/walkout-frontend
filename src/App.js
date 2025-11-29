@@ -1,0 +1,80 @@
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
+import PrivateRoute from "./components/Auth/PrivateRoute";
+import ControlPanel from "./components/Layout/ControlPanel";
+import Home from "./components/Home/Home";
+import Login from "./components/Auth/Login";
+import Signup from "./components/Auth/Signup";
+import Dashboard from "./components/Dashboard/Dashboard";
+import Profile from "./components/Profile/Profile";
+import UserManagement from "./components/Users/UserManagement";
+import RegionManagement from "./components/Management/RegionManagement";
+import OfficeManagement from "./components/Management/OfficeManagement";
+import TeamManagement from "./components/Management/TeamManagement";
+
+function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Dashboard - With Navbar only */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Control Panel Routes - With Sidebar */}
+            <Route
+              path="/control-panel"
+              element={
+                <PrivateRoute>
+                  <ControlPanel />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Navigate to="/profile" replace />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="regions" element={<RegionManagement />} />
+              <Route path="offices" element={<OfficeManagement />} />
+              <Route path="teams" element={<TeamManagement />} />
+            </Route>
+
+            {/* Profile - In Control Panel */}
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <ControlPanel />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Profile />} />
+            </Route>
+
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </ToastProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
