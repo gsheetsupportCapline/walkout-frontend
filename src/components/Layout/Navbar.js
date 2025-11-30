@@ -45,6 +45,11 @@ const Navbar = () => {
                 Dashboard
               </Link>
 
+              <Link to="/appointments" className="navbar-link">
+                <span className="nav-icon">📅</span>
+                Appointments
+              </Link>
+
               {(user.role === "admin" || user.role === "superAdmin") && (
                 <Link to="/control-panel" className="navbar-link">
                   <span className="nav-icon">⚙️</span>

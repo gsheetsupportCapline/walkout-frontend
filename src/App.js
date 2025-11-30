@@ -18,6 +18,7 @@ import UserManagement from "./components/Users/UserManagement";
 import RegionManagement from "./components/Management/RegionManagement";
 import OfficeManagement from "./components/Management/OfficeManagement";
 import TeamManagement from "./components/Management/TeamManagement";
+import Appointments from "./components/Appointments/Appointments";
 
 function App() {
   return (
@@ -36,6 +37,16 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Appointments - With Navbar only */}
+            <Route
+              path="/appointments"
+              element={
+                <PrivateRoute>
+                  <Appointments />
                 </PrivateRoute>
               }
             />
