@@ -44,16 +44,44 @@ function App() {
             <Route
               path="/control-panel"
               element={
-                <PrivateRoute>
+                <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
                   <ControlPanel />
                 </PrivateRoute>
               }
             >
               <Route index element={<Navigate to="/profile" replace />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="regions" element={<RegionManagement />} />
-              <Route path="offices" element={<OfficeManagement />} />
-              <Route path="teams" element={<TeamManagement />} />
+              <Route
+                path="users"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <UserManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="regions"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <RegionManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="offices"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <OfficeManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="teams"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <TeamManagement />
+                  </PrivateRoute>
+                }
+              />
             </Route>
 
             {/* Profile - In Control Panel */}

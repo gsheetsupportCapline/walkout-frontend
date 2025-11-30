@@ -158,14 +158,7 @@ const OfficeManagement = () => {
                 <td>
                   <span className="code-badge">{office.officeCode}</span>
                 </td>
-                <td>
-                  {office.regionId?.regionName || "N/A"}
-                  {office.regionId?.regionCode && (
-                    <span className="code-badge ml-2">
-                      {office.regionId.regionCode}
-                    </span>
-                  )}
-                </td>
+                <td>{office.regionId?.regionName || "N/A"}</td>
                 <td>
                   <span
                     className={`badge ${
@@ -257,7 +250,7 @@ const OfficeManagement = () => {
                       .filter((r) => r.visibility === "on" && r.isActive)
                       .map((region) => (
                         <option key={region._id} value={region._id}>
-                          {region.regionName} ({region.regionCode})
+                          {region.regionName}
                         </option>
                       ))}
                   </select>

@@ -8,6 +8,25 @@ const ControlPanel = () => {
   const { user } = useAuth();
   const location = useLocation();
 
+  // Detailed role checking
+  React.useEffect(() => {
+    if (user) {
+      console.log("=== CONTROL PANEL DEBUG ===");
+      console.log("User Object:", user);
+      console.log("User Role:", user.role);
+      console.log("Role Type:", typeof user.role);
+      console.log("Is Admin:", user.role === "admin");
+      console.log("Is SuperAdmin:", user.role === "superAdmin");
+      console.log("Is User:", user.role === "user");
+      console.log("Is Office:", user.role === "office");
+      console.log(
+        "canAccessUsers():",
+        user?.role === "admin" || user?.role === "superAdmin"
+      );
+      console.log("========================");
+    }
+  }, [user]);
+
   const isActive = (path) => {
     return location.pathname === path ? "active" : "";
   };
@@ -16,7 +35,15 @@ const ControlPanel = () => {
     return user?.role === "admin" || user?.role === "superAdmin";
   };
 
-  const canAccessManagement = () => {
+  const canAccessRegions = () => {
+    return user?.role === "admin" || user?.role === "superAdmin";
+  };
+
+  const canAccessOffices = () => {
+    return user?.role === "admin" || user?.role === "superAdmin";
+  };
+
+  const canAccessTeams = () => {
     return user?.role === "admin" || user?.role === "superAdmin";
   };
 
@@ -50,32 +77,47 @@ const ControlPanel = () => {
             </>
           )}
 
-          {canAccessManagement() && (
-            <div className="sidebar-section">
-              <Link
-                to="/control-panel/regions"
-                className={`sidebar-item ${isActive("/control-panel/regions")}`}
-              >
-                <span className="sidebar-icon">🌍</span>
-                <span>Regions</span>
-              </Link>
+          {(canAccessRegions() || canAccessOffices() || canAccessTeams()) && (
+            <>
+              <div className="sidebar-divider">Organization</div>
+              <div className="sidebar-section">
+                {canAccessRegions() && (
+                  <Link
+                    to="/control-panel/regions"
+                    className={`sidebar-item ${isActive(
+                      "/control-panel/regions"
+                    )}`}
+                  >
+                    <span className="sidebar-icon">🌍</span>
+                    <span>Regions</span>
+                  </Link>
+                )}
 
-              <Link
-                to="/control-panel/offices"
-                className={`sidebar-item ${isActive("/control-panel/offices")}`}
-              >
-                <span className="sidebar-icon">🏢</span>
-                <span>Offices</span>
-              </Link>
+                {canAccessOffices() && (
+                  <Link
+                    to="/control-panel/offices"
+                    className={`sidebar-item ${isActive(
+                      "/control-panel/offices"
+                    )}`}
+                  >
+                    <span className="sidebar-icon">🏢</span>
+                    <span>Offices</span>
+                  </Link>
+                )}
 
-              <Link
-                to="/control-panel/teams"
-                className={`sidebar-item ${isActive("/control-panel/teams")}`}
-              >
-                <span className="sidebar-icon">🤝</span>
-                <span>Teams</span>
-              </Link>
-            </div>
+                {canAccessTeams() && (
+                  <Link
+                    to="/control-panel/teams"
+                    className={`sidebar-item ${isActive(
+                      "/control-panel/teams"
+                    )}`}
+                  >
+                    <span className="sidebar-icon">🤝</span>
+                    <span>Teams</span>
+                  </Link>
+                )}
+              </div>
+            </>
           )}
         </aside>
 

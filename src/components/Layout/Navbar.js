@@ -45,10 +45,12 @@ const Navbar = () => {
                 Dashboard
               </Link>
 
-              <Link to="/control-panel" className="navbar-link">
-                <span className="nav-icon">⚙️</span>
-                Control Panel
-              </Link>
+              {(user.role === "admin" || user.role === "superAdmin") && (
+                <Link to="/control-panel" className="navbar-link">
+                  <span className="nav-icon">⚙️</span>
+                  Control Panel
+                </Link>
+              )}
 
               <div className="user-dropdown" ref={dropdownRef}>
                 <button
