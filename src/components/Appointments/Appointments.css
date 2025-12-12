@@ -149,6 +149,16 @@
   color: var(--text-secondary);
 }
 
+/* Clickable row styling */
+.data-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f0f8ff;
+  cursor: pointer;
+}
+
 .badge-info {
   background: #dbeafe;
   color: #1e40af;

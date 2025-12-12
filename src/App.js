@@ -19,6 +19,8 @@ import RegionManagement from "./components/Management/RegionManagement";
 import OfficeManagement from "./components/Management/OfficeManagement";
 import TeamManagement from "./components/Management/TeamManagement";
 import Appointments from "./components/Appointments/Appointments";
+import WalkoutDetails from "./components/WalkoutDetails/WalkoutDetails";
+import Navbar from "./components/Layout/Navbar";
 
 function App() {
   return (
@@ -47,6 +49,19 @@ function App() {
               element={
                 <PrivateRoute>
                   <Appointments />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Walkout Details - With Navbar only */}
+            <Route
+              path="/appointments/:id"
+              element={
+                <PrivateRoute>
+                  <>
+                    <Navbar />
+                    <WalkoutDetails />
+                  </>
                 </PrivateRoute>
               }
             />

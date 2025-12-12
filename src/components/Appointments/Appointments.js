@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import api from "../../utils/api";
@@ -6,23 +7,42 @@ import Navbar from "../Layout/Navbar";
 import "./Appointments.css";
 
 const Appointments = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showError } = useToast();
-  const [appointments, setAppointments] = useState([]);
+  // Load persisted data from localStorage
+  const getStoredData = (key, defaultValue) => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  const [appointments, setAppointments] = useState(() =>
+    getStoredData("appointments_data", [])
+  );
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(() =>
+    getStoredData("appointments_total", 0)
+  );
 
-  // Filter states
-  const [filters, setFilters] = useState({
-    officeName: "",
-    startDate: "",
-    endDate: "",
-    patientId: "",
-  });
+  // Filter states - load from localStorage
+  const [filters, setFilters] = useState(() =>
+    getStoredData("appointments_filters", {
+      officeName: "",
+      startDate: "",
+      endDate: "",
+      patientId: "",
+    })
+  );
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
+  // Pagination states - load from localStorage
+  const [currentPage, setCurrentPage] = useState(() =>
+    getStoredData("appointments_page", 1)
+  );
   const [limit] = useState(50);
 
   // Check if user is admin or superAdmin
@@ -76,8 +96,16 @@ const Appointments = () => {
       console.log("API Response:", response.data);
 
       if (response.data.success) {
-        setAppointments(response.data.data);
-        setTotalCount(response.data.total);
+        const appointmentsData = response.data.data;
+        const total = response.data.total;
+        setAppointments(appointmentsData);
+        setTotalCount(total);
+        // Persist to localStorage
+        localStorage.setItem(
+          "appointments_data",
+          JSON.stringify(appointmentsData)
+        );
+        localStorage.setItem("appointments_total", JSON.stringify(total));
       }
     } catch (err) {
       showError(err.response?.data?.message || "Failed to fetch appointments");
@@ -105,10 +133,13 @@ const Appointments = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters({
+    const newFilters = {
       ...filters,
       [name]: value,
-    });
+    };
+    setFilters(newFilters);
+    // Persist to localStorage
+    localStorage.setItem("appointments_filters", JSON.stringify(newFilters));
   };
 
   const handleSearch = () => {
@@ -123,17 +154,22 @@ const Appointments = () => {
     }
 
     setCurrentPage(1);
+    localStorage.setItem("appointments_page", JSON.stringify(1));
     fetchAppointments();
   };
 
   const handleClearFilters = () => {
-    setFilters({
+    const newFilters = {
       officeName: filters.officeName, // Keep office selection
       startDate: "",
       endDate: "",
       patientId: "",
-    });
+    };
+    setFilters(newFilters);
     setCurrentPage(1);
+    // Persist to localStorage
+    localStorage.setItem("appointments_filters", JSON.stringify(newFilters));
+    localStorage.setItem("appointments_page", JSON.stringify(1));
   };
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -141,6 +177,8 @@ const Appointments = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
+      // Persist to localStorage
+      localStorage.setItem("appointments_page", JSON.stringify(newPage));
     }
   };
 
@@ -275,7 +313,18 @@ const Appointments = () => {
                   </tr>
                 ) : (
                   appointments.map((appt) => (
-                    <tr key={appt._id}>
+                    <tr
+                      key={appt._id}
+                      onClick={() =>
+                        navigate(`/appointments/${appt._id}`, {
+                          state: {
+                            appointment: appt,
+                            officeName: filters.officeName,
+                          },
+                        })
+                      }
+                      style={{ cursor: "pointer" }}
+                    >
                       <td>-</td>
                       <td>
                         <span className="code-badge">{appt["patient-id"]}</span>
