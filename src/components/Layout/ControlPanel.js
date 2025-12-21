@@ -47,6 +47,14 @@ const ControlPanel = () => {
     return user?.role === "admin" || user?.role === "superAdmin";
   };
 
+  const canAccessFormManagement = () => {
+    return user?.role === "admin" || user?.role === "superAdmin";
+  };
+
+  const canAccessArchives = () => {
+    return user?.role === "superAdmin";
+  };
+
   return (
     <>
       <Navbar />
@@ -116,6 +124,60 @@ const ControlPanel = () => {
                     <span>Teams</span>
                   </Link>
                 )}
+              </div>
+            </>
+          )}
+
+          {canAccessFormManagement() && (
+            <>
+              <div className="sidebar-divider">Form Management</div>
+              <div className="sidebar-section">
+                <Link
+                  to="/control-panel/dropdown-sets"
+                  className={`sidebar-item ${isActive(
+                    "/control-panel/dropdown-sets"
+                  )}`}
+                >
+                  <span className="sidebar-icon">📋</span>
+                  <span>Dropdown Sets</span>
+                </Link>
+
+                <Link
+                  to="/control-panel/radio-button-sets"
+                  className={`sidebar-item ${isActive(
+                    "/control-panel/radio-button-sets"
+                  )}`}
+                >
+                  <span className="sidebar-icon">🔘</span>
+                  <span>Radio Button Sets</span>
+                </Link>
+              </div>
+            </>
+          )}
+
+          {canAccessArchives() && (
+            <>
+              <div className="sidebar-divider">Archive Management</div>
+              <div className="sidebar-section">
+                <Link
+                  to="/control-panel/archives/dropdown-sets"
+                  className={`sidebar-item ${isActive(
+                    "/control-panel/archives/dropdown-sets"
+                  )}`}
+                >
+                  <span className="sidebar-icon">📦</span>
+                  <span>Archived Dropdowns</span>
+                </Link>
+
+                <Link
+                  to="/control-panel/archives/radio-button-sets"
+                  className={`sidebar-item ${isActive(
+                    "/control-panel/archives/radio-button-sets"
+                  )}`}
+                >
+                  <span className="sidebar-icon">🗄️</span>
+                  <span>Archived Radio Buttons</span>
+                </Link>
               </div>
             </>
           )}

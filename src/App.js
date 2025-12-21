@@ -18,6 +18,10 @@ import UserManagement from "./components/Users/UserManagement";
 import RegionManagement from "./components/Management/RegionManagement";
 import OfficeManagement from "./components/Management/OfficeManagement";
 import TeamManagement from "./components/Management/TeamManagement";
+import DropdownSetManagement from "./components/Management/DropdownSetManagement";
+import RadioButtonSetManagement from "./components/Management/RadioButtonSetManagement";
+import ArchiveDropdownManagement from "./components/Management/ArchiveDropdownManagement";
+import ArchiveRadioButtonManagement from "./components/Management/ArchiveRadioButtonManagement";
 import Appointments from "./components/Appointments/Appointments";
 import WalkoutDetails from "./components/WalkoutDetails/WalkoutDetails";
 import Navbar from "./components/Layout/Navbar";
@@ -105,6 +109,38 @@ function App() {
                 element={
                   <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
                     <TeamManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="dropdown-sets"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <DropdownSetManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="radio-button-sets"
+                element={
+                  <PrivateRoute requiredRoles={["admin", "superAdmin"]}>
+                    <RadioButtonSetManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="archives/dropdown-sets"
+                element={
+                  <PrivateRoute requiredRoles={["superAdmin"]}>
+                    <ArchiveDropdownManagement />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="archives/radio-button-sets"
+                element={
+                  <PrivateRoute requiredRoles={["superAdmin"]}>
+                    <ArchiveRadioButtonManagement />
                   </PrivateRoute>
                 }
               />
