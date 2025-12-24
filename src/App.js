@@ -23,7 +23,7 @@ import RadioButtonSetManagement from "./components/Management/RadioButtonSetMana
 import ArchiveDropdownManagement from "./components/Management/ArchiveDropdownManagement";
 import ArchiveRadioButtonManagement from "./components/Management/ArchiveRadioButtonManagement";
 import Appointments from "./components/Appointments/Appointments";
-import WalkoutDetails from "./components/WalkoutDetails/WalkoutDetails";
+import WalkoutForm from "./components/WalkoutForm/WalkoutForm";
 import Navbar from "./components/Layout/Navbar";
 
 function App() {
@@ -57,14 +57,14 @@ function App() {
               }
             />
 
-            {/* Walkout Details - With Navbar only */}
+            {/* Walkout Form - With Navbar only */}
             <Route
               path="/appointments/:id"
               element={
                 <PrivateRoute>
                   <>
                     <Navbar />
-                    <WalkoutDetails />
+                    <WalkoutForm />
                   </>
                 </PrivateRoute>
               }

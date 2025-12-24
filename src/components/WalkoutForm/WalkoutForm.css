@@ -1,0 +1,472 @@
+.walkout-form-container {
+  display: flex;
+  min-height: calc(100vh - 60px);
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-primary);
+}
+
+.walkout-main-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Compact appointment info header - readonly text display */
+.appointment-info-header {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.info-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: white;
+  border-radius: 3px;
+  border: 1px solid #e9ecef;
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.info-value {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapsible-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #1a56db;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 13px;
+}
+
+.section-header:hover {
+  background: #1e429f;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.section-content {
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+}
+
+.walkout-sidebar {
+  width: 260px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  height: fit-content;
+  position: sticky;
+  top: 8px;
+}
+
+.walkout-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 6px;
+}
+
+.sidebar-content {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Fieldsets Container - Side by Side */
+.fieldsets-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Rule Engine Check - Full Width */
+.rule-engine-fieldset {
+  grid-column: 1 / -1;
+}
+
+/* Confirmation Fieldset - Full Width */
+.confirmation-fieldset {
+  grid-column: 1 / -1;
+}
+
+/* Checkbox Grid - 4 Columns */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.checkbox-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #1a56db;
+}
+
+.checkbox-label span {
+  line-height: 1.3;
+}
+
+/* Rule Engine Rows - 2 questions side by side */
+.rule-engine-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.rule-engine-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Single question in a row takes only first column */
+.rule-engine-row .walkout-form-row:only-child {
+  grid-column: 1;
+}
+
+.form-fieldset {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: white;
+}
+
+.form-fieldset legend {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 0 5px;
+}
+
+/* Appointment Details - Question and buttons in SAME ROW - unique class names */
+.walkout-form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.walkout-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.walkout-form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.walkout-form-select {
+  flex: 0 0 auto;
+  width: 200px;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: white;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+  margin-left: auto;
+}
+
+.walkout-form-select:focus {
+  outline: none;
+  border-color: #1a56db;
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
+}
+
+.walkout-form-input {
+  flex: 0 0 auto;
+  width: 400px;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: white;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+  margin-left: auto;
+}
+
+.walkout-form-input:focus {
+  outline: none;
+  border-color: #1a56db;
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
+}
+
+.btn-option {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: var(--text-primary);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-option:hover {
+  border-color: #1a56db;
+  background: #f0f5ff;
+}
+
+.btn-option.selected {
+  background: #1a56db;
+  color: white;
+  border-color: #1a56db;
+}
+
+/* Patient Portion - Question ABOVE, Input/Dropdown BELOW */
+.patient-portion-row {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+
+.patient-portion-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-group-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.form-group-inline .form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.form-group-inline .form-input,
+.form-group-inline .form-select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: white;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.form-group-inline .form-input:focus,
+.form-group-inline .form-select:focus {
+  outline: none;
+  border-color: #1a56db;
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
+}
+
+.form-group-inline .form-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Last 2 questions in Patient Portion - horizontal layout like upper rows */
+.form-fieldset .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 7px;
+}
+
+.form-fieldset .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-fieldset .form-group .form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.form-fieldset .form-group .form-input,
+.form-fieldset .form-group .form-select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  background: white;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.form-fieldset .form-group .form-input:focus,
+.form-fieldset .form-group .form-select:focus {
+  outline: none;
+  border-color: #1a56db;
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
+}
+
+/* Responsive design */
+@media (max-width: 1400px) {
+  .info-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .info-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .walkout-form-container {
+    flex-direction: column;
+  }
+
+  .walkout-sidebar {
+    width: 100%;
+    position: static;
+  }
+
+  .info-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .info-row {
+    grid-template-columns: 1fr;
+  }
+
+  .walkout-form-container {
+    padding: 8px;
+  }
+
+  .appointment-info-header {
+    padding: 12px 16px;
+  }
+
+  .info-item {
+    padding: 6px 10px;
+  }
+
+  .info-label {
+    font-size: 10px;
+  }
+
+  .info-value {
+    font-size: 12px;
+  }
+
+  .fieldsets-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .appointment-info-header h2 {
+    font-size: 14px;
+  }
+
+  .section-header {
+    padding: 10px 12px;
+  }
+
+  .section-header h3 {
+    font-size: 13px;
+  }
+
+  .section-content {
+    padding: 12px;
+  }
+}
