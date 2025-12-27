@@ -250,7 +250,7 @@ const WalkoutForm = () => {
                 <div className="WF-fieldsets-container">
                   {/* Left Fieldset */}
                   <fieldset className="WF-form-fieldset">
-                    <legend>Appointment Details</legend>
+                    <legend className="WF-legend">Appointment Details</legend>
 
                     <div className="WF-walkout-form-row">
                       <label className="WF-walkout-form-label">
@@ -452,7 +452,7 @@ const WalkoutForm = () => {
 
                   {/* Right Fieldset */}
                   <fieldset className="WF-form-fieldset">
-                    <legend>Patient Portion</legend>
+                    <legend className="WF-legend">Patient Portion</legend>
 
                     {/* First row - 3 number inputs */}
                     <div className="WF-patient-portion-row">
@@ -571,7 +571,7 @@ const WalkoutForm = () => {
 
                   {/* Rule Engine Check Fieldset */}
                   <fieldset className="WF-form-fieldset WF-rule-engine-fieldset">
-                    <legend>Rule Engine Check</legend>
+                    <legend className="WF-legend">Rule Engine Check</legend>
 
                     {/* Row 1: Did Office run + Reason dropdown */}
                     <div className="WF-rule-engine-row">
@@ -715,7 +715,7 @@ const WalkoutForm = () => {
 
                   {/* Confirmation Fieldset */}
                   <fieldset className="WF-form-fieldset WF-confirmation-fieldset">
-                    <legend>
+                    <legend className="WF-legend">
                       Confirmation from office about necessary info available in
                       Eaglesoft.
                     </legend>
@@ -896,7 +896,7 @@ const WalkoutForm = () => {
               <div className="WF-section-content">
                 <fieldset className="WF-form-fieldset WF-lc3-rule-engine-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>A. Rule Engine Check</legend>
+                    <legend className="WF-legend">A. Rule Engine Check</legend>
                     <div className="WF-status-toggle">
                       <label className="WF-status-label">
                         <input
@@ -1093,7 +1093,7 @@ const WalkoutForm = () => {
                 {/* B. Document Check Fieldset */}
                 <fieldset className="WF-form-fieldset WF-lc3-document-check-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>
+                    <legend className="WF-legend">
                       B. Document Check{" "}
                       <span className="WF-fieldset-subtitle">
                         (Attachment and Service Based Guidelines)
@@ -1297,7 +1297,7 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Row 3 - Ortho Questionnaire */}
-                    <div className="form-group-compact ortho-question">
+                    <div className="WF-form-group-compact WF-ortho-question">
                       <label className="WF-form-label-compact">
                         Does the Ortho Questionnaire form available?
                         <span style={{ color: "#dc2626" }}>*</span>
@@ -1338,7 +1338,7 @@ const WalkoutForm = () => {
                 {/* C. Attachments Check Fieldset */}
                 <fieldset className="WF-form-fieldset WF-lc3-attachments-check-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>
+                    <legend className="WF-legend">
                       C. Attachments Check{" "}
                       <span className="WF-fieldset-subtitle">
                         (Attachment and Service Based Guidelines)
@@ -1472,7 +1472,9 @@ const WalkoutForm = () => {
                 {/* D. Patient Portion Check Fieldset */}
                 <fieldset className="WF-form-fieldset WF-lc3-patient-portion-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>D. Patient Portion Check</legend>
+                    <legend className="WF-legend">
+                      D. Patient Portion Check
+                    </legend>
                     <div className="WF-status-toggle">
                       <label className="WF-status-label">
                         <input
@@ -1846,7 +1848,7 @@ const WalkoutForm = () => {
                 {/* E. Production Details and Walkout Submission/Hold */}
                 <fieldset className="WF-form-fieldset WF-lc3-production-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>
+                    <legend className="WF-legend">
                       E. Production Details and Walkout Submission/Hold
                     </legend>
                     <div className="WF-status-toggle">
@@ -2353,7 +2355,7 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="form-group-compact full-width">
+                    <div className="WF-form-group-compact WF-full-width">
                       <label className="WF-form-label-compact">
                         On Hold Reasons
                       </label>
@@ -2371,7 +2373,7 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact full-width">
+                    <div className="WF-form-group-compact WF-full-width">
                       <label className="WF-form-label-compact">
                         Other Reason/Notes
                         <span style={{ color: "#dc2626" }}>*</span>
@@ -2429,7 +2431,7 @@ const WalkoutForm = () => {
                 {/* F. Copy "Provider's Note" from Eaglesoft and Paste below */}
                 <fieldset className="WF-form-fieldset WF-lc3-provider-notes-fieldset">
                   <div className="WF-fieldset-header-row">
-                    <legend>
+                    <legend className="WF-legend">
                       F. Copy "Provider's Note" from Eaglesoft and Paste below
                     </legend>
                     <div className="WF-status-toggle">
@@ -2664,7 +2666,9 @@ const WalkoutForm = () => {
 
                 {/* On Hold Details & Notes */}
                 <fieldset className="WF-form-fieldset WF-lc3-onhold-notes-fieldset">
-                  <legend>On Hold Details & Notes (1)</legend>
+                  <legend className="WF-legend">
+                    On Hold Details & Notes (1)
+                  </legend>
 
                   {/* Existing Notes Display */}
                   <div className="WF-onhold-notes-list">
