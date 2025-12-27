@@ -106,7 +106,7 @@
 
 .WF-section-content {
   padding: 20px 12px 10px;
-  background: var(--bg-secondary);
+  background: #f3f4f6;
 }
 
 .WF-walkout-sidebar {
@@ -210,7 +210,7 @@
   border-radius: 6px;
   padding: 20px 16px 16px;
   margin-bottom: 16px;
-  background-color: #f9fafb;
+  background-color: white;
 }
 
 .WF-legend {
@@ -479,7 +479,7 @@
   border-radius: 6px;
   padding: 20px 16px 16px;
   margin-bottom: 16px;
-  background-color: #f9fafb;
+  background-color: white;
 }
 
 .WF-fieldset-header-row {
