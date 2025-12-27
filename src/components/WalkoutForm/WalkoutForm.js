@@ -578,7 +578,8 @@ const WalkoutForm = () => {
                     <div className="WF-fieldset-header-row">
                       <legend className="WF-legend">Rule Engine Check</legend>
                     </div>
-                    {/* Row 1: Did Office run + Reason dropdown */}}
+
+                    {/* Row 1: Did Office run + Reason dropdown */}
                     <div className="WF-rule-engine-row">
                       <div className="WF-walkout-form-row">
                         <label className="WF-walkout-form-label">
