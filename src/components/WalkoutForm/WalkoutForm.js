@@ -175,98 +175,101 @@ const WalkoutForm = () => {
   };
 
   return (
-    <div className="walkout-form-container">
-      <div className="walkout-main-content">
+    <div className="WF-walkout-form-container">
+      <div className="WF-walkout-main-content">
         {/* Compact appointment details - readonly text display */}
-        <div className="appointment-info-header">
-          <div className="info-row">
-            <div className="info-item">
-              <span className="info-label">Office:</span>
-              <span className="info-value">{appointmentDetails.office}</span>
+        <div className="WF-appointment-info-header">
+          <div className="WF-info-row">
+            <div className="WF-info-item">
+              <span className="WF-info-label">Office:</span>
+              <span className="WF-info-value">{appointmentDetails.office}</span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Patient ID:</span>
-              <span className="info-value">{appointmentDetails.patientId}</span>
+            <div className="WF-info-item">
+              <span className="WF-info-label">Patient ID:</span>
+              <span className="WF-info-value">
+                {appointmentDetails.patientId}
+              </span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Doctor 1:</span>
-              <span className="info-value">{appointmentDetails.doctor1}</span>
+            <div className="WF-info-item">
+              <span className="WF-info-label">Doctor 1:</span>
+              <span className="WF-info-value">
+                {appointmentDetails.doctor1}
+              </span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Doctor 2:</span>
-              <span className="info-value">{appointmentDetails.doctor2}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Doctor 3:</span>
-              <span className="info-value">{appointmentDetails.doctor3}</span>
+            <div className="WF-info-item">
+              <span className="WF-info-label">Doctor 2:</span>
+              <span className="WF-info-value">
+                {appointmentDetails.doctor2}
+              </span>
             </div>
           </div>
 
-          <div className="info-row">
-            <div className="info-item">
-              <span className="info-label">Date Of Service:</span>
-              <span className="info-value">
+          <div className="WF-info-row">
+            <div className="WF-info-item">
+              <span className="WF-info-label">Date Of Service:</span>
+              <span className="WF-info-value">
                 {appointmentDetails.dateOfService}
               </span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Patient Name:</span>
-              <span className="info-value">
+            <div className="WF-info-item">
+              <span className="WF-info-label">Patient Name:</span>
+              <span className="WF-info-value">
                 {appointmentDetails.patientName}
               </span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Hygienist 1:</span>
-              <span className="info-value">
+            <div className="WF-info-item">
+              <span className="WF-info-label">Hygienist 1:</span>
+              <span className="WF-info-value">
                 {appointmentDetails.hygienist1}
               </span>
             </div>
-            <div className="info-item">
-              <span className="info-label">Hygienist 2:</span>
-              <span className="info-value">
+            <div className="WF-info-item">
+              <span className="WF-info-label">Hygienist 2:</span>
+              <span className="WF-info-value">
                 {appointmentDetails.hygienist2}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Hygienist 3:</span>
-              <span className="info-value">
-                {appointmentDetails.hygienist3}
               </span>
             </div>
           </div>
         </div>
 
         {/* Collapsible sections */}
-        <div className="collapsible-sections">
+        <div className="WF-collapsible-sections">
           {/* Office Section */}
-          <div className="section">
+          <div className="WF-section">
             <div
-              className="section-header"
+              className="WF-section-header"
               onClick={() => toggleSection("office")}
             >
               <h3>Office Section</h3>
-              <span className="toggle-icon">{sections.office ? "▼" : "▶"}</span>
+              <span className="WF-toggle-icon">
+                {sections.office ? "▼" : "▶"}
+              </span>
             </div>
             {sections.office && (
-              <div className="section-content">
-                <div className="fieldsets-container">
+              <div className="WF-section-content">
+                <div className="WF-fieldsets-container">
                   {/* Left Fieldset */}
-                  <fieldset className="form-fieldset">
+                  <fieldset className="WF-form-fieldset">
                     <legend>Appointment Details</legend>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Did patient come to the Appointment?*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Did patient come to the Appointment?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (btn) => (
                             <button
                               key={btn._id}
                               type="button"
-                              className={`btn-option ${
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.patientCame === btn.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -280,19 +283,24 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Is Post op walkout completing with zero production?*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Is Post op walkout completing with zero production?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (btn) => (
                             <button
                               key={btn._id}
                               type="button"
-                              className={`btn-option ${
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.postOpZeroProduction === btn.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -309,12 +317,12 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Patient Type*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Patient Type<span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.patientType || ""}
                         onChange={(e) =>
                           handleDropdownChange("patientType", e.target.value)
@@ -331,19 +339,24 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Does patient have Insurance?*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Does patient have Insurance?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (btn) => (
                             <button
                               key={btn._id}
                               type="button"
-                              className={`btn-option ${
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.hasInsurance === btn.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -357,12 +370,13 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Insurance Type*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Insurance Type
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.insuranceType || ""}
                         onChange={(e) =>
                           handleDropdownChange("insuranceType", e.target.value)
@@ -379,10 +393,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">Insurance*</label>
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Insurance<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.insurance || ""}
                         onChange={(e) =>
                           handleDropdownChange("insurance", e.target.value)
@@ -399,19 +415,24 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="walkout-form-row">
-                      <label className="walkout-form-label">
-                        Google Review Request?*
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Google Review Request?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("69486c7e1166cbe2b2c3c3a8").map(
                           (btn) => (
                             <button
                               key={btn._id}
                               type="button"
-                              className={`btn-option ${
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.googleReviewRequest === btn.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -430,40 +451,41 @@ const WalkoutForm = () => {
                   </fieldset>
 
                   {/* Right Fieldset */}
-                  <fieldset className="form-fieldset">
+                  <fieldset className="WF-form-fieldset">
                     <legend>Patient Portion</legend>
 
                     {/* First row - 3 number inputs */}
-                    <div className="patient-portion-row">
-                      <div className="form-group-inline">
-                        <label className="form-label">
-                          Expected Patient Portion as per Office WO Snip*
+                    <div className="WF-patient-portion-row">
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
+                          Expected Patient Portion as per Office WO Snip
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <input
                           type="number"
-                          className="form-input"
+                          className="WF-form-input"
                           defaultValue="4"
                         />
                       </div>
 
-                      <div className="form-group-inline">
-                        <label className="form-label">
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
                           Patient Portion Collected
                         </label>
                         <input
                           type="number"
-                          className="form-input"
+                          className="WF-form-input"
                           defaultValue="1"
                         />
                       </div>
 
-                      <div className="form-group-inline">
-                        <label className="form-label">
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
                           Difference in Patient Portion
                         </label>
                         <input
                           type="number"
-                          className="form-input"
+                          className="WF-form-input"
                           defaultValue="-3"
                           disabled
                         />
@@ -471,12 +493,12 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Second row - Primary Mode */}
-                    <div className="patient-portion-row">
-                      <div className="form-group-inline">
-                        <label className="form-label">
+                    <div className="WF-patient-portion-row">
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
                           Patient Portion Primary Mode
                         </label>
-                        <select className="form-select">
+                        <select className="WF-form-select">
                           <option value="Personal Check">Personal Check</option>
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
@@ -484,25 +506,26 @@ const WalkoutForm = () => {
                         </select>
                       </div>
 
-                      <div className="form-group-inline">
-                        <label className="form-label">
-                          Amount Collected Using Primary Mode*
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
+                          Amount Collected Using Primary Mode
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <input
                           type="number"
-                          className="form-input"
+                          className="WF-form-input"
                           defaultValue="3"
                         />
                       </div>
                     </div>
 
                     {/* Third row - Secondary Mode */}
-                    <div className="patient-portion-row">
-                      <div className="form-group-inline">
-                        <label className="form-label">
+                    <div className="WF-patient-portion-row">
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
                           Patient Portion Secondary Mode
                         </label>
-                        <select className="form-select">
+                        <select className="WF-form-select">
                           <option value="Debit Card">Debit Card</option>
                           <option value="Personal Check">Personal Check</option>
                           <option value="Cash">Cash</option>
@@ -510,32 +533,34 @@ const WalkoutForm = () => {
                         </select>
                       </div>
 
-                      <div className="form-group-inline">
-                        <label className="form-label">
-                          Amount Collected Using Secondary Mode*
+                      <div className="WF-form-group-inline">
+                        <label className="WF-form-label">
+                          Amount Collected Using Secondary Mode
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <input
                           type="number"
-                          className="form-input"
+                          className="WF-form-input"
                           defaultValue="1"
                         />
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">
+                    <div className="WF-form-group">
+                      <label className="WF-form-label">
                         Enter the last four digits of the uploaded check in
-                        Forte (Primary)*
+                        Forte (Primary)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <input type="text" className="form-input" />
+                      <input type="text" className="WF-form-input" />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">
+                    <div className="WF-form-group">
+                      <label className="WF-form-label">
                         Reason Office Collected less Patient Portion than
-                        Expected?*
+                        Expected?<span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <select className="form-select">
+                      <select className="WF-form-select">
                         <option value="">Select</option>
                         <option value="Patient refused">Patient refused</option>
                         <option value="Payment plan">Payment plan</option>
@@ -545,24 +570,29 @@ const WalkoutForm = () => {
                   </fieldset>
 
                   {/* Rule Engine Check Fieldset */}
-                  <fieldset className="form-fieldset rule-engine-fieldset">
+                  <fieldset className="WF-form-fieldset WF-rule-engine-fieldset">
                     <legend>Rule Engine Check</legend>
 
                     {/* Row 1: Did Office run + Reason dropdown */}
-                    <div className="rule-engine-row">
-                      <div className="walkout-form-row">
-                        <label className="walkout-form-label">
-                          Did Office run the Rules Engine?*
+                    <div className="WF-rule-engine-row">
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
+                          Did Office run the Rules Engine?
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="button-group">
+                        <div className="WF-button-group">
                           {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                             (btn) => (
                               <button
                                 key={btn._id}
                                 type="button"
-                                className={`btn-option ${
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
                                   formData.ruleEngineRun === btn.name
-                                    ? "selected"
+                                    ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
@@ -576,12 +606,13 @@ const WalkoutForm = () => {
                         </div>
                       </div>
 
-                      <div className="walkout-form-row">
-                        <label className="walkout-form-label">
-                          Reason for Rules Engine not run*
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
+                          Reason for Rules Engine not run
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="walkout-form-select"
+                          className="WF-walkout-form-select"
                           value={formData.ruleEngineNotRunReason || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -596,20 +627,25 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Row 2: Was error found + Remarks textbox */}
-                    <div className="rule-engine-row">
-                      <div className="walkout-form-row">
-                        <label className="walkout-form-label">
-                          If Yes, Was any error found?*
+                    <div className="WF-rule-engine-row">
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
+                          If Yes, Was any error found?
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="button-group">
+                        <div className="WF-button-group">
                           {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                             (btn) => (
                               <button
                                 key={btn._id}
                                 type="button"
-                                className={`btn-option ${
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
                                   formData.ruleEngineError === btn.name
-                                    ? "selected"
+                                    ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
@@ -623,14 +659,14 @@ const WalkoutForm = () => {
                         </div>
                       </div>
 
-                      <div className="walkout-form-row">
-                        <label className="walkout-form-label">
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
                           Enter Remarks explaining the changes made to fix the
-                          Error*
+                          Error<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <input
                           type="text"
-                          className="walkout-form-input"
+                          className="WF-walkout-form-input"
                           value={formData.errorFixRemarks || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -643,20 +679,25 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Row 3: Were all issues fixed (single question) */}
-                    <div className="rule-engine-row">
-                      <div className="walkout-form-row">
-                        <label className="walkout-form-label">
-                          Were all the Issues fixed?*
+                    <div className="WF-rule-engine-row">
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
+                          Were all the Issues fixed?
+                          <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="button-group">
+                        <div className="WF-button-group">
                           {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                             (btn) => (
                               <button
                                 key={btn._id}
                                 type="button"
-                                className={`btn-option ${
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
                                   formData.issuesFixed === btn.name
-                                    ? "selected"
+                                    ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
@@ -673,16 +714,16 @@ const WalkoutForm = () => {
                   </fieldset>
 
                   {/* Confirmation Fieldset */}
-                  <fieldset className="form-fieldset confirmation-fieldset">
+                  <fieldset className="WF-form-fieldset WF-confirmation-fieldset">
                     <legend>
                       Confirmation from office about necessary info available in
                       Eaglesoft.
                     </legend>
 
-                    <div className="checkbox-grid">
+                    <div className="WF-checkbox-grid">
                       {/* Column 1 */}
-                      <div className="checkbox-column">
-                        <label className="checkbox-label">
+                      <div className="WF-checkbox-column">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.signedGeneralConsent || false}
@@ -695,7 +736,7 @@ const WalkoutForm = () => {
                           />
                           <span>Signed General Consent*</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.signedTreatmentConsent || false}
@@ -708,7 +749,7 @@ const WalkoutForm = () => {
                           />
                           <span>Signed Treatment Consent</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.preAuthAvailable || false}
@@ -724,8 +765,8 @@ const WalkoutForm = () => {
                       </div>
 
                       {/* Column 2 */}
-                      <div className="checkbox-column">
-                        <label className="checkbox-label">
+                      <div className="WF-checkbox-column">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.signedTxPlan || false}
@@ -738,7 +779,7 @@ const WalkoutForm = () => {
                           />
                           <span>Signed TX Plan*</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.perioChart || false}
@@ -751,7 +792,7 @@ const WalkoutForm = () => {
                           />
                           <span>Perio Chart (D4342/D4342)</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.nvd || false}
@@ -764,8 +805,8 @@ const WalkoutForm = () => {
                       </div>
 
                       {/* Column 3 */}
-                      <div className="checkbox-column">
-                        <label className="checkbox-label">
+                      <div className="WF-checkbox-column">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.xRayPanoAttached || false}
@@ -778,7 +819,7 @@ const WalkoutForm = () => {
                           />
                           <span>X-Ray/Pano Attached*</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.majorServiceForm || false}
@@ -791,7 +832,7 @@ const WalkoutForm = () => {
                           />
                           <span>Major Service Form</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.routeSheet || false}
@@ -807,8 +848,8 @@ const WalkoutForm = () => {
                       </div>
 
                       {/* Column 4 */}
-                      <div className="checkbox-column">
-                        <label className="checkbox-label">
+                      <div className="WF-checkbox-column">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.prcUpdatedInRouteSheet || false}
@@ -821,7 +862,7 @@ const WalkoutForm = () => {
                           />
                           <span>PRC updated in route sheet*</span>
                         </label>
-                        <label className="checkbox-label">
+                        <label className="WF-checkbox-label">
                           <input
                             type="checkbox"
                             checked={formData.narrative || false}
@@ -843,21 +884,21 @@ const WalkoutForm = () => {
           </div>
 
           {/* LC3 Section */}
-          <div className="section">
+          <div className="WF-section">
             <div
-              className="section-header"
+              className="WF-section-header"
               onClick={() => toggleSection("lc3")}
             >
               <h3>LC3 Section</h3>
-              <span className="toggle-icon">{sections.lc3 ? "▼" : "▶"}</span>
+              <span className="WF-toggle-icon">{sections.lc3 ? "▼" : "▶"}</span>
             </div>
             {sections.lc3 && (
-              <div className="section-content">
-                <fieldset className="form-fieldset lc3-rule-engine-fieldset">
-                  <div className="fieldset-header-row">
+              <div className="WF-section-content">
+                <fieldset className="WF-form-fieldset WF-lc3-rule-engine-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>A. Rule Engine Check</legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3FieldsetStatus"
@@ -867,9 +908,11 @@ const WalkoutForm = () => {
                             handleLc3Change("fieldsetStatus", e.target.value)
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3FieldsetStatus"
@@ -879,19 +922,22 @@ const WalkoutForm = () => {
                             handleLc3Change("fieldsetStatus", e.target.value)
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
                   {/* First Question with conditional right side elements */}
-                  <div className="lc3-main-question-row">
+                  <div className="WF-lc3-main-question-row">
                     {/* Left side - Main question */}
-                    <div className="lc3-question-left">
-                      <label className="walkout-form-label">
-                        1. Did LC3 run the Rules Engine?*
+                    <div className="WF-lc3-question-left">
+                      <label className="WF-walkout-form-label">
+                        1. Did LC3 run the Rules Engine?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {(() => {
                           const buttons = getRadioButtons(
                             "6948272c1166cbe2b2c332e0"
@@ -905,9 +951,14 @@ const WalkoutForm = () => {
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 lc3Data.didLc3RunRules === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -922,16 +973,17 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Right side - Conditional elements */}
-                    <div className="lc3-question-right">
+                    <div className="WF-lc3-question-right">
                       {lc3Data.didLc3RunRules === "Yes" && (
-                        <div className="rule-unique-id-group">
-                          <label className="form-label">
-                            Rule Engine Unique ID*
+                        <div className="WF-rule-unique-id-group">
+                          <label className="WF-form-label">
+                            Rule Engine Unique ID
+                            <span style={{ color: "#dc2626" }}>*</span>
                           </label>
-                          <div className="unique-id-input-row">
+                          <div className="WF-unique-id-input-row">
                             <input
                               type="text"
-                              className="form-input"
+                              className="WF-form-input"
                               value={lc3Data.ruleEngineUniqueId}
                               onChange={(e) =>
                                 handleLc3Change(
@@ -944,7 +996,7 @@ const WalkoutForm = () => {
                             {lc3Data.showUpdateButton && (
                               <button
                                 type="button"
-                                className="update-button"
+                                className="WF-update-button"
                                 onClick={fetchFailedRules}
                               >
                                 Update
@@ -955,12 +1007,12 @@ const WalkoutForm = () => {
                       )}
 
                       {lc3Data.didLc3RunRules === "No" && (
-                        <div className="reason-not-run-group">
-                          <label className="form-label">
+                        <div className="WF-reason-not-run-group">
+                          <label className="WF-form-label">
                             Reason for Rules Engine not run
                           </label>
                           <select
-                            className="walkout-form-select"
+                            className="WF-walkout-form-select"
                             value={lc3Data.reasonForNotRun}
                             onChange={(e) =>
                               handleLc3Change("reasonForNotRun", e.target.value)
@@ -977,40 +1029,45 @@ const WalkoutForm = () => {
                   {/* Failed Rules Section - Only show when Yes is selected and API has been called */}
                   {lc3Data.didLc3RunRules === "Yes" &&
                     lc3Data.lastFetchedId && (
-                      <div className="failed-rules-section">
+                      <div className="WF-failed-rules-section">
                         {lc3Data.failedRules.length === 0 ? (
-                          <p className="no-failed-rules-message">
+                          <p className="WF-no-failed-rules-message">
                             None of the rules failed by the engine!
                           </p>
                         ) : (
                           <>
-                            <h4 className="failed-rules-header">
+                            <h4 className="WF-failed-rules-header">
                               Have the failed rules listed below been addressed
                               and resolved?
                             </h4>
-                            <div className="failed-rules-list">
+                            <div className="WF-failed-rules-list">
                               {lc3Data.failedRules.map((rule, index) => (
-                                <div key={index} className="rule-item">
-                                  <span className="rule-number">
+                                <div key={index} className="WF-rule-item">
+                                  <span className="WF-rule-number">
                                     {index + 1}.
                                   </span>
                                   <span
-                                    className="rule-text"
+                                    className="WF-rule-text"
                                     dangerouslySetInnerHTML={{
                                       __html: rule.message,
                                     }}
                                   />
-                                  <div className="button-group">
+                                  <div className="WF-button-group">
                                     {getRadioButtons(
                                       "6948272c1166cbe2b2c332e0"
                                     ).map((button) => (
                                       <button
                                         key={button._id}
                                         type="button"
-                                        className={`radio-button ${
+                                        className={`WF-radio-button ${
+                                          button.name === "No" ||
+                                          button.name === "Pending"
+                                            ? "WF-no-or-pending-button"
+                                            : ""
+                                        } ${
                                           formData[`failedRule${index}`] ===
                                           button.name
-                                            ? "selected"
+                                            ? "WF-selected"
                                             : ""
                                         }`}
                                         onClick={() =>
@@ -1034,16 +1091,16 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* B. Document Check Fieldset */}
-                <fieldset className="form-fieldset lc3-document-check-fieldset">
-                  <div className="fieldset-header-row">
+                <fieldset className="WF-form-fieldset WF-lc3-document-check-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>
                       B. Document Check{" "}
-                      <span className="fieldset-subtitle">
+                      <span className="WF-fieldset-subtitle">
                         (Attachment and Service Based Guidelines)
                       </span>
                     </legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3DocumentCheckStatus"
@@ -1058,9 +1115,11 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3DocumentCheckStatus"
@@ -1075,19 +1134,22 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="document-check-grid">
+                  <div className="WF-document-check-grid">
                     {/* Row 1 */}
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Signed Treatment Plan Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Signed Treatment Plan Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.signedTreatmentPlanAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1101,12 +1163,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        PRC Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        PRC Available<span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.prcAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange("prcAvailable", e.target.value)
@@ -1117,12 +1179,13 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Signed Consent - General Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Signed Consent - General Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.signedConsentGeneralAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1136,12 +1199,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        NVD Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        NVD Available<span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.nvdAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange("nvdAvailable", e.target.value)
@@ -1153,12 +1216,13 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Row 2 */}
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Narrative Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Narrative Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.narrativeAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1172,12 +1236,13 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Signed Consent Tx. Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Signed Consent Tx. Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.signedConsentTxAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1191,12 +1256,13 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Pre Auth Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Pre Auth Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.preAuthAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1210,12 +1276,13 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Route Sheet Available*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Route Sheet Available
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.routeSheetAvailable || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1231,19 +1298,25 @@ const WalkoutForm = () => {
 
                     {/* Row 3 - Ortho Questionnaire */}
                     <div className="form-group-compact ortho-question">
-                      <label className="form-label-compact">
-                        Does the Ortho Questionnaire form available?*
+                      <label className="WF-form-label-compact">
+                        Does the Ortho Questionnaire form available?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948270d1166cbe2b2c332bb").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.orthoQuestionnaireAvailable ===
                                 button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -1263,16 +1336,16 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* C. Attachments Check Fieldset */}
-                <fieldset className="form-fieldset lc3-attachments-check-fieldset">
-                  <div className="fieldset-header-row">
+                <fieldset className="WF-form-fieldset WF-lc3-attachments-check-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>
                       C. Attachments Check{" "}
-                      <span className="fieldset-subtitle">
+                      <span className="WF-fieldset-subtitle">
                         (Attachment and Service Based Guidelines)
                       </span>
                     </legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3AttachmentsCheckStatus"
@@ -1287,9 +1360,11 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3AttachmentsCheckStatus"
@@ -1304,16 +1379,20 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="attachments-check-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">Pano*</label>
+                  <div className="WF-attachments-check-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Pano<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.pano || ""}
                         onChange={(e) =>
                           handleDropdownChange("pano", e.target.value)
@@ -1324,10 +1403,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">FMX*</label>
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        FMX<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.fmx || ""}
                         onChange={(e) =>
                           handleDropdownChange("fmx", e.target.value)
@@ -1338,10 +1419,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">Bitewing*</label>
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Bitewing<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.bitewing || ""}
                         onChange={(e) =>
                           handleDropdownChange("bitewing", e.target.value)
@@ -1352,10 +1435,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">PA*</label>
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        PA<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.pa || ""}
                         onChange={(e) =>
                           handleDropdownChange("pa", e.target.value)
@@ -1366,10 +1451,12 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">Perio Chart*</label>
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Perio Chart<span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.perioChart || ""}
                         onChange={(e) =>
                           handleDropdownChange("perioChart", e.target.value)
@@ -1383,11 +1470,11 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* D. Patient Portion Check Fieldset */}
-                <fieldset className="form-fieldset lc3-patient-portion-fieldset">
-                  <div className="fieldset-header-row">
+                <fieldset className="WF-form-fieldset WF-lc3-patient-portion-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>D. Patient Portion Check</legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3PatientPortionStatus"
@@ -1402,9 +1489,11 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3PatientPortionStatus"
@@ -1419,24 +1508,27 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
                   {/* Patient Portion Calculations and Collection by Office */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Patient Portion (PP) Calculations and Collection by Office
                   </div>
 
-                  <div className="pp-office-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Expected PP per Office*
+                  <div className="WF-pp-office-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Expected PP per Office
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.expectedPPOffice || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1447,13 +1539,14 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        PP Collected by Office (per Eaglesoft)*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        PP Collected by Office (per Eaglesoft)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.ppCollectedOffice || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1464,11 +1557,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">Difference</label>
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Difference
+                      </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.ppDifferenceOffice || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1480,19 +1575,24 @@ const WalkoutForm = () => {
                     </div>
                   </div>
 
-                  <div className="nvd-question-row">
-                    <label className="form-label-compact">
-                      Is there a signed NVD for the Difference?*
+                  <div className="WF-nvd-question-row">
+                    <label className="WF-form-label-compact">
+                      Is there a signed NVD for the Difference?
+                      <span style={{ color: "#dc2626" }}>*</span>
                     </label>
-                    <div className="button-group">
+                    <div className="WF-button-group">
                       {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                         (button) => (
                           <button
                             key={button._id}
                             type="button"
-                            className={`radio-button ${
+                            className={`WF-radio-button ${
+                              button.name === "No" || button.name === "Pending"
+                                ? "WF-no-or-pending-button"
+                                : ""
+                            } ${
                               formData.signedNVDForDifference === button.name
-                                ? "selected"
+                                ? "WF-selected"
                                 : ""
                             }`}
                             onClick={() =>
@@ -1510,18 +1610,19 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Patient Portion Calculations by LC3 */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Patient Portion Calculations by LC3
                   </div>
 
-                  <div className="pp-lc3-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Expected PP per LC3*
+                  <div className="WF-pp-lc3-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Expected PP per LC3
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.expectedPPLC3 || ""}
                         onChange={(e) =>
                           handleDropdownChange("expectedPPLC3", e.target.value)
@@ -1529,13 +1630,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Difference in Expected PP [LC3 vs. Office]
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.ppDifferenceLC3 || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1548,18 +1649,18 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Verification of Patient Portion Payment */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Verification of Patient Portion Payment
                   </div>
 
-                  <div className="payment-verification-grid">
+                  <div className="WF-payment-verification-grid">
                     {/* Row 1 */}
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Pat. Portion Primary Mode
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.ppPrimaryMode || ""}
                         onChange={(e) =>
                           handleDropdownChange("ppPrimaryMode", e.target.value)
@@ -1570,13 +1671,14 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Amount Collected Using Primary Mode*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Amount Collected Using Primary Mode
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.amountPrimaryMode || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1587,12 +1689,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Payment verified from*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Payment verified from
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.paymentVerifiedFromPrimary || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1607,12 +1710,12 @@ const WalkoutForm = () => {
                     </div>
 
                     {/* Row 2 */}
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Pat. Portion Secondary Mode
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.ppSecondaryMode || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1626,13 +1729,14 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Amount Collected Using Secondary Mode*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Amount Collected Using Secondary Mode
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.amountSecondaryMode || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1643,12 +1747,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Payment verified from*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Payment verified from
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.paymentVerifiedFromSecondary || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1664,21 +1769,26 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Bottom Questions */}
-                  <div className="payment-questions">
-                    <div className="payment-question-row">
-                      <label className="form-label-compact">
+                  <div className="WF-payment-questions">
+                    <div className="WF-payment-question-row">
+                      <label className="WF-form-label-compact">
                         Did you verify if the attached check matches the payment
-                        posted in ES?*
+                        posted in ES?<span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.verifyCheckMatchesES === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -1695,20 +1805,26 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="payment-question-row">
-                      <label className="form-label-compact">
+                    <div className="WF-payment-question-row">
+                      <label className="WF-form-label-compact">
                         Do we have the uploaded Forte check available in SD, and
-                        does the entered ref# by the office match?*
+                        does the entered ref# by the office match?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.forteCheckAvailable === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -1728,13 +1844,13 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* E. Production Details and Walkout Submission/Hold */}
-                <fieldset className="form-fieldset lc3-production-fieldset">
-                  <div className="fieldset-header-row">
+                <fieldset className="WF-form-fieldset WF-lc3-production-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>
                       E. Production Details and Walkout Submission/Hold
                     </legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3ProductionStatus"
@@ -1747,9 +1863,11 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3ProductionStatus"
@@ -1762,24 +1880,27 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
                   {/* Production Calculations per Office Walkout */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Production Calculations per Office Walkout
                   </div>
 
-                  <div className="production-office-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Total Production (Office)*
+                  <div className="WF-production-office-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Total Production (Office)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.totalProductionOffice || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1790,13 +1911,14 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Est. Insurance (Office)*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Est. Insurance (Office)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.estInsuranceOffice || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1807,13 +1929,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Expected PP (Office)
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.expectedPPOfficeProduction || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1826,18 +1948,19 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Production Calculations per LC3 Walkout */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Production Calculations per LC3 Walkout
                   </div>
 
-                  <div className="production-lc3-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Total Production (LC3)*
+                  <div className="WF-production-lc3-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Total Production (LC3)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.totalProductionLC3 || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1848,13 +1971,14 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Est. Insurance (LC3)*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Est. Insurance (LC3)
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.estInsuranceLC3 || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1865,13 +1989,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Expected PP (LC3)
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.expectedPPLC3Production || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1884,18 +2008,18 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Difference between LC3 and Office Production */}
-                  <div className="section-subheader">
+                  <div className="WF-section-subheader">
                     Difference between LC3 and Office Production [LC3 - Office]
                   </div>
 
-                  <div className="production-difference-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                  <div className="WF-production-difference-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Total Production Difference
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.totalProductionDifference || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1906,13 +2030,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Est Insurance Difference
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.estInsuranceDifference || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1923,13 +2047,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
                         Expected PP Difference
                       </label>
                       <input
                         type="number"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.expectedPPDifference || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1941,13 +2065,14 @@ const WalkoutForm = () => {
                     </div>
                   </div>
 
-                  <div className="production-reason-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Reason for Difference in Total Production*
+                  <div className="WF-production-reason-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Reason for Difference in Total Production
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.reasonTotalProductionDiff || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1961,12 +2086,13 @@ const WalkoutForm = () => {
                       </select>
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Reason for Difference in Est Insurance*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Reason for Difference in Est Insurance
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.reasonEstInsuranceDiff || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -1981,15 +2107,15 @@ const WalkoutForm = () => {
                     </div>
                   </div>
 
-                  <div className="production-explanation-grid">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Explanation of reason for Difference in Total
-                        Production*
+                  <div className="WF-production-explanation-grid">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Explanation of reason for Difference in Total Production
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.explanationTotalProductionDiff || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -2000,13 +2126,14 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Explanation of reason for Difference in Est Insurance*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Explanation of reason for Difference in Est Insurance
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.explanationEstInsuranceDiff || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -2019,21 +2146,27 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Walkout Questions */}
-                  <div className="walkout-questions">
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
+                  <div className="WF-walkout-questions">
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
                         Have we informed office manager on HQ for changes made
-                        in the walkout?*
+                        in the walkout?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.informedOfficeManager === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2050,19 +2183,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
-                        Has the request for a Google review been sent?*
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
+                        Has the request for a Google review been sent?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("69486c7e1166cbe2b2c3c3a8").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.googleReviewSent === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2079,21 +2218,26 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
                         Does walkout contains Crown/Denture/Implant with
-                        Prep/Imp?*
+                        Prep/Imp?<span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.containsCrownDentureImplant ===
                                 button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2110,19 +2254,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
-                        As per IV crown paid on - *
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
+                        As per IV crown paid on -{" "}
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948270d1166cbe2b2c332bb").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.crownPaidOn === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2136,20 +2286,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
                         Does crown/Denture/Implants delivered as per provider
-                        notes?*
+                        notes?<span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.deliveredAsPerNotes === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2166,19 +2321,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="walkout-question-row">
-                      <label className="form-label-compact">
-                        Is Walkout getting on Hold?*
+                    <div className="WF-walkout-question-row">
+                      <label className="WF-form-label-compact">
+                        Is Walkout getting on Hold?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.walkoutOnHold === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2193,11 +2354,11 @@ const WalkoutForm = () => {
                     </div>
 
                     <div className="form-group-compact full-width">
-                      <label className="form-label-compact">
+                      <label className="WF-form-label-compact">
                         On Hold Reasons
                       </label>
                       <select
-                        className="walkout-form-select"
+                        className="WF-walkout-form-select"
                         value={formData.onHoldReasons || ""}
                         onChange={(e) =>
                           handleDropdownChange("onHoldReasons", e.target.value)
@@ -2211,12 +2372,13 @@ const WalkoutForm = () => {
                     </div>
 
                     <div className="form-group-compact full-width">
-                      <label className="form-label-compact">
-                        Other Reason/Notes*
+                      <label className="WF-form-label-compact">
+                        Other Reason/Notes
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-input"
+                        className="WF-form-input"
                         value={formData.otherReasonNotes || ""}
                         onChange={(e) =>
                           handleDropdownChange(
@@ -2229,19 +2391,24 @@ const WalkoutForm = () => {
                   </div>
 
                   {/* Final Question */}
-                  <div className="final-question-row">
-                    <label className="form-label-compact">
-                      Is walkout completing with deficiency?*
+                  <div className="WF-final-question-row">
+                    <label className="WF-form-label-compact">
+                      Is walkout completing with deficiency?
+                      <span style={{ color: "#dc2626" }}>*</span>
                     </label>
-                    <div className="button-group">
+                    <div className="WF-button-group">
                       {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                         (button) => (
                           <button
                             key={button._id}
                             type="button"
-                            className={`radio-button ${
+                            className={`WF-radio-button ${
+                              button.name === "No" || button.name === "Pending"
+                                ? "WF-no-or-pending-button"
+                                : ""
+                            } ${
                               formData.completingWithDeficiency === button.name
-                                ? "selected"
+                                ? "WF-selected"
                                 : ""
                             }`}
                             onClick={() =>
@@ -2260,13 +2427,13 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* F. Copy "Provider's Note" from Eaglesoft and Paste below */}
-                <fieldset className="form-fieldset lc3-provider-notes-fieldset">
-                  <div className="fieldset-header-row">
+                <fieldset className="WF-form-fieldset WF-lc3-provider-notes-fieldset">
+                  <div className="WF-fieldset-header-row">
                     <legend>
                       F. Copy "Provider's Note" from Eaglesoft and Paste below
                     </legend>
-                    <div className="status-toggle">
-                      <label className="status-label">
+                    <div className="WF-status-toggle">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3ProviderNotesStatus"
@@ -2281,9 +2448,11 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text completed">Completed</span>
+                        <span className="WF-status-text WF-completed">
+                          Completed
+                        </span>
                       </label>
-                      <label className="status-label">
+                      <label className="WF-status-label">
                         <input
                           type="radio"
                           name="lc3ProviderNotesStatus"
@@ -2298,25 +2467,33 @@ const WalkoutForm = () => {
                             )
                           }
                         />
-                        <span className="status-text pending">Pending</span>
+                        <span className="WF-status-text WF-pending">
+                          Pending
+                        </span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="provider-notes-questions">
-                    <div className="provider-note-question-row">
-                      <label className="form-label-compact">
-                        1. Doctor note completed?*
+                  <div className="WF-provider-notes-questions">
+                    <div className="WF-provider-note-question-row">
+                      <label className="WF-form-label-compact">
+                        1. Doctor note completed?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.doctorNoteCompleted === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2333,19 +2510,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="provider-note-question-row">
-                      <label className="form-label-compact">
-                        2. Does the notes updated on DOS?*
+                    <div className="WF-provider-note-question-row">
+                      <label className="WF-form-label-compact">
+                        2. Does the notes updated on DOS?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.notesUpdatedOnDOS === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2362,19 +2545,25 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="provider-note-question-row">
-                      <label className="form-label-compact">
-                        3. Does the Note include following 4 things?*
+                    <div className="WF-provider-note-question-row">
+                      <label className="WF-form-label-compact">
+                        3. Does the Note include following 4 things?
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="button-group">
+                      <div className="WF-button-group">
                         {getRadioButtons("6948272c1166cbe2b2c332e0").map(
                           (button) => (
                             <button
                               key={button._id}
                               type="button"
-                              className={`radio-button ${
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
                                 formData.noteIncludesFourThings === button.name
-                                  ? "selected"
+                                  ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
@@ -2391,41 +2580,42 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    <div className="note-checklist">
-                      <div className="checklist-item">
-                        <span className="checklist-label">
+                    <div className="WF-note-checklist">
+                      <div className="WF-checklist-item">
+                        <span className="WF-checklist-label">
                           a. Procedure Name
                         </span>
-                        <span className="checklist-icon">❌</span>
+                        <span className="WF-checklist-icon">❌</span>
                       </div>
-                      <div className="checklist-item">
-                        <span className="checklist-label">
+                      <div className="WF-checklist-item">
+                        <span className="WF-checklist-label">
                           b. Tooth#/Quads/Arch and Surface (if applicable)
                         </span>
-                        <span className="checklist-icon">❌</span>
+                        <span className="WF-checklist-icon">❌</span>
                       </div>
-                      <div className="checklist-item">
-                        <span className="checklist-label">
+                      <div className="WF-checklist-item">
+                        <span className="WF-checklist-label">
                           c. Provider Name
                         </span>
-                        <span className="checklist-icon">❌</span>
+                        <span className="WF-checklist-icon">❌</span>
                       </div>
-                      <div className="checklist-item">
-                        <span className="checklist-label">
+                      <div className="WF-checklist-item">
+                        <span className="WF-checklist-label">
                           d. Hygienist Name
                         </span>
-                        <span className="checklist-icon">❌</span>
+                        <span className="WF-checklist-icon">❌</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="notes-textarea-section">
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Provider's note from ES*
+                  <div className="WF-notes-textarea-section">
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Provider's note from ES
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <textarea
-                        className="notes-textarea"
+                        className="WF-notes-textarea"
                         placeholder="Paste the provider's notes here."
                         rows="6"
                         value={formData.providerNotesFromES || ""}
@@ -2438,12 +2628,13 @@ const WalkoutForm = () => {
                       />
                     </div>
 
-                    <div className="form-group-compact">
-                      <label className="form-label-compact">
-                        Hygienist's note from ES*
+                    <div className="WF-form-group-compact">
+                      <label className="WF-form-label-compact">
+                        Hygienist's note from ES
+                        <span style={{ color: "#dc2626" }}>*</span>
                       </label>
                       <textarea
-                        className="notes-textarea"
+                        className="WF-notes-textarea"
                         placeholder="Paste the provider's notes here."
                         rows="6"
                         value={formData.hygienistNotesFromES || ""}
@@ -2457,10 +2648,10 @@ const WalkoutForm = () => {
                     </div>
                   </div>
 
-                  <div className="check-ai-button-container">
+                  <div className="WF-check-ai-button-container">
                     <button
                       type="button"
-                      className="check-ai-button"
+                      className="WF-check-ai-button"
                       onClick={() => {
                         // AI check functionality will be added
                         console.log("Check with AI clicked");
@@ -2472,22 +2663,24 @@ const WalkoutForm = () => {
                 </fieldset>
 
                 {/* On Hold Details & Notes */}
-                <fieldset className="form-fieldset lc3-onhold-notes-fieldset">
+                <fieldset className="WF-form-fieldset WF-lc3-onhold-notes-fieldset">
                   <legend>On Hold Details & Notes (1)</legend>
 
                   {/* Existing Notes Display */}
-                  <div className="onhold-notes-list">
-                    <div className="onhold-note-item">
-                      <div className="note-datetime">2025-12-22 17:49:45</div>
-                      <div className="note-author">Soransh Sharma</div>
-                      <div className="note-content">WO completed.</div>
+                  <div className="WF-onhold-notes-list">
+                    <div className="WF-onhold-note-item">
+                      <div className="WF-note-datetime">
+                        2025-12-22 17:49:45
+                      </div>
+                      <div className="WF-note-author">Soransh Sharma</div>
+                      <div className="WF-note-content">WO completed.</div>
                     </div>
                   </div>
 
                   {/* Add New Note */}
-                  <div className="add-note-section">
+                  <div className="WF-add-note-section">
                     <textarea
-                      className="add-note-textarea"
+                      className="WF-add-note-textarea"
                       placeholder="Add new note here."
                       rows="4"
                       value={formData.newOnHoldNote || ""}
@@ -2502,16 +2695,18 @@ const WalkoutForm = () => {
           </div>
 
           {/* Audit Section */}
-          <div className="section">
+          <div className="WF-section">
             <div
-              className="section-header"
+              className="WF-section-header"
               onClick={() => toggleSection("audit")}
             >
               <h3>Audit Section</h3>
-              <span className="toggle-icon">{sections.audit ? "▼" : "▶"}</span>
+              <span className="WF-toggle-icon">
+                {sections.audit ? "▼" : "▶"}
+              </span>
             </div>
             {sections.audit && (
-              <div className="section-content">
+              <div className="WF-section-content">
                 <p>Audit section content will go here...</p>
               </div>
             )}
@@ -2520,9 +2715,9 @@ const WalkoutForm = () => {
       </div>
 
       {/* Fixed sidebar */}
-      <div className="walkout-sidebar">
+      <div className="WF-walkout-sidebar">
         <h3>Walkout Information</h3>
-        <div className="sidebar-content">
+        <div className="WF-sidebar-content">
           <p>Sidebar details will go here...</p>
         </div>
       </div>

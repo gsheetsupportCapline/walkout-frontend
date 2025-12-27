@@ -1,4 +1,4 @@
-.walkout-form-container {
+.WF-walkout-form-container {
   display: flex;
   min-height: calc(100vh - 60px);
   gap: 8px;
@@ -6,13 +6,13 @@
   background: var(--bg-primary);
 }
 
-.walkout-main-content {
+.WF-walkout-main-content {
   flex: 1;
   overflow-y: auto;
 }
 
 /* Compact appointment info header - readonly text display */
-.appointment-info-header {
+.WF-appointment-info-header {
   background: #f8f9fa;
   border-radius: 4px;
   padding: 6px 8px;
@@ -24,18 +24,18 @@
   z-index: 100;
 }
 
-.info-row {
+.WF-info-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   margin-bottom: 4px;
 }
 
-.info-row:last-child {
+.WF-info-row:last-child {
   margin-bottom: 0;
 }
 
-.info-item {
+.WF-info-item {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -45,7 +45,7 @@
   border: 1px solid #e9ecef;
 }
 
-.info-label {
+.WF-info-label {
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 10px;
@@ -54,7 +54,7 @@
   white-space: nowrap;
 }
 
-.info-value {
+.WF-info-value {
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 500;
@@ -63,13 +63,13 @@
   white-space: nowrap;
 }
 
-.collapsible-sections {
+.WF-collapsible-sections {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.section {
+.WF-section {
   background: var(--bg-secondary);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -77,7 +77,7 @@
   border: 1px solid #e5e7eb;
 }
 
-.section-header {
+.WF-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -89,27 +89,27 @@
   font-size: 13px;
 }
 
-.section-header:hover {
+.WF-section-header:hover {
   background: #1e429f;
 }
 
-.section-header h3 {
+.WF-section-header .WF-heading {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
 }
 
-.toggle-icon {
+.WF-toggle-icon {
   font-size: 12px;
   transition: transform 0.2s ease;
 }
 
-.section-content {
+.WF-section-content {
   padding: 10px 12px;
   background: var(--bg-secondary);
 }
 
-.walkout-sidebar {
+.WF-walkout-sidebar {
   width: 260px;
   background: var(--bg-secondary);
   border-radius: 6px;
@@ -121,7 +121,7 @@
   top: 8px;
 }
 
-.walkout-sidebar h3 {
+.WF-walkout-sidebar h3 {
   margin-top: 0;
   margin-bottom: 8px;
   color: var(--text-primary);
@@ -131,42 +131,42 @@
   padding-bottom: 6px;
 }
 
-.sidebar-content {
+.WF-sidebar-content {
   color: var(--text-secondary);
   font-size: 12px;
 }
 
 /* Fieldsets Container - Side by Side */
-.fieldsets-container {
+.WF-fieldsets-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
 
 /* Rule Engine Check - Full Width */
-.rule-engine-fieldset {
+.WF-rule-engine-fieldset {
   grid-column: 1 / -1;
 }
 
 /* Confirmation Fieldset - Full Width */
-.confirmation-fieldset {
+.WF-confirmation-fieldset {
   grid-column: 1 / -1;
 }
 
 /* Checkbox Grid - 4 Columns */
-.checkbox-grid {
+.WF-checkbox-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
-.checkbox-column {
+.WF-checkbox-column {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.checkbox-label {
+.WF-checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -176,42 +176,42 @@
   cursor: pointer;
 }
 
-.checkbox-label input[type="checkbox"] {
+.WF-checkbox-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
   accent-color: #1a56db;
 }
 
-.checkbox-label span {
+.WF-checkbox-text {
   line-height: 1.3;
 }
 
 /* Rule Engine Rows - 2 questions side by side */
-.rule-engine-row {
+.WF-rule-engine-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 7px;
 }
 
-.rule-engine-row:last-child {
+.WF-rule-engine-row:last-child {
   margin-bottom: 0;
 }
 
 /* Single question in a row takes only first column */
-.rule-engine-row .walkout-form-row:only-child {
+.WF-rule-engine-row .WF-walkout-form-row:only-child {
   grid-column: 1;
 }
 
-.form-fieldset {
+.WF-form-fieldset {
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   padding: 6px 8px;
   background: white;
 }
 
-.form-fieldset legend {
+.WF-legend {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
@@ -219,18 +219,18 @@
 }
 
 /* Appointment Details - Question and buttons in SAME ROW - unique class names */
-.walkout-form-row {
+.WF-walkout-form-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 7px;
 }
 
-.walkout-form-row:last-child {
+.WF-walkout-form-row:last-child {
   margin-bottom: 0;
 }
 
-.walkout-form-label {
+.WF-walkout-form-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -238,7 +238,7 @@
   flex-shrink: 0;
 }
 
-.button-group {
+.WF-button-group {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -247,7 +247,7 @@
   margin-left: auto;
 }
 
-.walkout-form-select {
+.WF-walkout-form-select {
   flex: 0 0 auto;
   width: 200px;
   padding: 5px 8px;
@@ -260,13 +260,81 @@
   margin-left: auto;
 }
 
-.walkout-form-select:focus {
+.WF-walkout-form-select:focus {
   outline: none;
   border-color: #1a56db;
   box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
 }
 
-.walkout-form-input {
+/* Office Section Dropdowns and Textboxes - Bottom border only */
+.WF-form-fieldset .WF-walkout-form-select,
+.WF-form-fieldset .WF-walkout-form-input {
+  border: none;
+  border-bottom: 1px solid #d1d5db;
+  border-radius: 0;
+  padding: 5px 0;
+  box-shadow: none;
+}
+
+.WF-form-fieldset .WF-walkout-form-select:focus,
+.WF-form-fieldset .WF-walkout-form-input:focus {
+  border-bottom: 1px solid #1a56db;
+  box-shadow: none;
+}
+
+/* LC3 Section Dropdowns - Full width with bottom border only */
+.WF-lc3-rule-engine-fieldset .WF-walkout-form-select,
+.WF-lc3-document-check-fieldset .WF-walkout-form-select,
+.WF-lc3-attachments-check-fieldset .WF-walkout-form-select,
+.WF-lc3-patient-portion-fieldset .WF-walkout-form-select,
+.WF-lc3-production-fieldset .WF-walkout-form-select,
+.WF-lc3-provider-notes-fieldset .WF-walkout-form-select {
+  width: 100%;
+  margin-left: 0;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid #d1d5db;
+  border-radius: 0;
+  padding: 5px 0;
+}
+
+.WF-lc3-rule-engine-fieldset .WF-walkout-form-select:focus,
+.WF-lc3-document-check-fieldset .WF-walkout-form-select:focus,
+.WF-lc3-attachments-check-fieldset .WF-walkout-form-select:focus,
+.WF-lc3-patient-portion-fieldset .WF-walkout-form-select:focus,
+.WF-lc3-production-fieldset .WF-walkout-form-select:focus,
+.WF-lc3-provider-notes-fieldset .WF-walkout-form-select:focus {
+  border-bottom: 1px solid #1a56db;
+  box-shadow: none;
+}
+
+/* LC3 Section Textboxes - Same styling as dropdowns */
+.WF-lc3-rule-engine-fieldset .WF-form-input,
+.WF-lc3-document-check-fieldset .WF-form-input,
+.WF-lc3-attachments-check-fieldset .WF-form-input,
+.WF-lc3-patient-portion-fieldset .WF-form-input,
+.WF-lc3-production-fieldset .WF-form-input,
+.WF-lc3-provider-notes-fieldset .WF-form-input {
+  width: 100%;
+  margin-left: 0;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid #d1d5db;
+  border-radius: 0;
+  padding: 5px 0;
+}
+
+.WF-lc3-rule-engine-fieldset .WF-form-input:focus,
+.WF-lc3-document-check-fieldset .WF-form-input:focus,
+.WF-lc3-attachments-check-fieldset .WF-form-input:focus,
+.WF-lc3-patient-portion-fieldset .WF-form-input:focus,
+.WF-lc3-production-fieldset .WF-form-input:focus,
+.WF-lc3-provider-notes-fieldset .WF-form-input:focus {
+  border-bottom: 1px solid #1a56db;
+  box-shadow: none;
+}
+
+.WF-walkout-form-input {
   flex: 0 0 auto;
   width: 400px;
   padding: 5px 8px;
@@ -279,13 +347,13 @@
   margin-left: auto;
 }
 
-.walkout-form-input:focus {
+.WF-walkout-form-input:focus {
   outline: none;
   border-color: #1a56db;
   box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
 }
 
-.btn-option {
+.WF-btn-option {
   padding: 5px 10px;
   font-size: 11px;
   font-weight: 500;
@@ -297,44 +365,44 @@
   transition: all 0.2s ease;
 }
 
-.btn-option:hover {
+.WF-btn-option:hover {
   border-color: #1a56db;
   background: #f0f5ff;
 }
 
-.btn-option.selected {
+.WF-btn-option.WF-selected {
   background: #1a56db;
   color: white;
   border-color: #1a56db;
 }
 
 /* Patient Portion - Question ABOVE, Input/Dropdown BELOW */
-.patient-portion-row {
+.WF-patient-portion-row {
   display: flex;
   gap: 7px;
   margin-bottom: 7px;
 }
 
-.patient-portion-row:last-child {
+.WF-patient-portion-row:last-child {
   margin-bottom: 0;
 }
 
-.form-group-inline {
+.WF-form-group-inline {
   display: flex;
   flex-direction: column;
   gap: 3px;
   flex: 1;
 }
 
-.form-group-inline .form-label {
+.WF-form-group-inline .WF-form-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
   line-height: 1.3;
 }
 
-.form-group-inline .form-input,
-.form-group-inline .form-select {
+.WF-form-group-inline .WF-form-input,
+.WF-form-group-inline .WF-form-select {
   width: 100%;
   padding: 5px 8px;
   font-size: 11px;
@@ -345,64 +413,65 @@
   transition: border-color 0.2s ease;
 }
 
-.form-group-inline .form-input:focus,
-.form-group-inline .form-select:focus {
+.WF-form-group-inline .WF-form-input:focus,
+.WF-form-group-inline .WF-form-select:focus {
   outline: none;
   border-color: #1a56db;
   box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
 }
 
-.form-group-inline .form-input:disabled {
+.WF-form-group-inline .WF-form-input:disabled {
   background: #f3f4f6;
   cursor: not-allowed;
 }
 
 /* Last 2 questions in Patient Portion - horizontal layout like upper rows */
-.form-fieldset .form-group {
+.WF-form-fieldset .WF-form-group {
   display: flex;
   flex-direction: column;
   gap: 3px;
   margin-bottom: 7px;
 }
 
-.form-fieldset .form-group:last-child {
+.WF-form-fieldset .WF-form-group:last-child {
   margin-bottom: 0;
 }
 
-.form-fieldset .form-group .form-label {
+.WF-form-fieldset .WF-form-group .WF-form-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
   line-height: 1.3;
 }
 
-.form-fieldset .form-group .form-input,
-.form-fieldset .form-group .form-select {
+.WF-form-fieldset .WF-form-group .WF-form-input,
+.WF-form-fieldset .WF-form-group .WF-form-select {
   width: 100%;
   padding: 5px 8px;
   font-size: 11px;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
+  border: none;
+  border-bottom: 1px solid #d1d5db;
+  border-radius: 0;
   background: white;
-  color: var(--text-primary);
+  color: #000000;
   transition: border-color 0.2s ease;
 }
 
-.form-fieldset .form-group .form-input:focus,
-.form-fieldset .form-group .form-select:focus {
+.WF-form-fieldset .WF-form-group .WF-form-input:focus,
+.WF-form-fieldset .WF-form-group .WF-form-select:focus {
   outline: none;
-  border-color: #1a56db;
-  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
+  border-bottom-color: #1a56db;
+  box-shadow: none;
 }
 
 /* LC3 Section Styles */
-.lc3-rule-engine-fieldset,
-.lc3-document-check-fieldset,
-.lc3-attachments-check-fieldset,
-.lc3-patient-portion-fieldset,
-.lc3-production-fieldset,
-.lc3-provider-notes-fieldset,
-.lc3-onhold-notes-fieldset {
+.WF-lc3-rule-engine-fieldset,
+.WF-lc3-document-check-fieldset,
+.WF-lc3-attachments-check-fieldset,
+.WF-lc3-patient-portion-fieldset,
+.WF-lc3-production-fieldset,
+.WF-lc3-provider-notes-fieldset,
+.WF-lc3-onhold-notes-fieldset {
   position: relative;
   border: 2px solid #d1d5db;
   border-radius: 6px;
@@ -411,7 +480,7 @@
   background-color: #f9fafb;
 }
 
-.fieldset-header-row {
+.WF-fieldset-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -422,7 +491,7 @@
   z-index: 10;
 }
 
-.fieldset-header-row legend {
+.WF-fieldset-header-row .WF-legend {
   margin: 0;
   padding: 6px 12px;
   font-size: 11px;
@@ -433,7 +502,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.status-toggle {
+.WF-status-toggle {
   display: flex;
   background-color: #e5e7eb;
   border-radius: 20px;
@@ -441,20 +510,20 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.status-label {
+.WF-status-label {
   position: relative;
   cursor: pointer;
   font-size: 10px;
 }
 
-.status-label input[type="radio"] {
+.WF-status-label input[type="radio"] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.status-text {
+.WF-status-text {
   display: block;
   padding: 4px 14px;
   border-radius: 18px;
@@ -463,19 +532,19 @@
   color: #6b7280;
 }
 
-.status-label input[type="radio"]:checked + .status-text.completed {
+.WF-status-label input[type="radio"]:checked + .WF-status-text.WF-completed {
   background-color: #15803d;
   color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.status-label input[type="radio"]:checked + .status-text.pending {
+.WF-status-label input[type="radio"]:checked + .WF-status-text.WF-pending {
   background-color: #f59e0b;
   color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.lc3-main-question-row {
+.WF-lc3-main-question-row {
   display: flex;
   gap: 20px;
   align-items: flex-start;
@@ -486,52 +555,52 @@
   border-radius: 4px;
 }
 
-.lc3-question-left {
+.WF-lc3-question-left {
   display: flex;
   align-items: center;
   gap: 15px;
   flex: 0 0 auto;
 }
 
-.lc3-question-left .walkout-form-label {
+.WF-lc3-question-left .WF-walkout-form-label {
   font-size: 11px;
   color: #000000;
 }
 
-.lc3-question-right {
+.WF-lc3-question-right {
   flex: 1;
   display: flex;
   justify-content: flex-end;
 }
 
-.rule-unique-id-group,
-.reason-not-run-group {
+.WF-rule-unique-id-group,
+.WF-reason-not-run-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 350px;
 }
 
-.rule-unique-id-group .form-label,
-.reason-not-run-group .form-label {
+.WF-rule-unique-id-group .WF-form-label,
+.WF-reason-not-run-group .WF-form-label {
   font-size: 11px;
   color: #000000;
 }
 
-.unique-id-input-row {
+.WF-unique-id-input-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.unique-id-input-row .form-input {
+.WF-unique-id-input-row .WF-form-input {
   flex: 1;
   min-width: 250px;
   font-size: 11px;
   padding: 5px 8px;
 }
 
-.update-button {
+.WF-update-button {
   background-color: #1a56db;
   color: white;
   border: none;
@@ -544,24 +613,24 @@
   transition: background-color 0.2s;
 }
 
-.update-button:hover {
+.WF-update-button:hover {
   background-color: #1e40af;
 }
 
-.failed-rules-section {
+.WF-failed-rules-section {
   margin-top: 15px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
 }
 
-.failed-rules-header {
+.WF-failed-rules-header {
   font-size: 11px;
   font-weight: 600;
   color: #000000;
   margin-bottom: 10px;
 }
 
-.no-rules-message {
+.WF-no-rules-message {
   font-size: 11px;
   color: #6b7280;
   font-style: italic;
@@ -571,13 +640,13 @@
   text-align: center;
 }
 
-.failed-rules-list {
+.WF-failed-rules-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.rule-item {
+.WF-rule-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -587,27 +656,27 @@
   border-left: 3px solid #ef4444;
 }
 
-.rule-number {
+.WF-rule-number {
   font-size: 11px;
   font-weight: 600;
   color: #000000;
   min-width: 25px;
 }
 
-.rule-text {
+.WF-rule-text {
   flex: 1;
   font-size: 11px;
   color: #000000;
   line-height: 1.5;
 }
 
-.rule-text b,
-.rule-text .error-message-api {
+.WF-rule-text b,
+.WF-rule-text .WF-error-message-api {
   color: #dc2626 !important;
   font-weight: 600;
 }
 
-.no-failed-rules-message {
+.WF-no-failed-rules-message {
   font-size: 11px;
   color: #15803d;
   font-weight: 500;
@@ -618,58 +687,100 @@
   border: 1px solid #86efac;
 }
 
-.rule-item .button-group {
-  margin-left: auto;
+.WF-rule-item .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
-/* Fix LC3 Radio Buttons styling */
-.lc3-question-left .button-group .radio-button,
-.rule-item .button-group .radio-button {
-  background-color: white;
-  color: #000000;
-  border: 1px solid #d1d5db;
-  padding: 5px 12px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
+/* Slide Toggle Button Groups for ALL sections (Office, LC3, Audit) */
+.WF-walkout-form-row .WF-button-group,
+.WF-lc3-question-left .WF-button-group,
+.WF-rule-item .WF-button-group,
+.WF-ortho-question .WF-button-group,
+.WF-nvd-question-row .WF-button-group,
+.WF-payment-question-row .WF-button-group,
+.WF-walkout-question-row .WF-button-group,
+.WF-provider-note-question-row .WF-button-group,
+.WF-final-question-row .WF-button-group {
+  display: inline-flex;
+  background-color: #e5e7eb;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 0;
+  position: relative;
+}
+
+.WF-walkout-form-row .WF-button-group .WF-radio-button,
+.WF-walkout-form-row .WF-button-group .WF-radio-button,
+.WF-lc3-question-left .WF-button-group .WF-radio-button,
+.WF-rule-item .WF-button-group .WF-radio-button,
+.WF-ortho-question .WF-button-group .WF-radio-button,
+.WF-nvd-question-row .WF-button-group .WF-radio-button,
+.WF-payment-question-row .WF-button-group .WF-radio-button,
+.WF-walkout-question-row .WF-button-group .WF-radio-button,
+.WF-provider-note-question-row .WF-button-group .WF-radio-button,
+.WF-final-question-row .WF-button-group .WF-radio-button {
+  background-color: transparent;
+  color: #6b7280;
+  border: none;
+  padding: 4px 14px;
+  border-radius: 18px;
+  font-size: 10px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
-.lc3-question-left .button-group .radio-button:hover,
-.rule-item .button-group .radio-button:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+.WF-walkout-form-row .WF-button-group .WF-radio-button:hover,
+.WF-walkout-form-row .WF-button-group .WF-radio-button:hover,
+.WF-lc3-question-left .WF-button-group .WF-radio-button:hover,
+.WF-rule-item .WF-button-group .WF-radio-button:hover,
+.WF-ortho-question .WF-button-group .WF-radio-button:hover,
+.WF-nvd-question-row .WF-button-group .WF-radio-button:hover,
+.WF-payment-question-row .WF-button-group .WF-radio-button:hover,
+.WF-walkout-question-row .WF-button-group .WF-radio-button:hover,
+.WF-provider-note-question-row .WF-button-group .WF-radio-button:hover,
+.WF-final-question-row .WF-button-group .WF-radio-button:hover {
+  color: #374151;
 }
 
-.lc3-question-left .button-group .radio-button.selected,
-.rule-item .button-group .radio-button.selected {
+/* Selected state - Blue for Yes, Prep, Seat, etc. */
+.WF-walkout-form-row .WF-button-group .WF-radio-button.WF-selected,
+.WF-lc3-question-left .WF-button-group .WF-radio-button.WF-selected,
+.WF-rule-item .WF-button-group .WF-radio-button.WF-selected,
+.WF-ortho-question .WF-button-group .WF-radio-button.WF-selected,
+.WF-nvd-question-row .WF-button-group .WF-radio-button.WF-selected,
+.WF-payment-question-row .WF-button-group .WF-radio-button.WF-selected,
+.WF-walkout-question-row .WF-button-group .WF-radio-button.WF-selected,
+.WF-provider-note-question-row .WF-button-group .WF-radio-button.WF-selected,
+.WF-final-question-row .WF-button-group .WF-radio-button.WF-selected {
   background-color: #1a56db;
   color: white;
-  border-color: #1a56db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.lc3-question-left .button-group .radio-button.selected:hover,
-.rule-item .button-group .radio-button.selected:hover {
-  background-color: #1e40af;
-  border-color: #1e40af;
+/* Red color for "No" and "Pending" buttons when selected */
+.WF-radio-button.WF-selected.WF-no-or-pending-button {
+  background-color: #dc2626 !important;
+  color: white !important;
 }
 
 /* B. Document Check & C. Attachments Check Fieldsets */
-.lc3-document-check-fieldset,
-.lc3-attachments-check-fieldset {
+.WF-lc3-document-check-fieldset,
+.WF-lc3-attachments-check-fieldset {
   margin-top: 12px;
 }
 
-.fieldset-subtitle {
+.WF-fieldset-subtitle {
   font-size: 10px;
   font-weight: 400;
   color: #6b7280;
   font-style: italic;
 }
 
-.document-check-grid {
+.WF-document-check-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px 12px;
@@ -677,7 +788,7 @@
   margin-top: 8px;
 }
 
-.attachments-check-grid {
+.WF-attachments-check-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 10px 12px;
@@ -685,13 +796,34 @@
   margin-top: 8px;
 }
 
-.form-group-compact {
+.WF-form-group-compact {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-items: flex-start;
 }
 
-.form-group-compact.ortho-question {
+.WF-form-group-compact .WF-form-select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 11px;
+  border: none;
+  border-bottom: 2px solid #d1d5db;
+  border-radius: 0;
+  background: transparent;
+  color: #000000;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.WF-form-group-compact .WF-form-select:focus {
+  outline: none;
+  border-bottom-color: #1a56db;
+  background: transparent;
+}
+
+.WF-form-group-compact.WF-ortho-question {
   grid-column: 1 / -1;
   flex-direction: row;
   align-items: center;
@@ -701,29 +833,29 @@
   border-radius: 4px;
 }
 
-.form-label-compact {
+.WF-form-label-compact {
   font-size: 11px;
   font-weight: 500;
   color: #000000;
   line-height: 1.4;
 }
 
-.ortho-question .form-label-compact {
+.WF-ortho-question .WF-form-label-compact {
   flex: 0 0 auto;
   margin: 0;
 }
 
-.ortho-question .button-group {
-  margin-left: auto;
+.WF-ortho-question .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
 /* D. Patient Portion Check Fieldset */
-.lc3-patient-portion-fieldset {
+.WF-lc3-patient-portion-fieldset {
   margin-top: 12px;
 }
 
-.section-subheader {
+.WF-section-subheader {
   background-color: #6b7280;
   color: white;
   padding: 6px 12px;
@@ -734,7 +866,7 @@
   border-radius: 3px;
 }
 
-.pp-office-grid {
+.WF-pp-office-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px 12px;
@@ -742,7 +874,7 @@
   margin-bottom: 10px;
 }
 
-.nvd-question-row {
+.WF-nvd-question-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -752,19 +884,19 @@
   margin-bottom: 10px;
 }
 
-.nvd-question-row .form-label-compact {
+.WF-nvd-question-row .WF-form-label-compact {
   flex: 0 0 auto;
   margin: 0;
   font-size: 11px;
   color: #000000;
 }
 
-.nvd-question-row .button-group {
-  margin-left: auto;
+.WF-nvd-question-row .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
-.pp-lc3-grid {
+.WF-pp-lc3-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px 12px;
@@ -772,7 +904,7 @@
   margin-bottom: 10px;
 }
 
-.payment-verification-grid {
+.WF-payment-verification-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px 12px;
@@ -780,13 +912,13 @@
   margin-bottom: 10px;
 }
 
-.payment-questions {
+.WF-payment-questions {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.payment-question-row {
+.WF-payment-question-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -795,26 +927,26 @@
   border-radius: 4px;
 }
 
-.payment-question-row .form-label-compact {
+.WF-payment-question-row .WF-form-label-compact {
   flex: 1;
   margin: 0;
   font-size: 11px;
   color: #000000;
 }
 
-.payment-question-row .button-group {
-  margin-left: auto;
+.WF-payment-question-row .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
 /* E. Production Details and Walkout Submission/Hold */
-.lc3-production-fieldset {
+.WF-lc3-production-fieldset {
   margin-top: 12px;
 }
 
-.production-office-grid,
-.production-lc3-grid,
-.production-difference-grid {
+.WF-production-office-grid,
+.WF-production-lc3-grid,
+.WF-production-difference-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px 12px;
@@ -822,8 +954,8 @@
   margin-bottom: 10px;
 }
 
-.production-reason-grid,
-.production-explanation-grid {
+.WF-production-reason-grid,
+.WF-production-explanation-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px 12px;
@@ -831,14 +963,14 @@
   margin-bottom: 10px;
 }
 
-.walkout-questions {
+.WF-walkout-questions {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
 }
 
-.walkout-question-row {
+.WF-walkout-question-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -847,23 +979,23 @@
   border-radius: 4px;
 }
 
-.walkout-question-row .form-label-compact {
+.WF-walkout-question-row .WF-form-label-compact {
   flex: 1;
   margin: 0;
   font-size: 11px;
   color: #000000;
 }
 
-.walkout-question-row .button-group {
-  margin-left: auto;
+.WF-walkout-question-row .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
-.form-group-compact.full-width {
+.WF-form-group-compact.WF-full-width {
   width: 100%;
 }
 
-.final-question-row {
+.WF-final-question-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -874,7 +1006,7 @@
   border: 1px solid #e5e7eb;
 }
 
-.final-question-row .form-label-compact {
+.WF-final-question-row .WF-form-label-compact {
   flex: 1;
   margin: 0;
   font-weight: 600;
@@ -882,17 +1014,17 @@
   color: #000000;
 }
 
-.final-question-row .button-group {
-  margin-left: auto;
+.WF-final-question-row .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
 /* F. Copy "Provider's Note" from Eaglesoft and Paste below */
-.lc3-provider-notes-fieldset {
+.WF-lc3-provider-notes-fieldset {
   margin-top: 12px;
 }
 
-.provider-notes-questions {
+.WF-provider-notes-questions {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -900,7 +1032,7 @@
   margin-top: 8px;
 }
 
-.provider-note-question-row {
+.WF-provider-note-question-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -909,19 +1041,19 @@
   border-radius: 4px;
 }
 
-.provider-note-question-row .form-label-compact {
+.WF-provider-note-question-row .WF-form-label-compact {
   flex: 1;
   margin: 0;
   font-size: 11px;
   color: #000000;
 }
 
-.provider-note-question-row .button-group {
-  margin-left: auto;
+.WF-provider-note-question-row .WF-button-group {
+  margin-left: 12px;
   flex-shrink: 0;
 }
 
-.note-checklist {
+.WF-note-checklist {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -931,32 +1063,32 @@
   margin: 8px 0;
 }
 
-.checklist-item {
+.WF-checklist-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 3px 0;
 }
 
-.checklist-label {
+.WF-checklist-label {
   font-size: 11px;
   color: #000000;
   font-weight: 500;
 }
 
-.checklist-icon {
+.WF-checklist-icon {
   font-size: 14px;
   margin-left: 8px;
 }
 
-.notes-textarea-section {
+.WF-notes-textarea-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 10px;
 }
 
-.notes-textarea {
+.WF-notes-textarea {
   width: 100%;
   padding: 10px;
   font-size: 11px;
@@ -967,24 +1099,24 @@
   line-height: 1.5;
 }
 
-.notes-textarea:focus {
+.WF-notes-textarea:focus {
   outline: none;
   border-color: #1a56db;
   box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
 }
 
-.notes-textarea::placeholder {
+.WF-notes-textarea::placeholder {
   color: #9ca3af;
   font-style: italic;
 }
 
-.check-ai-button-container {
+.WF-check-ai-button-container {
   display: flex;
   justify-content: flex-start;
   padding: 8px 0;
 }
 
-.check-ai-button {
+.WF-check-ai-button {
   background-color: #fbbf24;
   color: #78350f;
   border: 1px solid #f59e0b;
@@ -997,22 +1129,22 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.check-ai-button:hover {
+.WF-check-ai-button:hover {
   background-color: #f59e0b;
   border-color: #d97706;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.check-ai-button:active {
+.WF-check-ai-button:active {
   transform: translateY(1px);
 }
 
 /* On Hold Details & Notes */
-.lc3-onhold-notes-fieldset {
+.WF-lc3-onhold-notes-fieldset {
   margin-top: 12px;
 }
 
-.lc3-onhold-notes-fieldset legend {
+.WF-lc3-onhold-notes-fieldset .WF-legend {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
@@ -1022,14 +1154,14 @@
   border-radius: 3px;
 }
 
-.onhold-notes-list {
+.WF-onhold-notes-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.onhold-note-item {
+.WF-onhold-note-item {
   display: grid;
   grid-template-columns: 200px 220px 1fr;
   gap: 10px;
@@ -1039,7 +1171,7 @@
   background-color: white;
 }
 
-.note-datetime {
+.WF-note-datetime {
   font-size: 11px;
   font-weight: 500;
   color: #000000;
@@ -1048,7 +1180,7 @@
   border-radius: 3px;
 }
 
-.note-author {
+.WF-note-author {
   font-size: 11px;
   font-weight: 500;
   color: #000000;
@@ -1057,7 +1189,7 @@
   border-radius: 3px;
 }
 
-.note-content {
+.WF-note-content {
   font-size: 11px;
   color: #000000;
   padding: 5px 8px;
@@ -1066,11 +1198,11 @@
   line-height: 1.5;
 }
 
-.add-note-section {
+.WF-add-note-section {
   margin-top: 10px;
 }
 
-.add-note-textarea {
+.WF-add-note-textarea {
   width: 100%;
   padding: 8px;
   font-size: 11px;
@@ -1082,89 +1214,89 @@
   background-color: white;
 }
 
-.add-note-textarea:focus {
+.WF-add-note-textarea:focus {
   outline: none;
   border-color: #1a56db;
   box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.1);
 }
 
-.add-note-textarea::placeholder {
+.WF-add-note-textarea::placeholder {
   color: #9ca3af;
   font-style: italic;
 }
 
 /* Responsive design */
 @media (max-width: 1400px) {
-  .info-row {
+  .WF-info-row {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
 @media (max-width: 1200px) {
-  .info-row {
+  .WF-info-row {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (max-width: 992px) {
-  .walkout-form-container {
+  .WF-walkout-form-container {
     flex-direction: column;
   }
 
-  .walkout-sidebar {
+  .WF-walkout-sidebar {
     width: 100%;
     position: static;
   }
 
-  .info-row {
+  .WF-info-row {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .info-row {
+  .WF-info-row {
     grid-template-columns: 1fr;
   }
 
-  .walkout-form-container {
+  .WF-walkout-form-container {
     padding: 8px;
   }
 
-  .appointment-info-header {
+  .WF-appointment-info-header {
     padding: 12px 16px;
   }
 
-  .info-item {
+  .WF-info-item {
     padding: 6px 10px;
   }
 
-  .info-label {
+  .WF-info-label {
     font-size: 10px;
   }
 
-  .info-value {
+  .WF-info-value {
     font-size: 12px;
   }
 
-  .fieldsets-container {
+  .WF-fieldsets-container {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 576px) {
-  .appointment-info-header h2 {
+  .WF-appointment-info-header h2 {
     font-size: 14px;
   }
 
-  .section-header {
+  .WF-section-header {
     padding: 10px 12px;
   }
 
-  .section-header h3 {
+  .WF-section-header .WF-heading {
     font-size: 13px;
   }
 
-  .section-content {
+  .WF-section-content {
     padding: 12px;
   }
 }
