@@ -205,10 +205,12 @@
 }
 
 .WF-form-fieldset {
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 6px 8px;
-  background: white;
+  position: relative;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  padding: 20px 16px 16px;
+  margin-bottom: 16px;
+  background-color: #f9fafb;
 }
 
 .WF-legend {

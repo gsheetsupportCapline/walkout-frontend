@@ -250,7 +250,9 @@ const WalkoutForm = () => {
                 <div className="WF-fieldsets-container">
                   {/* Left Fieldset */}
                   <fieldset className="WF-form-fieldset">
-                    <legend className="WF-legend">Appointment Details</legend>
+                    <div className="WF-fieldset-header-row">
+                      <legend className="WF-legend">Appointment Details</legend>
+                    </div>
 
                     <div className="WF-walkout-form-row">
                       <label className="WF-walkout-form-label">
@@ -452,7 +454,9 @@ const WalkoutForm = () => {
 
                   {/* Right Fieldset */}
                   <fieldset className="WF-form-fieldset">
-                    <legend className="WF-legend">Patient Portion</legend>
+                    <div className="WF-fieldset-header-row">
+                      <legend className="WF-legend">Patient Portion</legend>
+                    </div>
 
                     {/* First row - 3 number inputs */}
                     <div className="WF-patient-portion-row">
@@ -571,9 +575,10 @@ const WalkoutForm = () => {
 
                   {/* Rule Engine Check Fieldset */}
                   <fieldset className="WF-form-fieldset WF-rule-engine-fieldset">
-                    <legend className="WF-legend">Rule Engine Check</legend>
-
-                    {/* Row 1: Did Office run + Reason dropdown */}
+                    <div className="WF-fieldset-header-row">
+                      <legend className="WF-legend">Rule Engine Check</legend>
+                    </div>
+                    {/* Row 1: Did Office run + Reason dropdown */}}
                     <div className="WF-rule-engine-row">
                       <div className="WF-walkout-form-row">
                         <label className="WF-walkout-form-label">
@@ -625,7 +630,6 @@ const WalkoutForm = () => {
                         </select>
                       </div>
                     </div>
-
                     {/* Row 2: Was error found + Remarks textbox */}
                     <div className="WF-rule-engine-row">
                       <div className="WF-walkout-form-row">
@@ -677,7 +681,6 @@ const WalkoutForm = () => {
                         />
                       </div>
                     </div>
-
                     {/* Row 3: Were all issues fixed (single question) */}
                     <div className="WF-rule-engine-row">
                       <div className="WF-walkout-form-row">
@@ -715,10 +718,12 @@ const WalkoutForm = () => {
 
                   {/* Confirmation Fieldset */}
                   <fieldset className="WF-form-fieldset WF-confirmation-fieldset">
-                    <legend className="WF-legend">
-                      Confirmation from office about necessary info available in
-                      Eaglesoft.
-                    </legend>
+                    <div className="WF-fieldset-header-row">
+                      <legend className="WF-legend">
+                        Confirmation from office about necessary info available
+                        in Eaglesoft.
+                      </legend>
+                    </div>
 
                     <div className="WF-checkbox-grid">
                       {/* Column 1 */}
