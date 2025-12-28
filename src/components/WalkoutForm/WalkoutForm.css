@@ -1285,6 +1285,109 @@
   }
 }
 
+/* Audit Section Styles */
+.WF-audit-fieldset {
+  background-color: white;
+}
+
+.WF-audit-table-container {
+  margin-bottom: 16px;
+}
+
+.WF-audit-table-header {
+  background-color: #6b7280;
+  color: white;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.WF-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  background: white;
+  border: 1px solid #d1d5db;
+}
+
+.WF-audit-table thead {
+  background-color: #1a56db;
+}
+
+.WF-audit-table thead th {
+  color: white;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #1a56db;
+}
+
+.WF-audit-table tbody td {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  color: #000;
+}
+
+.WF-audit-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.WF-overall-match {
+  background: white;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 11px;
+  color: #dc2626;
+  border: 1px solid #d1d5db;
+  border-top: none;
+}
+
+.WF-match-yes {
+  color: #15803d;
+  font-weight: bold;
+  text-align: center;
+  font-size: 16px;
+}
+
+.WF-match-no {
+  color: #dc2626;
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+}
+
+.WF-audit-questions-section {
+  margin-top: 20px;
+}
+
+.WF-audit-question-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.WF-audit-question-item .WF-walkout-form-label {
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+.WF-audit-question-item .WF-button-group {
+  flex-shrink: 0;
+}
+
+.WF-audit-question-item .WF-walkout-form-input {
+  flex: 1;
+}
+
+.WF-audit-questions {
+  margin-top: 16px;
+}
+
 @media (max-width: 576px) {
   .WF-appointment-info-header h2 {
     font-size: 14px;

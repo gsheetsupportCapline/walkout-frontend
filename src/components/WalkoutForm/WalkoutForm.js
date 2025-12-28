@@ -2717,7 +2717,181 @@ const WalkoutForm = () => {
             </div>
             {sections.audit && (
               <div className="WF-section-content">
-                <p>Audit section content will go here...</p>
+                {/* Office Walkout Image Data Table */}
+                <div className="WF-audit-table-container">
+                  <h4 className="WF-audit-table-title">
+                    Office Walkout Image Data Extracted by AI
+                  </h4>
+                  <table className="WF-audit-table">
+                    <thead>
+                      <tr>
+                        <th>Patient</th>
+                        <th>Service</th>
+                        <th>Provider</th>
+                        <th>Description</th>
+                        <th>Tooth</th>
+                        <th>Surface</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>JAMES TRAPANI</td>
+                        <td>IMP</td>
+                        <td>Dr. James S...</td>
+                        <td>DENTURE/PARTIAL IMPRESSION</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* LC3 Walkout Image Data Table */}
+                <div className="WF-audit-table-container">
+                  <h4 className="WF-audit-table-title">
+                    LC3 Walkout Image Data Extracted by AI
+                  </h4>
+                  <table className="WF-audit-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Patient</th>
+                        <th>Provider</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Tooth</th>
+                        <th>Surface</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>12/22/2025</td>
+                        <td>JAMES</td>
+                        <td>Dr. James Song</td>
+                        <td>Service</td>
+                        <td>
+                          Service Code: IMP | Procedure: DENTURE/PARTIAL
+                          IMPRESSION
+                        </td>
+                        <td>LA</td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Analysis Section */}
+                <div className="WF-audit-analysis">
+                  <h4 className="WF-analysis-title">Analysis</h4>
+                  <p className="WF-overall-match-status WF-not-matched">
+                    Overall Not Matched
+                  </p>
+
+                  <table className="WF-audit-table WF-analysis-table">
+                    <thead>
+                      <tr>
+                        <th>Service</th>
+                        <th>Service Match</th>
+                        <th>Tooth & Surface Match</th>
+                        <th>All Columns Match</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>IMP</td>
+                        <td className="WF-match-check">✓</td>
+                        <td className="WF-match-cross">❌</td>
+                        <td className="WF-match-cross">❌</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Discrepancy Questions */}
+                  <div className="WF-audit-questions">
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Discrepancy Found other than LC3 remarks?
+                        <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
+                      <div className="WF-button-group">
+                        {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                          (btn) => (
+                            <button
+                              key={btn._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.discrepancyFound === btn.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange("discrepancyFound", btn.name)
+                              }
+                            >
+                              {btn.name}
+                            </button>
+                          )
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        className="WF-walkout-form-input"
+                        placeholder="Discrepancy Remarks*"
+                        value={formData.discrepancyRemarks || ""}
+                        onChange={(e) =>
+                          handleDropdownChange(
+                            "discrepancyRemarks",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="WF-walkout-form-row">
+                      <label className="WF-walkout-form-label">
+                        Discrepancy Fixed by LC3?
+                        <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
+                      <div className="WF-button-group">
+                        {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                          (btn) => (
+                            <button
+                              key={btn._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.discrepancyFixed === btn.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange("discrepancyFixed", btn.name)
+                              }
+                            >
+                              {btn.name}
+                            </button>
+                          )
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        className="WF-walkout-form-input"
+                        placeholder="LC3 Remarks*"
+                        value={formData.lc3Remarks || ""}
+                        onChange={(e) =>
+                          handleDropdownChange("lc3Remarks", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
