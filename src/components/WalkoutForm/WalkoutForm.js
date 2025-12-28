@@ -29,6 +29,40 @@ const WalkoutForm = () => {
     lastFetchedId: "", // Track last fetched ID to hide button after fetch
   });
 
+  // State for sidebar - Timer, Status, Images
+  const [sidebarData, setSidebarData] = useState({
+    timerStarted: false,
+    elapsedTime: 0,
+    walkoutStatus: "pending", // completed, office-pending, lc3-pending
+    images: {
+      officeWO: { file: null, url: null, zoom: 100 },
+      checkImage: { file: null, url: null, zoom: 100 },
+      lc3WO: { file: null, url: null, zoom: 100 },
+    },
+  });
+
+  const [timerInterval, setTimerInterval] = useState(null);
+  const [currentUser] = useState({ teamName: "LC3 Team" }); // Mock user data - replace with actual auth
+  const [imageModal, setImageModal] = useState({ isOpen: false, type: null }); // Modal for adding image
+  const [previewModal, setPreviewModal] = useState({
+    isOpen: false,
+    type: null,
+  }); // Modal for preview
+  const [onHoldReasons] = useState([
+    "Missing Documentation",
+    "Pending Provider Approval",
+    "Insurance Verification Required",
+  ]); // Sample on-hold reasons - replace with actual data
+
+  // Submission details - dummy data
+  const [submissionDetails] = useState({
+    submitToLC3Office: "2025-12-22 17:02:26",
+    lastUpdateByLC3: "Saransh Sharma",
+    lastUpdateOnLC3: "2025-12-22 17:49:45",
+    completedByLC3: "Saransh Sharma",
+    completedOnLC3: "2025-12-22 17:49:45",
+  });
+
   // Fetch radio button sets
   useEffect(() => {
     const fetchRadioButtonSets = async () => {
@@ -158,6 +192,143 @@ const WalkoutForm = () => {
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  // Timer functions
+  useEffect(() => {
+    // Start timer automatically if user is from LC3 Team
+    if (currentUser.teamName === "LC3 Team" && !sidebarData.timerStarted) {
+      startTimer();
+    }
+    // Cleanup on unmount
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-focus paste area when image modal opens
+  useEffect(() => {
+    if (imageModal.isOpen) {
+      const pasteArea = document.querySelector(".WF-paste-area");
+      if (pasteArea) {
+        pasteArea.focus();
+      }
+    }
+  }, [imageModal.isOpen]);
+
+  const startTimer = () => {
+    setSidebarData((prev) => ({ ...prev, timerStarted: true }));
+    const interval = setInterval(() => {
+      setSidebarData((prev) => ({
+        ...prev,
+        elapsedTime: prev.elapsedTime + 1,
+      }));
+    }, 1000);
+    setTimerInterval(interval);
+  };
+
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Image upload functions
+  const handleImageUpload = (type, file) => {
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSidebarData((prev) => ({
+          ...prev,
+          images: {
+            ...prev.images,
+            [type]: { file, url: e.target.result, zoom: 100 },
+          },
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePasteImage = (type, event) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        handleImageUpload(type, file);
+        break;
+      }
+    }
+  };
+
+  const handleZoomChange = (type, delta) => {
+    setSidebarData((prev) => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        [type]: {
+          ...prev.images[type],
+          zoom: Math.max(50, Math.min(200, prev.images[type].zoom + delta)),
+        },
+      },
+    }));
+  };
+
+  const handleRemoveImage = (type) => {
+    setSidebarData((prev) => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        [type]: { file: null, url: null, zoom: 100 },
+      },
+    }));
+  };
+
+  const handleImageClick = (type, event) => {
+    event.stopPropagation(); // Prevent closing preview
+    event.preventDefault();
+    // Left click - zoom in
+    handleZoomChange(type, 10);
+  };
+
+  const handleImageRightClick = (type, event) => {
+    event.stopPropagation(); // Prevent closing preview
+    event.preventDefault();
+    // Right click - zoom out
+    handleZoomChange(type, -10);
+  };
+
+  // Render compact image buttons
+  const renderImageButtons = (type, label) => {
+    const imageData = sidebarData.images[type];
+    const hasImage = imageData.url !== null;
+
+    return (
+      <div className="WF-image-button-group">
+        <button
+          className="WF-image-btn"
+          onClick={() => setImageModal({ isOpen: true, type })}
+        >
+          <span className="WF-image-btn-icon">📁</span>
+          Add Image
+          {hasImage && <span className="WF-image-indicator">✓</span>}
+        </button>
+        <button
+          className="WF-image-btn WF-preview-btn"
+          onClick={() => setPreviewModal({ isOpen: true, type })}
+          disabled={!hasImage}
+        >
+          <span className="WF-image-btn-icon">👁️</span>
+          Preview
+        </button>
+      </div>
+    );
   };
 
   // Extract data from appointment object
@@ -2900,11 +3071,194 @@ const WalkoutForm = () => {
 
       {/* Fixed sidebar */}
       <div className="WF-walkout-sidebar">
-        <h3>Walkout Information</h3>
-        <div className="WF-sidebar-content">
-          <p>Sidebar details will go here...</p>
+        <div className="WF-sidebar-section">
+          {/* Timer Section - Only for LC3 Team */}
+          {currentUser.teamName === "LC3 Team" && (
+            <div className="WF-sidebar-item">
+              <label className="WF-sidebar-label">Time Tracker</label>
+              <div className="WF-timer-display">
+                {formatTime(sidebarData.elapsedTime)}
+              </div>
+            </div>
+          )}
+
+          {/* Walkout Status */}
+          <div className="WF-sidebar-item">
+            <label className="WF-sidebar-label">Walkout Status</label>
+            <div
+              className={`WF-status-badge WF-status-${sidebarData.walkoutStatus}`}
+            >
+              {sidebarData.walkoutStatus === "completed"
+                ? "Completed"
+                : sidebarData.walkoutStatus === "office-pending"
+                ? "Office Pending"
+                : "LC3 Pending"}
+            </div>
+          </div>
+
+          {/* On-Hold Reasons */}
+          <div className="WF-sidebar-item">
+            <label className="WF-sidebar-label">On-Hold Reasons</label>
+            <div className="WF-onhold-reasons">
+              {onHoldReasons.length > 0 ? (
+                onHoldReasons.map((reason, index) => (
+                  <div key={index} className="WF-reason-item">
+                    • {reason}
+                  </div>
+                ))
+              ) : (
+                <div className="WF-no-reasons">No reasons listed</div>
+              )}
+            </div>
+          </div>
+
+          {/* Image Upload Sections */}
+          <div className="WF-sidebar-item">
+            <label className="WF-sidebar-label">Office WO Snip</label>
+            {renderImageButtons("officeWO", "Office WO")}
+          </div>
+
+          <div className="WF-sidebar-item">
+            <label className="WF-sidebar-label">Check Image</label>
+            {renderImageButtons("checkImage", "Check")}
+          </div>
+
+          <div className="WF-sidebar-item">
+            <label className="WF-sidebar-label">LC3 WO Snip</label>
+            {renderImageButtons("lc3WO", "LC3 WO")}
+          </div>
+
+          {/* Submission Details */}
+          <div className="WF-sidebar-item">
+            <div className="WF-submission-details">
+              <div className="WF-detail-row">
+                <span className="WF-detail-label">Submit to LC3(Office):</span>
+                <span className="WF-detail-value">
+                  {submissionDetails.submitToLC3Office}
+                </span>
+              </div>
+              <div className="WF-detail-row">
+                <span className="WF-detail-label">Last Update By(LC3):</span>
+                <span className="WF-detail-value">
+                  {submissionDetails.lastUpdateByLC3}
+                </span>
+              </div>
+              <div className="WF-detail-row">
+                <span className="WF-detail-label">Last Update on(LC3):</span>
+                <span className="WF-detail-value">
+                  {submissionDetails.lastUpdateOnLC3}
+                </span>
+              </div>
+              <div className="WF-detail-row">
+                <span className="WF-detail-label">Completed By(LC3):</span>
+                <span className="WF-detail-value">
+                  {submissionDetails.completedByLC3}
+                </span>
+              </div>
+              <div className="WF-detail-row">
+                <span className="WF-detail-label">Completed on(LC3):</span>
+                <span className="WF-detail-value">
+                  {submissionDetails.completedOnLC3}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Image Upload Modal */}
+      {imageModal.isOpen && (
+        <div
+          className="WF-modal-overlay"
+          onClick={() => setImageModal({ isOpen: false, type: null })}
+        >
+          <div
+            className="WF-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="WF-modal-header">
+              <h3>Add Image</h3>
+              <button
+                className="WF-modal-close"
+                onClick={() => setImageModal({ isOpen: false, type: null })}
+              >
+                ×
+              </button>
+            </div>
+            <div className="WF-modal-body">
+              <div
+                className="WF-paste-area"
+                onPaste={(e) => {
+                  handlePasteImage(imageModal.type, e);
+                  setImageModal({ isOpen: false, type: null });
+                }}
+                tabIndex={0}
+              >
+                <p className="WF-paste-instruction">
+                  Press Ctrl+V to paste image
+                </p>
+                <span className="WF-paste-icon">📋</span>
+              </div>
+              <div className="WF-modal-divider">OR</div>
+              <label htmlFor="modal-file-input" className="WF-upload-file-btn">
+                <span className="WF-upload-icon">📁</span>
+                Choose File
+              </label>
+              <input
+                id="modal-file-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  handleImageUpload(imageModal.type, e.target.files[0]);
+                  setImageModal({ isOpen: false, type: null });
+                }}
+                style={{ display: "none" }}
+              />
+              {sidebarData.images[imageModal.type]?.url && (
+                <button
+                  className="WF-modal-remove-btn"
+                  onClick={() => {
+                    handleRemoveImage(imageModal.type);
+                    setImageModal({ isOpen: false, type: null });
+                  }}
+                >
+                  Remove Current Image
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal - Fullscreen */}
+      {previewModal.isOpen && sidebarData.images[previewModal.type]?.url && (
+        <div
+          className="WF-fullscreen-preview"
+          onClick={() => setPreviewModal({ isOpen: false, type: null })}
+        >
+          <button
+            className="WF-fullscreen-close"
+            onClick={() => setPreviewModal({ isOpen: false, type: null })}
+          >
+            ×
+          </button>
+          <img
+            src={sidebarData.images[previewModal.type].url}
+            alt="Preview"
+            style={{
+              transform: `scale(${
+                sidebarData.images[previewModal.type].zoom / 100
+              })`,
+            }}
+            className="WF-fullscreen-image"
+            onClick={(e) => handleImageClick(previewModal.type, e)}
+            onContextMenu={(e) => handleImageRightClick(previewModal.type, e)}
+          />
+          <div className="WF-zoom-indicator">
+            {sidebarData.images[previewModal.type].zoom}%
+          </div>
+        </div>
+      )}
     </div>
   );
 };
