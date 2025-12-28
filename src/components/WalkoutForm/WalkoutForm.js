@@ -198,12 +198,20 @@ const WalkoutForm = () => {
   useEffect(() => {
     // Start timer automatically if user is from LC3 Team
     if (currentUser.teamName === "LC3 Team" && !sidebarData.timerStarted) {
-      startTimer();
+      const interval = setInterval(() => {
+        setSidebarData((prev) => ({
+          ...prev,
+          elapsedTime: prev.elapsedTime + 1,
+        }));
+      }, 1000);
+      setTimerInterval(interval);
+      setSidebarData((prev) => ({ ...prev, timerStarted: true }));
+
+      // Cleanup on unmount
+      return () => {
+        clearInterval(interval);
+      };
     }
-    // Cleanup on unmount
-    return () => {
-      if (timerInterval) clearInterval(timerInterval);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -216,17 +224,6 @@ const WalkoutForm = () => {
       }
     }
   }, [imageModal.isOpen]);
-
-  const startTimer = () => {
-    setSidebarData((prev) => ({ ...prev, timerStarted: true }));
-    const interval = setInterval(() => {
-      setSidebarData((prev) => ({
-        ...prev,
-        elapsedTime: prev.elapsedTime + 1,
-      }));
-    }, 1000);
-    setTimerInterval(interval);
-  };
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
