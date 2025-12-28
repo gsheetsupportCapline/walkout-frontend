@@ -1,14 +1,25 @@
 .WF-walkout-form-container {
   display: flex;
+  flex-direction: column;
   min-height: calc(100vh - 60px);
-  gap: 8px;
-  padding: 8px;
   background: var(--bg-primary);
+  padding: 8px;
+  gap: 0;
+}
+
+/* Content wrapper with sidebar */
+.WF-content-with-sidebar {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  position: relative;
 }
 
 .WF-walkout-main-content {
   flex: 1;
   overflow-y: auto;
+  padding-top: 80px;
+  max-width: calc(100% - 268px);
 }
 
 /* Compact appointment info header - readonly text display */
@@ -16,12 +27,14 @@
   background: #f8f9fa;
   border-radius: 4px;
   padding: 6px 8px;
-  margin-bottom: 6px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   border: 1px solid #e9ecef;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 64px;
+  left: 8px;
+  width: calc(100% - 276px);
   z-index: 100;
+  margin-bottom: 6px;
 }
 
 .WF-info-row {
@@ -117,8 +130,12 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
   height: fit-content;
-  position: sticky;
-  top: 8px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  position: fixed;
+  top: 64px;
+  right: 8px;
+  z-index: 99;
 }
 
 .WF-sidebar-section {
