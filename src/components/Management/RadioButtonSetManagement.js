@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
 import api from "../../utils/api";
+import "./Management.css";
 import "./RadioButtonSetManagement.css";
 
 const RadioButtonSetManagement = () => {
@@ -275,9 +276,12 @@ const RadioButtonSetManagement = () => {
   };
 
   const renderListView = () => (
-    <div className="list-view">
-      <div className="management-header">
-        <h2>Radio Button Set Management</h2>
+    <div className="management-container">
+      <div className="page-header">
+        <div>
+          <h1>Radio Button Set Management</h1>
+          <p>Manage radio button sets and their buttons</p>
+        </div>
         <button
           className="btn btn-primary"
           onClick={() => {
@@ -293,43 +297,71 @@ const RadioButtonSetManagement = () => {
       {loading ? (
         <div className="loading">Loading button sets...</div>
       ) : (
-        <div className="sets-grid">
-          {buttonSets.map((set) => (
-            <div key={set._id} className="set-card-compact">
-              <div className="set-card-header">
-                <div className="set-info">
-                  <h3>{set.name}</h3>
-                  <p className="set-stats">
-                    {set.buttons?.length || 0} buttons
-                  </p>
-                </div>
-                <span
-                  className={`status-badge ${
-                    set.isActive ? "active" : "inactive"
-                  }`}
-                >
-                  {set.isActive ? "Active" : "Inactive"}
-                </span>
-              </div>
-              {set.description && (
-                <p className="set-description">{set.description}</p>
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Set Name</th>
+                <th>Description</th>
+                <th>Buttons Count</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {buttonSets.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="no-data">
+                    No button sets found
+                  </td>
+                </tr>
+              ) : (
+                buttonSets.map((set) => (
+                  <tr key={set._id}>
+                    <td>
+                      <strong>{set.name}</strong>
+                    </td>
+                    <td>{set.description || "-"}</td>
+                    <td>{set.buttons?.length || 0}</td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          set.isActive ? "badge-success" : "badge-danger"
+                        }`}
+                      >
+                        {set.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => handleViewSetDetails(set)}
+                          title="Manage Buttons"
+                        >
+                          Manage
+                        </button>
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => openEditSetModal(set)}
+                          title="Edit Set"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => openDeleteSetModal(set._id)}
+                          title="Delete Set"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
-              <div className="set-card-actions">
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={() => handleViewSetDetails(set)}
-                >
-                  Manage Buttons
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => openDeleteSetModal(set._id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
