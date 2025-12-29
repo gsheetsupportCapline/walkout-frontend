@@ -84,8 +84,7 @@ const RadioButtonSetManagement = () => {
       );
       if (response.data.success) {
         showSuccess("Button set created successfully");
-        setShowSetModal(false);
-        setSetFormData({ name: "", description: "", isActive: true });
+        closeSetModal();
         fetchButtonSets();
       }
     } catch (err) {
@@ -96,19 +95,31 @@ const RadioButtonSetManagement = () => {
   const handleUpdateSet = async (e) => {
     e.preventDefault();
     try {
+      const setId = selectedSet._id;
       const response = await api.put(
-        `/radio-buttons/button-sets/${selectedSet._id}`,
+        `/radio-buttons/button-sets/${setId}`,
         setFormData
       );
       if (response.data.success) {
         showSuccess("Button set updated successfully");
         setShowSetModal(false);
         setSetFormData({ name: "", description: "", isActive: true });
-        fetchSetDetails(selectedSet._id);
+        if (viewMode === "detail") {
+          fetchSetDetails(setId);
+        } else {
+          setSelectedSet(null);
+          fetchButtonSets();
+        }
       }
     } catch (err) {
       showError(err.response?.data?.message || "Failed to update button set");
     }
+  };
+
+  const closeSetModal = () => {
+    setShowSetModal(false);
+    setSelectedSet(null);
+    setSetFormData({ name: "", description: "", isActive: true });
   };
 
   const handleAddButton = async (e) => {
@@ -149,6 +160,7 @@ const RadioButtonSetManagement = () => {
   };
 
   const openEditSetModal = (set) => {
+    setSelectedSet(set);
     setSetFormData({
       name: set.name,
       description: set.description || "",
@@ -275,6 +287,18 @@ const RadioButtonSetManagement = () => {
     }
   };
 
+  const copyToClipboard = (text, label = "ID") => {
+    navigator.clipboard.writeText(text).then(
+      () => showSuccess(`${label} copied to clipboard!`),
+      () => showError(`Failed to copy ${label}`)
+    );
+  };
+
+  const truncateId = (id) => {
+    if (!id) return "-";
+    return id.length > 8 ? `${id.substring(0, 8)}...` : id;
+  };
+
   const renderListView = () => (
     <div className="management-container">
       <div className="page-header">
@@ -302,7 +326,7 @@ const RadioButtonSetManagement = () => {
             <thead>
               <tr>
                 <th>Set Name</th>
-                <th>Description</th>
+                <th>Set ID</th>
                 <th>Buttons Count</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -321,7 +345,15 @@ const RadioButtonSetManagement = () => {
                     <td>
                       <strong>{set.name}</strong>
                     </td>
-                    <td>{set.description || "-"}</td>
+                    <td>
+                      <span
+                        className="id-cell"
+                        onClick={() => copyToClipboard(set._id, "Set ID")}
+                        title={`Click to copy: ${set._id}`}
+                      >
+                        {truncateId(set._id)}
+                      </span>
+                    </td>
                     <td>{set.buttons?.length || 0}</td>
                     <td>
                       <span
@@ -474,7 +506,7 @@ const RadioButtonSetManagement = () => {
       {viewMode === "list" ? renderListView() : renderDetailView()}
 
       {showSetModal && (
-        <div className="modal-overlay" onClick={() => setShowSetModal(false)}>
+        <div className="modal-overlay" onClick={closeSetModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>{selectedSet ? "Edit Button Set" : "Create Button Set"}</h3>
             <form onSubmit={selectedSet ? handleUpdateSet : handleCreateSet}>
@@ -521,7 +553,7 @@ const RadioButtonSetManagement = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowSetModal(false)}
+                  onClick={closeSetModal}
                 >
                   Cancel
                 </button>

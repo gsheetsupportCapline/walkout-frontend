@@ -1,9 +1,10 @@
 .management-container {
-  padding: 0;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  width: 100%;
 }
 
 .page-header {
@@ -53,24 +54,24 @@
 }
 
 .data-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   background: var(--bg-primary);
   box-shadow: 0 1px 0 var(--border-color);
 }
 
 .data-table td {
-  padding: 0.625rem 1rem;
+  padding: 0.4rem 0.75rem;
   border-top: 1px solid var(--border-color);
   color: var(--text-primary);
   vertical-align: middle;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .data-table tbody tr {
@@ -83,17 +84,17 @@
 
 .data-table td:first-child,
 .data-table th:first-child {
-  padding-left: 1.25rem;
+  padding-left: 0.75rem;
 }
 
 .data-table td:last-child,
 .data-table th:last-child {
-  padding-right: 1.25rem;
+  padding-right: 0.75rem;
 }
 
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
   align-items: center;
 }

@@ -81,8 +81,7 @@ const DropdownSetManagement = () => {
       const response = await api.post("/dropdowns/dropdown-sets", setFormData);
       if (response.data.success) {
         showSuccess("Dropdown set created successfully");
-        setShowSetModal(false);
-        setSetFormData({ name: "", description: "", isActive: true });
+        closeSetModal();
         fetchDropdownSets();
       }
     } catch (err) {
@@ -93,19 +92,31 @@ const DropdownSetManagement = () => {
   const handleUpdateSet = async (e) => {
     e.preventDefault();
     try {
+      const setId = selectedSet._id;
       const response = await api.put(
-        `/dropdowns/dropdown-sets/${selectedSet._id}`,
+        `/dropdowns/dropdown-sets/${setId}`,
         setFormData
       );
       if (response.data.success) {
         showSuccess("Dropdown set updated successfully");
         setShowSetModal(false);
         setSetFormData({ name: "", description: "", isActive: true });
-        fetchSetDetails(selectedSet._id);
+        if (viewMode === "detail") {
+          fetchSetDetails(setId);
+        } else {
+          setSelectedSet(null);
+          fetchDropdownSets();
+        }
       }
     } catch (err) {
       showError(err.response?.data?.message || "Failed to update dropdown set");
     }
+  };
+
+  const closeSetModal = () => {
+    setShowSetModal(false);
+    setSelectedSet(null);
+    setSetFormData({ name: "", description: "", isActive: true });
   };
 
   const handleAddOption = async (e) => {
@@ -146,6 +157,7 @@ const DropdownSetManagement = () => {
   };
 
   const openEditSetModal = (set) => {
+    setSelectedSet(set);
     setSetFormData({
       name: set.name,
       description: set.description || "",
@@ -272,6 +284,18 @@ const DropdownSetManagement = () => {
     }
   };
 
+  const copyToClipboard = (text, label = "ID") => {
+    navigator.clipboard.writeText(text).then(
+      () => showSuccess(`${label} copied to clipboard!`),
+      () => showError(`Failed to copy ${label}`)
+    );
+  };
+
+  const truncateId = (id) => {
+    if (!id) return "-";
+    return id.length > 8 ? `${id.substring(0, 8)}...` : id;
+  };
+
   const renderListView = () => (
     <div className="management-container">
       <div className="page-header">
@@ -299,7 +323,7 @@ const DropdownSetManagement = () => {
             <thead>
               <tr>
                 <th>Set Name</th>
-                <th>Description</th>
+                <th>Set ID</th>
                 <th>Options Count</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -318,7 +342,15 @@ const DropdownSetManagement = () => {
                     <td>
                       <strong>{set.name}</strong>
                     </td>
-                    <td>{set.description || "-"}</td>
+                    <td>
+                      <span
+                        className="id-cell"
+                        onClick={() => copyToClipboard(set._id, "Set ID")}
+                        title={`Click to copy: ${set._id}`}
+                      >
+                        {truncateId(set._id)}
+                      </span>
+                    </td>
                     <td>{set.options?.length || 0}</td>
                     <td>
                       <span
@@ -471,7 +503,7 @@ const DropdownSetManagement = () => {
       {viewMode === "list" ? renderListView() : renderDetailView()}
 
       {showSetModal && (
-        <div className="modal-overlay" onClick={() => setShowSetModal(false)}>
+        <div className="modal-overlay" onClick={closeSetModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>{selectedSet ? "Edit Dropdown Set" : "Create Dropdown Set"}</h3>
             <form onSubmit={selectedSet ? handleUpdateSet : handleCreateSet}>
@@ -518,7 +550,7 @@ const DropdownSetManagement = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowSetModal(false)}
+                  onClick={closeSetModal}
                 >
                   Cancel
                 </button>
