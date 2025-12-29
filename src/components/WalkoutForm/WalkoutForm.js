@@ -301,6 +301,25 @@ const WalkoutForm = () => {
     handleZoomChange(type, -10);
   };
 
+  // Handle form submission
+  const handleOfficeSubmit = () => {
+    console.log("Office Section Data:", formData);
+    alert("Office section submitted successfully!");
+    // TODO: API call to save office section data
+  };
+
+  const handleLC3Submit = () => {
+    console.log("LC3 Section Data:", { formData, lc3Data });
+    alert("LC3 section submitted successfully!");
+    // TODO: API call to save LC3 section data
+  };
+
+  const handleAuditSubmit = () => {
+    console.log("Audit Section Data:", formData);
+    alert("Audit section submitted successfully!");
+    // TODO: API call to save audit section data
+  };
+
   // Render compact image buttons
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
@@ -408,7 +427,7 @@ const WalkoutForm = () => {
               >
                 <h3>Office Section</h3>
                 <span className="WF-toggle-icon">
-                  {sections.office ? "▼" : "▶"}
+                  {sections.office ? "−" : "+"}
                 </span>
               </div>
               {sections.office && (
@@ -1066,6 +1085,17 @@ const WalkoutForm = () => {
                       </div>
                     </fieldset>
                   </div>
+
+                  {/* Office Section Submit Button */}
+                  <div className="WF-section-submit">
+                    <button
+                      type="button"
+                      className="WF-submit-button"
+                      onClick={handleOfficeSubmit}
+                    >
+                      Submit Office Section
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1078,7 +1108,7 @@ const WalkoutForm = () => {
               >
                 <h3>LC3 Section</h3>
                 <span className="WF-toggle-icon">
-                  {sections.lc3 ? "▼" : "▶"}
+                  {sections.lc3 ? "−" : "+"}
                 </span>
               </div>
               {sections.lc3 && (
@@ -2911,6 +2941,17 @@ const WalkoutForm = () => {
                       />
                     </div>
                   </fieldset>
+
+                  {/* LC3 Section Submit Button */}
+                  <div className="WF-section-submit">
+                    <button
+                      type="button"
+                      className="WF-submit-button"
+                      onClick={handleLC3Submit}
+                    >
+                      Submit LC3 Section
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2923,7 +2964,7 @@ const WalkoutForm = () => {
               >
                 <h3>Audit Section</h3>
                 <span className="WF-toggle-icon">
-                  {sections.audit ? "▼" : "▶"}
+                  {sections.audit ? "−" : "+"}
                 </span>
               </div>
               {sections.audit && (
@@ -3108,6 +3149,17 @@ const WalkoutForm = () => {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Audit Section Submit Button */}
+                  <div className="WF-section-submit">
+                    <button
+                      type="button"
+                      className="WF-submit-button"
+                      onClick={handleAuditSubmit}
+                    >
+                      Submit Audit Section
+                    </button>
                   </div>
                 </div>
               )}
