@@ -109,18 +109,31 @@ const WalkoutForm = () => {
 
   // State for sidebar - Timer, Status, Images
   const [sidebarData, setSidebarData] = useState({
-    timerStarted: false,
-    elapsedTime: 0,
+    timer: {
+      currentSession: {
+        isActive: false,
+        startTime: "",
+        elapsedSeconds: 0,
+      },
+      lastSession: {
+        user: "",
+        duration: 0,
+        completedAt: "",
+      },
+      totalTime: 0,
+      sessionHistory: [],
+    },
     walkoutStatus: "pending", // completed, office-pending, lc3-pending
     images: {
-      officeWO: { file: null, url: null, zoom: 100 },
-      checkImage: { file: null, url: null, zoom: 100 },
-      lc3WO: { file: null, url: null, zoom: 100 },
+      officeWO: { imageId: "", zoom: 100 },
+      checkImage: { imageId: "", zoom: 100 },
+      lc3WO: { imageId: "", zoom: 100 },
     },
   });
 
   const [timerInterval, setTimerInterval] = useState(null);
-  const [currentUser] = useState({ teamName: "LC3 Team" }); // Mock user data - replace with actual auth
+  const [currentUser, setCurrentUser] = useState(null); // Will hold user data with teamName array
+  const LC3_TEAM_ID = "692b62d7671d81750966a63c";
   const [imageModal, setImageModal] = useState({ isOpen: false, type: null }); // Modal for adding image
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
@@ -131,6 +144,17 @@ const WalkoutForm = () => {
     "Pending Provider Approval",
     "Insurance Verification Required",
   ]); // Sample on-hold reasons - replace with actual data
+
+  // Check if current user is LC3 team member
+  const isLC3TeamMember = () => {
+    return (
+      currentUser &&
+      currentUser.teamName &&
+      Array.isArray(currentUser.teamName) &&
+      currentUser.teamName.includes(LC3_TEAM_ID) &&
+      currentUser.role === "user"
+    );
+  };
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -349,18 +373,37 @@ const WalkoutForm = () => {
     }));
   };
 
-  // Timer functions
+  // Timer functions - Only for LC3 Team
   useEffect(() => {
-    // Start timer automatically if user is from LC3 Team
-    if (currentUser.teamName === "LC3 Team" && !sidebarData.timerStarted) {
+    // Start timer automatically if user is from LC3 Team and timer not already active
+    if (isLC3TeamMember() && !sidebarData.timer.currentSession.isActive) {
+      const startTime = new Date().toISOString();
+
       const interval = setInterval(() => {
         setSidebarData((prev) => ({
           ...prev,
-          elapsedTime: prev.elapsedTime + 1,
+          timer: {
+            ...prev.timer,
+            currentSession: {
+              ...prev.timer.currentSession,
+              elapsedSeconds: prev.timer.currentSession.elapsedSeconds + 1,
+            },
+          },
         }));
       }, 1000);
+
       setTimerInterval(interval);
-      setSidebarData((prev) => ({ ...prev, timerStarted: true }));
+      setSidebarData((prev) => ({
+        ...prev,
+        timer: {
+          ...prev.timer,
+          currentSession: {
+            isActive: true,
+            startTime: startTime,
+            elapsedSeconds: 0,
+          },
+        },
+      }));
 
       // Cleanup on unmount
       return () => {
@@ -368,7 +411,7 @@ const WalkoutForm = () => {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUser]);
 
   // Auto-focus paste area when image modal opens
   useEffect(() => {
@@ -389,31 +432,50 @@ const WalkoutForm = () => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Image upload functions
-  const handleImageUpload = (type, file) => {
+  // Image upload functions - Backend handles upload, returns imageId
+  const handleImageUpload = async (type, file) => {
     if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSidebarData((prev) => ({
-          ...prev,
-          images: {
-            ...prev.images,
-            [type]: { file, url: e.target.result, zoom: 100 },
-          },
-        }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("type", type);
+
+        // TODO: Replace with actual API endpoint
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/upload-image`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.imageId) {
+          setSidebarData((prev) => ({
+            ...prev,
+            images: {
+              ...prev.images,
+              [type]: { imageId: data.imageId, zoom: 100 },
+            },
+          }));
+          alert("Image uploaded successfully!");
+        }
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        alert("Failed to upload image. Please try again.");
+      }
     }
   };
 
-  const handlePasteImage = (type, event) => {
+  const handlePasteImage = async (type, event) => {
     const items = event.clipboardData?.items;
     if (!items) return;
 
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
         const file = items[i].getAsFile();
-        handleImageUpload(type, file);
+        await handleImageUpload(type, file);
         break;
       }
     }
@@ -432,14 +494,34 @@ const WalkoutForm = () => {
     }));
   };
 
-  const handleRemoveImage = (type) => {
-    setSidebarData((prev) => ({
-      ...prev,
-      images: {
-        ...prev.images,
-        [type]: { file: null, url: null, zoom: 100 },
-      },
-    }));
+  const handleRemoveImage = async (type) => {
+    const imageId = sidebarData.images[type].imageId;
+
+    if (imageId) {
+      try {
+        // TODO: Optional - Delete from Google Drive if needed
+        // await fetch(`${process.env.REACT_APP_API_URL}/delete-image/${imageId}`, { method: 'DELETE' });
+
+        setSidebarData((prev) => ({
+          ...prev,
+          images: {
+            ...prev.images,
+            [type]: { imageId: "", zoom: 100 },
+          },
+        }));
+        alert("Image removed successfully!");
+      } catch (error) {
+        console.error("Image removal failed:", error);
+        alert("Failed to remove image.");
+      }
+    }
+  };
+
+  // Generate image URL from imageId (Google Drive)
+  const getImageUrl = (imageId) => {
+    if (!imageId) return null;
+    // TODO: Replace with actual Google Drive URL format
+    return `https://drive.google.com/uc?id=${imageId}`;
   };
 
   const handleImageClick = (type, event) => {
@@ -463,10 +545,74 @@ const WalkoutForm = () => {
     // TODO: API call to save office section data
   };
 
-  const handleLC3Submit = () => {
-    console.log("LC3 Section Data:", { formData, lc3Data });
-    alert("LC3 section submitted successfully!");
-    // TODO: API call to save LC3 section data
+  const handleLC3Submit = async () => {
+    // Stop timer and save session for LC3 team
+    if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
+      clearInterval(timerInterval);
+
+      const sessionDuration = sidebarData.timer.currentSession.elapsedSeconds;
+      const completedAt = new Date().toISOString();
+      const userName = currentUser.name || currentUser.email || "Unknown User";
+
+      // Create session record
+      const sessionRecord = {
+        user: userName,
+        duration: sessionDuration,
+        completedAt: completedAt,
+        startTime: sidebarData.timer.currentSession.startTime,
+      };
+
+      // Calculate new total time
+      const newTotalTime = sidebarData.timer.totalTime + sessionDuration;
+
+      // Update sidebar with session info
+      setSidebarData((prev) => ({
+        ...prev,
+        timer: {
+          currentSession: {
+            isActive: false,
+            startTime: "",
+            elapsedSeconds: 0,
+          },
+          lastSession: {
+            user: userName,
+            duration: sessionDuration,
+            completedAt: completedAt,
+          },
+          totalTime: newTotalTime,
+          sessionHistory: [...prev.timer.sessionHistory, sessionRecord],
+        },
+      }));
+
+      // Prepare data to send to backend
+      const submitData = {
+        formData,
+        lc3Data,
+        sidebarData: {
+          ...sidebarData,
+          timer: {
+            lastSession: {
+              user: userName,
+              duration: sessionDuration,
+              completedAt: completedAt,
+            },
+            totalTime: newTotalTime,
+            sessionHistory: [
+              ...sidebarData.timer.sessionHistory,
+              sessionRecord,
+            ],
+          },
+        },
+      };
+
+      console.log("LC3 Section Data with Timer:", submitData);
+      alert("LC3 section submitted successfully! Timer session saved.");
+      // TODO: API call to save LC3 section data with timer info
+    } else {
+      console.log("LC3 Section Data:", { formData, lc3Data });
+      alert("LC3 section submitted successfully!");
+      // TODO: API call to save LC3 section data
+    }
   };
 
   const handleAuditSubmit = () => {
@@ -478,7 +624,7 @@ const WalkoutForm = () => {
   // Render compact image buttons
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
-    const hasImage = imageData.url !== null;
+    const hasImage = imageData.imageId !== "";
 
     return (
       <div className="WF-image-button-group">
@@ -487,7 +633,7 @@ const WalkoutForm = () => {
           onClick={() => setImageModal({ isOpen: true, type })}
         >
           <span className="WF-image-btn-icon">📁</span>
-          Add Image
+          {hasImage ? "Change Image" : "Add Image"}
           {hasImage && <span className="WF-image-indicator">✓</span>}
         </button>
         <button
@@ -3533,12 +3679,44 @@ const WalkoutForm = () => {
         <div className="WF-walkout-sidebar">
           <div className="WF-sidebar-section">
             {/* Timer Section - Only for LC3 Team */}
-            {currentUser.teamName === "LC3 Team" && (
+            {isLC3TeamMember() && (
               <div className="WF-sidebar-item">
                 <label className="WF-sidebar-label">Time Tracker</label>
+
+                {/* Current Session Timer */}
                 <div className="WF-timer-display">
-                  {formatTime(sidebarData.elapsedTime)}
+                  <div className="WF-timer-label">Current Session:</div>
+                  <div className="WF-timer-value">
+                    {formatTime(
+                      sidebarData.timer.currentSession.elapsedSeconds
+                    )}
+                  </div>
                 </div>
+
+                {/* Last Session Info */}
+                {sidebarData.timer.lastSession.user && (
+                  <div className="WF-last-session">
+                    <div className="WF-timer-label">Last Session:</div>
+                    <div className="WF-session-info">
+                      <div className="WF-session-duration">
+                        {formatTime(sidebarData.timer.lastSession.duration)}
+                      </div>
+                      <div className="WF-session-user">
+                        by {sidebarData.timer.lastSession.user}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total Time */}
+                {sidebarData.timer.totalTime > 0 && (
+                  <div className="WF-total-time">
+                    <div className="WF-timer-label">Total Time:</div>
+                    <div className="WF-timer-value WF-total">
+                      {formatTime(sidebarData.timer.totalTime)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3694,34 +3872,35 @@ const WalkoutForm = () => {
       )}
 
       {/* Image Preview Modal - Fullscreen */}
-      {previewModal.isOpen && sidebarData.images[previewModal.type]?.url && (
-        <div
-          className="WF-fullscreen-preview"
-          onClick={() => setPreviewModal({ isOpen: false, type: null })}
-        >
-          <button
-            className="WF-fullscreen-close"
+      {previewModal.isOpen &&
+        sidebarData.images[previewModal.type]?.imageId && (
+          <div
+            className="WF-fullscreen-preview"
             onClick={() => setPreviewModal({ isOpen: false, type: null })}
           >
-            ×
-          </button>
-          <img
-            src={sidebarData.images[previewModal.type].url}
-            alt="Preview"
-            style={{
-              transform: `scale(${
-                sidebarData.images[previewModal.type].zoom / 100
-              })`,
-            }}
-            className="WF-fullscreen-image"
-            onClick={(e) => handleImageClick(previewModal.type, e)}
-            onContextMenu={(e) => handleImageRightClick(previewModal.type, e)}
-          />
-          <div className="WF-zoom-indicator">
-            {sidebarData.images[previewModal.type].zoom}%
+            <button
+              className="WF-fullscreen-close"
+              onClick={() => setPreviewModal({ isOpen: false, type: null })}
+            >
+              ×
+            </button>
+            <img
+              src={getImageUrl(sidebarData.images[previewModal.type].imageId)}
+              alt="Preview"
+              style={{
+                transform: `scale(${
+                  sidebarData.images[previewModal.type].zoom / 100
+                })`,
+              }}
+              className="WF-fullscreen-image"
+              onClick={(e) => handleImageClick(previewModal.type, e)}
+              onContextMenu={(e) => handleImageRightClick(previewModal.type, e)}
+            />
+            <div className="WF-zoom-indicator">
+              {sidebarData.images[previewModal.type].zoom}%
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

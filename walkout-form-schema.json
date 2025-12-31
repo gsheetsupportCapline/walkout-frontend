@@ -1,16 +1,4 @@
 {
-  "appointmentDetails": {
-    "office": "",
-    "doctor1": "",
-    "doctor2": "",
-    "doctor3": "",
-    "hygienist1": "",
-    "hygienist2": "",
-    "hygienist3": "",
-    "patientId": "",
-    "patientName": "",
-    "dateOfService": ""
-  },
   "officeSection": {
     "patientCame": "",
     "postOpZeroProduction": "",
@@ -45,12 +33,11 @@
     "prcUpdatedInRouteSheet": false,
     "narrative": false,
     "officeHistoricalNotes": [],
-    "lc3HistoricalNotes": [],
     "newOfficeNote": ""
   },
   "lc3Section": {
     "ruleEngine": {
-      "fieldsetStatus": "",
+      "status": "",
       "didLc3RunRules": "",
       "ruleEngineUniqueId": "",
       "reasonForNotRun": "",
@@ -115,7 +102,7 @@
       "crownPaidOn": "",
       "deliveredAsPerNotes": "",
       "walkoutOnHold": "",
-      "onHoldReasons": "",
+      "onHoldReasons": [],
       "otherReasonNotes": "",
       "completingWithDeficiency": ""
     },
@@ -125,7 +112,11 @@
       "notesUpdatedOnDOS": "",
       "noteIncludesFourThings": "",
       "providerNotesFromES": "",
-      "hygienistNotesFromES": ""
+      "hygienistNotesFromES": "",
+      "noteElement1": false,
+      "noteElement2": false,
+      "noteElement3": false,
+      "noteElement4": false
     },
     "onHoldNotes": [],
     "newOnHoldNote": ""
@@ -143,57 +134,18 @@
     "lc3Remarks": ""
   },
   "sidebarData": {
-    "timerStarted": false,
-    "elapsedTime": 0,
-    "walkoutStatus": "",
-    "onHoldReasons": [],
+    "timer": "00:15:20",
     "images": {
       "officeWO": {
-        "file": null,
-        "url": "",
-        "zoom": 100
+        "imageData": ""
       },
       "checkImage": {
-        "file": null,
-        "url": "",
-        "zoom": 100
+        "imageData": ""
       },
       "lc3WO": {
-        "file": null,
-        "url": "",
-        "zoom": 100
+        "imageData": ""
       }
-    },
-    "submissionDetails": {
-      "submitToLC3Office": "",
-      "lastUpdateByLC3": "",
-      "lastUpdateOnLC3": "",
-      "completedByLC3": "",
-      "completedOnLC3": ""
     }
   },
-  "metadata": {
-    "createdAt": "",
-    "updatedAt": "",
-    "createdBy": "",
-    "lastUpdatedBy": "",
-    "version": 1,
-    "currentTeam": "",
-    "formVersion": "1.0.0"
-  },
-  "uiState": {
-    "collapsedSections": {
-      "office": false,
-      "lc3": false,
-      "audit": false
-    },
-    "activeFieldsetStatuses": {
-      "lc3RuleEngine": "",
-      "lc3DocumentCheck": "",
-      "lc3AttachmentsCheck": "",
-      "lc3PatientPortion": "",
-      "lc3Production": "",
-      "lc3ProviderNotes": ""
-    }
-  }
+  "walkoutStatus": ""
 }
