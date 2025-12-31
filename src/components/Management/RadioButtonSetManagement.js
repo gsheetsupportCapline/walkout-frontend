@@ -4,6 +4,91 @@ import api from "../../utils/api";
 import "./Management.css";
 import "./RadioButtonSetManagement.css";
 
+// Import FIELD_IDS from WalkoutForm
+const FIELD_IDS = {
+  PATIENT_TYPE: "WFDRP_PATIENT_TYPE",
+  INSURANCE_TYPE: "WFDRP_INSURANCE_TYPE",
+  INSURANCE: "WFDRP_INSURANCE",
+  PATIENT_PORTION_PRIMARY_MODE: "WFDRP_PP_PRIMARY_MODE",
+  PATIENT_PORTION_SECONDARY_MODE: "WFDRP_PP_SECONDARY_MODE",
+  REASON_LESS_COLLECTION: "WFDRP_REASON_LESS_COLLECTION",
+  RULE_ENGINE_NOT_RUN_REASON: "WFDRP_RULE_ENGINE_NOT_RUN_REASON",
+  GOOGLE_REVIEW_REQUEST: "WFRAD_GOOGLE_REVIEW",
+  RULE_ENGINE_RUN: "WFRAD_RULE_ENGINE_RUN",
+  RULE_ENGINE_ERROR_FOUND: "WFRAD_RULE_ENGINE_ERROR",
+  LC3_RUN_RULES: "WFRAD_LC3_RUN_RULES",
+  LC3_RULE_ERROR_FOUND: "WFRAD_LC3_ERROR_FOUND",
+  LC3_DOCUMENT_CHECK_STATUS: "WFDRP_LC3_DOC_STATUS",
+  LC3_ATTACHMENT_CHECK_STATUS: "WFDRP_LC3_ATTACH_STATUS",
+  LC3_PATIENT_PORTION_STATUS: "WFDRP_LC3_PP_STATUS",
+  LC3_PRODUCTION_DETAILS_STATUS: "WFDRP_LC3_PROD_STATUS",
+  LC3_PROVIDER_NOTES_STATUS: "WFDRP_LC3_PROVIDER_STATUS",
+  LC3_ONHOLD_STATUS: "WFDRP_LC3_ONHOLD_STATUS",
+  AUDIT_DISCREPANCY_FOUND: "WFRAD_AUDIT_DISCREPANCY",
+  AUDIT_DISCREPANCY_FIXED: "WFRAD_AUDIT_FIXED",
+};
+
+// Field ID Labels for dropdown options - ALL RADIO BUTTONS
+const FIELD_LABELS = {
+  // === OFFICE SECTION - RADIO BUTTONS (7) ===
+  WFRAD_OFFICE_PATIENT_CAME:
+    "Office - Did patient come to the Appointment? (Radio)",
+  WFRAD_OFFICE_POST_OP_ZERO:
+    "Office - Is Post op walkout completing with zero production? (Radio)",
+  WFRAD_OFFICE_HAS_INSURANCE: "Office - Does patient have Insurance? (Radio)",
+  WFRAD_OFFICE_GOOGLE_REVIEW: "Office - Google Review Request? (Radio)",
+  WFRAD_OFFICE_RULE_ENGINE_RUN:
+    "Office - Did Office run the Rules Engine? (Radio)",
+  WFRAD_OFFICE_RULE_ENGINE_ERROR:
+    "Office - If Yes, Was any error found? (Radio)",
+  WFRAD_OFFICE_ISSUES_FIXED: "Office - Were all the Issues fixed? (Radio)",
+
+  // === LC3 SECTION - RADIO BUTTONS (22) ===
+  WFRAD_LC3_RULE_ENGINE_STATUS:
+    "LC3 - A. Rule Engine Check (Status Toggle) (Radio)",
+  WFRAD_LC3_RUN_RULES: "LC3 - Did LC3 run the Rules Engine? (Radio)",
+  WFRAD_LC3_FAILED_RULES_RESOLVED:
+    "LC3 - Failed rules addressed and resolved? (Radio)",
+  WFRAD_LC3_DOC_CHECK_STATUS: "LC3 - B. Document Check (Status Toggle) (Radio)",
+  WFRAD_LC3_ORTHO_QUESTIONNAIRE:
+    "LC3 - Does the Ortho Questionnaire form available? (Radio)",
+  WFRAD_LC3_ATTACH_CHECK_STATUS:
+    "LC3 - C. Attachments Check (Status Toggle) (Radio)",
+  WFRAD_LC3_PP_CHECK_STATUS:
+    "LC3 - D. Patient Portion Check (Status Toggle) (Radio)",
+  WFRAD_LC3_SIGNED_NVD_DIFF:
+    "LC3 - Is there a signed NVD for the Difference? (Radio)",
+  WFRAD_LC3_VERIFY_CHECK_ES:
+    "LC3 - Did you verify if the attached check matches the payment posted in ES? (Radio)",
+  WFRAD_LC3_FORTE_CHECK:
+    "LC3 - Do we have the uploaded Forte check available in SD? (Radio)",
+  WFRAD_LC3_PROD_STATUS:
+    "LC3 - E. Production Details and Walkout Submission/Hold (Status Toggle) (Radio)",
+  WFRAD_LC3_INFORMED_OFFICE:
+    "LC3 - Have we informed office manager on HQ for changes made? (Radio)",
+  WFRAD_LC3_GOOGLE_REVIEW_SENT:
+    "LC3 - Has the request for a Google review been sent? (Radio)",
+  WFRAD_LC3_CONTAINS_CROWN:
+    "LC3 - Does walkout contains Crown/Denture/Implant with Prep/Imp? (Radio)",
+  WFRAD_LC3_CROWN_PAID_ON: "LC3 - As per IV crown paid on - (Radio)",
+  WFRAD_LC3_DELIVERED_PER_NOTES:
+    "LC3 - Does crown/Denture/Implants delivered as per provider notes? (Radio)",
+  WFRAD_LC3_WALKOUT_ON_HOLD: "LC3 - Is Walkout getting on Hold? (Radio)",
+  WFRAD_LC3_COMPLETING_DEFICIENCY:
+    "LC3 - Is walkout completing with deficiency? (Radio)",
+  WFRAD_LC3_PROVIDER_NOTES_STATUS:
+    "LC3 - F. Provider Notes (Status Toggle) (Radio)",
+  WFRAD_LC3_DOCTOR_NOTE_COMPLETED: "LC3 - Doctor note completed? (Radio)",
+  WFRAD_LC3_NOTES_UPDATED_DOS: "LC3 - Does the notes updated on DOS? (Radio)",
+  WFRAD_LC3_NOTE_INCLUDES_FOUR:
+    "LC3 - Does the Note include following 4 things? (Radio)",
+
+  // === AUDIT SECTION - RADIO BUTTONS (2) ===
+  WFRAD_AUDIT_DISCREPANCY_FOUND:
+    "Audit - Discrepancy Found other than LC3 remarks? (Radio)",
+  WFRAD_AUDIT_DISCREPANCY_FIXED: "Audit - Discrepancy Fixed by LC3? (Radio)",
+};
+
 const RadioButtonSetManagement = () => {
   const { showSuccess, showError } = useToast();
 
@@ -299,6 +384,49 @@ const RadioButtonSetManagement = () => {
     return id.length > 8 ? `${id.substring(0, 8)}...` : id;
   };
 
+  // Handle field ID mapping
+  const handleFieldIdMapping = async (setId, fieldId) => {
+    try {
+      if (!fieldId) {
+        // Remove all usedIn references if empty
+        await api.put(`/radio-buttons/button-sets/${setId}/used-in`, {
+          references: [],
+        });
+        showSuccess("Field mapping cleared");
+      } else {
+        // STEP 1: Remove this field ID from ALL other sets first
+        // This ensures only ONE set can have a particular field ID
+        const otherSets = buttonSets.filter((s) => s._id !== setId);
+        for (const otherSet of otherSets) {
+          if (otherSet.usedIn && otherSet.usedIn.includes(fieldId)) {
+            // Remove the field ID from this set
+            const updatedReferences = otherSet.usedIn.filter(
+              (id) => id !== fieldId
+            );
+            await api.put(
+              `/radio-buttons/button-sets/${otherSet._id}/used-in`,
+              {
+                references: updatedReferences,
+              }
+            );
+            console.log(`Removed ${fieldId} from set: ${otherSet.name}`);
+          }
+        }
+
+        // STEP 2: Now add to the current set
+        await api.put(`/radio-buttons/button-sets/${setId}/used-in`, {
+          references: [fieldId],
+        });
+        showSuccess("Field mapped successfully - previous mappings cleared");
+      }
+      fetchButtonSets(); // Refresh the list
+    } catch (err) {
+      showError(
+        err.response?.data?.message || "Failed to update field mapping"
+      );
+    }
+  };
+
   const renderListView = () => (
     <div className="management-container">
       <div className="page-header">
@@ -328,6 +456,7 @@ const RadioButtonSetManagement = () => {
                 <th>Set Name</th>
                 <th>Set ID</th>
                 <th>Buttons Count</th>
+                <th>Used In Field</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -335,7 +464,7 @@ const RadioButtonSetManagement = () => {
             <tbody>
               {buttonSets.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="no-data">
+                  <td colSpan="6" className="no-data">
                     No button sets found
                   </td>
                 </tr>
@@ -355,6 +484,25 @@ const RadioButtonSetManagement = () => {
                       </span>
                     </td>
                     <td>{set.buttons?.length || 0}</td>
+                    <td>
+                      <select
+                        className="field-id-select"
+                        value={set.usedIn?.[0] || ""}
+                        onChange={(e) =>
+                          handleFieldIdMapping(set._id, e.target.value)
+                        }
+                        title="Map this set to a form field"
+                      >
+                        <option value="">-- Select Field --</option>
+                        {Object.entries(FIELD_LABELS)
+                          .filter(([key]) => key.startsWith("WFRAD_")) // Only radio button fields
+                          .map(([key, label]) => (
+                            <option key={key} value={key}>
+                              {label}
+                            </option>
+                          ))}
+                      </select>
+                    </td>
                     <td>
                       <span
                         className={`badge ${

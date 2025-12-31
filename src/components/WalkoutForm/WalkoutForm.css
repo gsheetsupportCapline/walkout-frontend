@@ -635,6 +635,11 @@
   grid-column: 1 / -1;
 }
 
+/* Office Notes Fieldset - Full Width */
+.WF-office-notes-fieldset {
+  grid-column: 1 / -1;
+}
+
 /* Checkbox Grid - 4 Columns */
 .WF-checkbox-grid {
   display: grid;
@@ -1638,48 +1643,107 @@
   border-radius: 3px;
 }
 
+/* Office Notes Fieldset Styling */
+.WF-notes-subsection {
+  margin-bottom: 16px;
+}
+
+.WF-notes-subheading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.WF-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.WF-note-item {
+  display: grid;
+  grid-template-columns: 180px 200px 1fr;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.WF-note-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.WF-no-notes-message {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  padding: 12px;
+  text-align: center;
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+}
+
 .WF-onhold-notes-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .WF-onhold-note-item {
   display: grid;
-  grid-template-columns: 200px 220px 1fr;
-  gap: 10px;
+  grid-template-columns: 180px 200px 1fr;
+  gap: 8px;
   padding: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
-  background-color: white;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.WF-onhold-note-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .WF-note-datetime {
   font-size: 11px;
-  font-weight: 500;
-  color: #000000;
-  padding: 5px 8px;
-  background-color: #f3f4f6;
-  border-radius: 3px;
+  font-weight: 600;
+  color: #374151;
+  padding: 6px 10px;
+  background-color: #e0e7ff;
+  border-radius: 4px;
+  text-align: center;
+  border-left: 3px solid #4f46e5;
 }
 
 .WF-note-author {
   font-size: 11px;
-  font-weight: 500;
-  color: #000000;
-  padding: 5px 8px;
-  background-color: #f3f4f6;
-  border-radius: 3px;
+  font-weight: 600;
+  color: #374151;
+  padding: 6px 10px;
+  background-color: #dbeafe;
+  border-radius: 4px;
+  text-align: center;
+  border-left: 3px solid #2563eb;
 }
 
 .WF-note-content {
-  font-size: 11px;
-  color: #000000;
-  padding: 5px 8px;
-  background-color: #f3f4f6;
-  border-radius: 3px;
-  line-height: 1.5;
+  font-size: 12px;
+  color: #1f2937;
+  padding: 6px 10px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  line-height: 1.6;
+  border: 1px solid #e5e7eb;
 }
 
 .WF-add-note-section {
@@ -1688,7 +1752,7 @@
 
 .WF-add-note-textarea {
   width: 100%;
-  padding: 8px;
+  padding: 8px 10px;
   font-size: 11px;
   border: 1px solid #d1d5db;
   border-radius: 4px;
@@ -1696,6 +1760,7 @@
   font-family: inherit;
   line-height: 1.5;
   background-color: white;
+  transition: all 0.2s ease;
 }
 
 .WF-add-note-textarea:focus {

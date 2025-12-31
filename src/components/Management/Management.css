@@ -144,6 +144,33 @@
   font-weight: 500;
 }
 
+/* Field ID Mapping Dropdown */
+.field-id-select {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.field-id-select:hover {
+  border-color: var(--primary-color);
+}
+
+.field-id-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.field-id-select option {
+  padding: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .management-container {
     padding: 1rem;

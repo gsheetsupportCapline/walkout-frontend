@@ -6,10 +6,85 @@ const WalkoutForm = () => {
   const location = useLocation();
   const { appointment, officeName } = location.state || {};
 
+  // ===========================================
+  // UNIQUE FIELD IDs FOR DROPDOWN & RADIO BUTTON MAPPING
+  // These IDs MUST match with RadioButtonSetManagement and DropdownSetManagement
+  // ===========================================
+  const FIELD_IDS = {
+    // === OFFICE SECTION - DROPDOWNS (7) ===
+    PATIENT_TYPE: "WFDRP_OFFICE_PATIENT_TYPE",
+    INSURANCE_TYPE: "WFDRP_OFFICE_INSURANCE_TYPE",
+    INSURANCE: "WFDRP_OFFICE_INSURANCE",
+    PATIENT_PORTION_PRIMARY_MODE: "WFDRP_OFFICE_PP_PRIMARY_MODE",
+    PATIENT_PORTION_SECONDARY_MODE: "WFDRP_OFFICE_PP_SECONDARY_MODE",
+    REASON_LESS_COLLECTION: "WFDRP_OFFICE_REASON_LESS_COLLECTION",
+    RULE_ENGINE_NOT_RUN_REASON: "WFDRP_OFFICE_RULE_ENGINE_NOT_RUN",
+
+    // === OFFICE SECTION - RADIO BUTTONS (7) ===
+    PATIENT_CAME: "WFRAD_OFFICE_PATIENT_CAME",
+    POST_OP_ZERO: "WFRAD_OFFICE_POST_OP_ZERO",
+    HAS_INSURANCE: "WFRAD_OFFICE_HAS_INSURANCE",
+    GOOGLE_REVIEW_REQUEST: "WFRAD_OFFICE_GOOGLE_REVIEW",
+    RULE_ENGINE_RUN: "WFRAD_OFFICE_RULE_ENGINE_RUN",
+    RULE_ENGINE_ERROR_FOUND: "WFRAD_OFFICE_RULE_ENGINE_ERROR",
+    ISSUES_FIXED: "WFRAD_OFFICE_ISSUES_FIXED",
+
+    // === LC3 SECTION - DROPDOWNS (21) ===
+    LC3_REASON_NOT_RUN: "WFDRP_LC3_REASON_NOT_RUN",
+    LC3_SIGNED_TREATMENT_PLAN: "WFDRP_LC3_SIGNED_TREATMENT_PLAN",
+    LC3_PRC_AVAILABLE: "WFDRP_LC3_PRC_AVAILABLE",
+    LC3_SIGNED_CONSENT_GENERAL: "WFDRP_LC3_SIGNED_CONSENT_GENERAL",
+    LC3_NVD_AVAILABLE: "WFDRP_LC3_NVD_AVAILABLE",
+    LC3_NARRATIVE_AVAILABLE: "WFDRP_LC3_NARRATIVE_AVAILABLE",
+    LC3_SIGNED_CONSENT_TX: "WFDRP_LC3_SIGNED_CONSENT_TX",
+    LC3_PRE_AUTH: "WFDRP_LC3_PRE_AUTH",
+    LC3_ROUTE_SHEET: "WFDRP_LC3_ROUTE_SHEET",
+    LC3_PANO: "WFDRP_LC3_PANO",
+    LC3_FMX: "WFDRP_LC3_FMX",
+    LC3_BITEWING: "WFDRP_LC3_BITEWING",
+    LC3_PA: "WFDRP_LC3_PA",
+    LC3_PERIO_CHART: "WFDRP_LC3_PERIO_CHART",
+    LC3_PP_PRIMARY_MODE: "WFDRP_LC3_PP_PRIMARY_MODE",
+    LC3_PAYMENT_VERIFIED_PRIMARY: "WFDRP_LC3_PAYMENT_VERIFIED_PRIMARY",
+    LC3_PP_SECONDARY_MODE: "WFDRP_LC3_PP_SECONDARY_MODE",
+    LC3_PAYMENT_VERIFIED_SECONDARY: "WFDRP_LC3_PAYMENT_VERIFIED_SECONDARY",
+    LC3_REASON_PROD_DIFF: "WFDRP_LC3_REASON_PROD_DIFF",
+    LC3_REASON_INS_DIFF: "WFDRP_LC3_REASON_INS_DIFF",
+    LC3_ONHOLD_REASONS: "WFDRP_LC3_ONHOLD_REASONS",
+
+    // === LC3 SECTION - RADIO BUTTONS (22) ===
+    LC3_RULE_ENGINE_STATUS: "WFRAD_LC3_RULE_ENGINE_STATUS",
+    LC3_RUN_RULES: "WFRAD_LC3_RUN_RULES",
+    LC3_FAILED_RULES_RESOLVED: "WFRAD_LC3_FAILED_RULES_RESOLVED",
+    LC3_DOC_CHECK_STATUS: "WFRAD_LC3_DOC_CHECK_STATUS",
+    LC3_ORTHO_QUESTIONNAIRE: "WFRAD_LC3_ORTHO_QUESTIONNAIRE",
+    LC3_ATTACH_CHECK_STATUS: "WFRAD_LC3_ATTACH_CHECK_STATUS",
+    LC3_PP_CHECK_STATUS: "WFRAD_LC3_PP_CHECK_STATUS",
+    LC3_SIGNED_NVD_DIFF: "WFRAD_LC3_SIGNED_NVD_DIFF",
+    LC3_VERIFY_CHECK_ES: "WFRAD_LC3_VERIFY_CHECK_ES",
+    LC3_FORTE_CHECK: "WFRAD_LC3_FORTE_CHECK",
+    LC3_PROD_STATUS: "WFRAD_LC3_PROD_STATUS",
+    LC3_INFORMED_OFFICE: "WFRAD_LC3_INFORMED_OFFICE",
+    LC3_GOOGLE_REVIEW_SENT: "WFRAD_LC3_GOOGLE_REVIEW_SENT",
+    LC3_CONTAINS_CROWN: "WFRAD_LC3_CONTAINS_CROWN",
+    LC3_CROWN_PAID_ON: "WFRAD_LC3_CROWN_PAID_ON",
+    LC3_DELIVERED_PER_NOTES: "WFRAD_LC3_DELIVERED_PER_NOTES",
+    LC3_WALKOUT_ON_HOLD: "WFRAD_LC3_WALKOUT_ON_HOLD",
+    LC3_COMPLETING_DEFICIENCY: "WFRAD_LC3_COMPLETING_DEFICIENCY",
+    LC3_PROVIDER_NOTES_STATUS: "WFRAD_LC3_PROVIDER_NOTES_STATUS",
+    LC3_DOCTOR_NOTE_COMPLETED: "WFRAD_LC3_DOCTOR_NOTE_COMPLETED",
+    LC3_NOTES_UPDATED_DOS: "WFRAD_LC3_NOTES_UPDATED_DOS",
+    LC3_NOTE_INCLUDES_FOUR: "WFRAD_LC3_NOTE_INCLUDES_FOUR",
+
+    // === AUDIT SECTION - RADIO BUTTONS (2) ===
+    AUDIT_DISCREPANCY_FOUND: "WFRAD_AUDIT_DISCREPANCY_FOUND",
+    AUDIT_DISCREPANCY_FIXED: "WFRAD_AUDIT_DISCREPANCY_FIXED",
+  };
+
   // State for collapsible sections
   const [sections, setSections] = useState({
-    office: true,
-    lc3: true,
+    office: false,
+    lc3: false,
     audit: false,
   });
 
@@ -17,6 +92,9 @@ const WalkoutForm = () => {
   const [radioButtonSets, setRadioButtonSets] = useState([]);
   const [dropdownSets, setDropdownSets] = useState([]);
   const [formData, setFormData] = useState({});
+
+  // State for field ID to set ID mapping
+  const [fieldToSetMapping, setFieldToSetMapping] = useState({});
 
   // State for LC3 section
   const [lc3Data, setLc3Data] = useState({
@@ -73,6 +151,32 @@ const WalkoutForm = () => {
         const result = await response.json();
         if (result.success) {
           setRadioButtonSets(result.data);
+
+          // Create mapping from field IDs to set IDs based on usedIn field
+          const mapping = {};
+          result.data.forEach((set) => {
+            if (set.usedIn && set.usedIn.length > 0) {
+              // Each set can have a field ID in its usedIn array
+              set.usedIn.forEach((fieldId) => {
+                // Check for duplicate mappings
+                if (mapping[fieldId]) {
+                  console.warn(
+                    `⚠️ Duplicate field ID mapping detected: ${fieldId}`,
+                    `\nPreviously mapped to set: ${mapping[fieldId]}`,
+                    `\nNow being mapped to: ${set._id}`,
+                    `\nSet name: ${set.name}`
+                  );
+                }
+                mapping[fieldId] = set._id;
+              });
+            }
+          });
+
+          console.log("🔵 Radio Button Sets Loaded:", result.data.length);
+          console.log("🔵 Radio Field Mappings Created:", mapping);
+
+          // Update the mapping state
+          setFieldToSetMapping((prev) => ({ ...prev, ...mapping }));
         }
       } catch (error) {
         console.error("Error fetching radio button sets:", error);
@@ -91,6 +195,32 @@ const WalkoutForm = () => {
         const result = await response.json();
         if (result.success) {
           setDropdownSets(result.data);
+
+          // Create mapping from field IDs to set IDs based on usedIn field
+          const mapping = {};
+          result.data.forEach((set) => {
+            if (set.usedIn && set.usedIn.length > 0) {
+              // Each set can have a field ID in its usedIn array
+              set.usedIn.forEach((fieldId) => {
+                // Check for duplicate mappings
+                if (mapping[fieldId]) {
+                  console.warn(
+                    `⚠️ Duplicate field ID mapping detected: ${fieldId}`,
+                    `\nPreviously mapped to set: ${mapping[fieldId]}`,
+                    `\nNow being mapped to: ${set._id}`,
+                    `\nSet name: ${set.name}`
+                  );
+                }
+                mapping[fieldId] = set._id;
+              });
+            }
+          });
+
+          console.log("🟢 Dropdown Sets Loaded:", result.data.length);
+          console.log("🟢 Dropdown Field Mappings Created:", mapping);
+
+          // Update the mapping state
+          setFieldToSetMapping((prev) => ({ ...prev, ...mapping }));
         }
       } catch (error) {
         console.error("Error fetching dropdown sets:", error);
@@ -99,14 +229,39 @@ const WalkoutForm = () => {
     fetchDropdownSets();
   }, []);
 
-  // Helper function to get radio buttons by set ID
-  const getRadioButtons = (setId) => {
+  // Log field to set mapping when it updates (for debugging)
+  useEffect(() => {
+    if (Object.keys(fieldToSetMapping).length > 0) {
+      console.log("Field ID to Set ID Mapping:", fieldToSetMapping);
+    }
+  }, [fieldToSetMapping]);
+
+  // Helper function to get radio buttons by set ID or field ID
+  const getRadioButtons = (identifier) => {
+    // First check if identifier is a field ID and get the mapped set ID
+    const setId = fieldToSetMapping[identifier] || identifier;
+
+    // Debug log to see the mapping
+    if (identifier !== setId) {
+      console.log(`Radio: Mapped ${identifier} → ${setId}`);
+    }
+
+    // Find the set by ID
     const set = radioButtonSets.find((s) => s._id === setId);
     return set?.buttons.filter((btn) => btn.isActive && btn.visibility) || [];
   };
 
-  // Helper function to get dropdown options by set ID
-  const getDropdownOptions = (setId) => {
+  // Helper function to get dropdown options by set ID or field ID
+  const getDropdownOptions = (identifier) => {
+    // First check if identifier is a field ID and get the mapped set ID
+    const setId = fieldToSetMapping[identifier] || identifier;
+
+    // Debug log to see the mapping
+    if (identifier !== setId) {
+      console.log(`Dropdown: Mapped ${identifier} → ${setId}`);
+    }
+
+    // Find the set by ID
     const set = dropdownSets.find((s) => s._id === setId);
     return set?.options.filter((opt) => opt.isActive && opt.visibility) || [];
   };
@@ -446,8 +601,11 @@ const WalkoutForm = () => {
                           Did patient come to the Appointment?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.PATIENT_CAME}
+                        >
+                          {getRadioButtons(FIELD_IDS.PATIENT_CAME).map(
                             (btn) => (
                               <button
                                 key={btn._id}
@@ -477,8 +635,11 @@ const WalkoutForm = () => {
                           Is Post op walkout completing with zero production?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.POST_OP_ZERO}
+                        >
+                          {getRadioButtons(FIELD_IDS.POST_OP_ZERO).map(
                             (btn) => (
                               <button
                                 key={btn._id}
@@ -513,13 +674,14 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.PATIENT_TYPE}
                           value={formData.patientType || ""}
                           onChange={(e) =>
                             handleDropdownChange("patientType", e.target.value)
                           }
                         >
                           <option value="">Select</option>
-                          {getDropdownOptions("69486b4a1166cbe2b2c3c2ae").map(
+                          {getDropdownOptions(FIELD_IDS.PATIENT_TYPE).map(
                             (opt) => (
                               <option key={opt._id} value={opt.name}>
                                 {opt.name}
@@ -534,8 +696,11 @@ const WalkoutForm = () => {
                           Does patient have Insurance?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.HAS_INSURANCE}
+                        >
+                          {getRadioButtons(FIELD_IDS.HAS_INSURANCE).map(
                             (btn) => (
                               <button
                                 key={btn._id}
@@ -567,6 +732,7 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.INSURANCE_TYPE}
                           value={formData.insuranceType || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -576,7 +742,7 @@ const WalkoutForm = () => {
                           }
                         >
                           <option value="">Select</option>
-                          {getDropdownOptions("69486b8e1166cbe2b2c3c2db").map(
+                          {getDropdownOptions(FIELD_IDS.INSURANCE_TYPE).map(
                             (opt) => (
                               <option key={opt._id} value={opt.name}>
                                 {opt.name}
@@ -592,13 +758,14 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.INSURANCE}
                           value={formData.insurance || ""}
                           onChange={(e) =>
                             handleDropdownChange("insurance", e.target.value)
                           }
                         >
                           <option value="">Select</option>
-                          {getDropdownOptions("69486c1f1166cbe2b2c3c356").map(
+                          {getDropdownOptions(FIELD_IDS.INSURANCE).map(
                             (opt) => (
                               <option key={opt._id} value={opt.name}>
                                 {opt.name}
@@ -613,8 +780,11 @@ const WalkoutForm = () => {
                           Google Review Request?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("69486c7e1166cbe2b2c3c3a8").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.GOOGLE_REVIEW_REQUEST}
+                        >
+                          {getRadioButtons(FIELD_IDS.GOOGLE_REVIEW_REQUEST).map(
                             (btn) => (
                               <button
                                 key={btn._id}
@@ -693,13 +863,20 @@ const WalkoutForm = () => {
                           <label className="WF-form-label">
                             Patient Portion Primary Mode
                           </label>
-                          <select className="WF-form-select">
-                            <option value="Personal Check">
-                              Personal Check
-                            </option>
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Debit Card">Debit Card</option>
+                          <select
+                            className="WF-form-select"
+                            data-field-id={
+                              FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE
+                            }
+                          >
+                            <option value="">Select</option>
+                            {getDropdownOptions(
+                              FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE
+                            ).map((opt) => (
+                              <option key={opt._id} value={opt.name}>
+                                {opt.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -722,13 +899,20 @@ const WalkoutForm = () => {
                           <label className="WF-form-label">
                             Patient Portion Secondary Mode
                           </label>
-                          <select className="WF-form-select">
-                            <option value="Debit Card">Debit Card</option>
-                            <option value="Personal Check">
-                              Personal Check
-                            </option>
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card">Credit Card</option>
+                          <select
+                            className="WF-form-select"
+                            data-field-id={
+                              FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE
+                            }
+                          >
+                            <option value="">Select</option>
+                            {getDropdownOptions(
+                              FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE
+                            ).map((opt) => (
+                              <option key={opt._id} value={opt.name}>
+                                {opt.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -759,13 +943,18 @@ const WalkoutForm = () => {
                           Reason Office Collected less Patient Portion than
                           Expected?<span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <select className="WF-form-select">
+                        <select
+                          className="WF-form-select"
+                          data-field-id={FIELD_IDS.REASON_LESS_COLLECTION}
+                        >
                           <option value="">Select</option>
-                          <option value="Patient refused">
-                            Patient refused
-                          </option>
-                          <option value="Payment plan">Payment plan</option>
-                          <option value="Other">Other</option>
+                          {getDropdownOptions(
+                            FIELD_IDS.REASON_LESS_COLLECTION
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.name}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </fieldset>
@@ -783,8 +972,11 @@ const WalkoutForm = () => {
                             Did Office run the Rules Engine?
                             <span style={{ color: "#dc2626" }}>*</span>
                           </label>
-                          <div className="WF-button-group">
-                            {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                          <div
+                            className="WF-button-group"
+                            data-field-id={FIELD_IDS.RULE_ENGINE_RUN}
+                          >
+                            {getRadioButtons(FIELD_IDS.RULE_ENGINE_RUN).map(
                               (btn) => (
                                 <button
                                   key={btn._id}
@@ -816,6 +1008,7 @@ const WalkoutForm = () => {
                           </label>
                           <select
                             className="WF-walkout-form-select"
+                            data-field-id={FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON}
                             value={formData.ruleEngineNotRunReason || ""}
                             onChange={(e) =>
                               handleDropdownChange(
@@ -825,6 +1018,13 @@ const WalkoutForm = () => {
                             }
                           >
                             <option value="">Select</option>
+                            {getDropdownOptions(
+                              FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                            ).map((opt) => (
+                              <option key={opt._id} value={opt.name}>
+                                {opt.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>
@@ -835,32 +1035,32 @@ const WalkoutForm = () => {
                             If Yes, Was any error found?
                             <span style={{ color: "#dc2626" }}>*</span>
                           </label>
-                          <div className="WF-button-group">
-                            {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                              (btn) => (
-                                <button
-                                  key={btn._id}
-                                  type="button"
-                                  className={`WF-radio-button ${
-                                    btn.name === "No" || btn.name === "Pending"
-                                      ? "WF-no-or-pending-button"
-                                      : ""
-                                  } ${
-                                    formData.ruleEngineError === btn.name
-                                      ? "WF-selected"
-                                      : ""
-                                  }`}
-                                  onClick={() =>
-                                    handleRadioChange(
-                                      "ruleEngineError",
-                                      btn.name
-                                    )
-                                  }
-                                >
-                                  {btn.name}
-                                </button>
-                              )
-                            )}
+                          <div
+                            className="WF-button-group"
+                            data-field-id={FIELD_IDS.RULE_ENGINE_ERROR_FOUND}
+                          >
+                            {getRadioButtons(
+                              FIELD_IDS.RULE_ENGINE_ERROR_FOUND
+                            ).map((btn) => (
+                              <button
+                                key={btn._id}
+                                type="button"
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
+                                  formData.ruleEngineError === btn.name
+                                    ? "WF-selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleRadioChange("ruleEngineError", btn.name)
+                                }
+                              >
+                                {btn.name}
+                              </button>
+                            ))}
                           </div>
                         </div>
 
@@ -889,8 +1089,11 @@ const WalkoutForm = () => {
                             Were all the Issues fixed?
                             <span style={{ color: "#dc2626" }}>*</span>
                           </label>
-                          <div className="WF-button-group">
-                            {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                          <div
+                            className="WF-button-group"
+                            data-field-id={FIELD_IDS.ISSUES_FIXED}
+                          >
+                            {getRadioButtons(FIELD_IDS.ISSUES_FIXED).map(
                               (btn) => (
                                 <button
                                   key={btn._id}
@@ -1084,6 +1287,87 @@ const WalkoutForm = () => {
                         </div>
                       </div>
                     </fieldset>
+
+                    {/* Notes Fieldset */}
+                    <fieldset className="WF-form-fieldset WF-office-notes-fieldset">
+                      <div className="WF-fieldset-header-row">
+                        <legend className="WF-legend">
+                          Notes ({formData.officeHistoricalNotes?.length || 0})
+                        </legend>
+                      </div>
+
+                      {/* Office Notes Section */}
+                      <div className="WF-notes-subsection">
+                        <h4 className="WF-notes-subheading">Office Notes:</h4>
+                        <div className="WF-notes-list">
+                          {formData.officeHistoricalNotes?.length > 0 ? (
+                            formData.officeHistoricalNotes.map(
+                              (note, index) => (
+                                <div key={index} className="WF-note-item">
+                                  <div className="WF-note-datetime">
+                                    {note.dateTime}
+                                  </div>
+                                  <div className="WF-note-author">
+                                    {note.author}
+                                  </div>
+                                  <div className="WF-note-content">
+                                    {note.content}
+                                  </div>
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <p className="WF-no-notes-message">
+                              No office notes yet.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* LC3 Historical Notes Section */}
+                      <div className="WF-notes-subsection">
+                        <h4 className="WF-notes-subheading">
+                          On Hold Details & Notes by LC3 Team:
+                        </h4>
+                        <div className="WF-notes-list">
+                          {formData.lc3HistoricalNotes?.length > 0 ? (
+                            formData.lc3HistoricalNotes.map((note, index) => (
+                              <div key={index} className="WF-note-item">
+                                <div className="WF-note-datetime">
+                                  {note.dateTime}
+                                </div>
+                                <div className="WF-note-author">
+                                  {note.author}
+                                </div>
+                                <div className="WF-note-content">
+                                  {note.content}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="WF-no-notes-message">
+                              No LC3 notes yet.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Add New Office Note */}
+                      <div className="WF-add-note-section">
+                        <textarea
+                          className="WF-add-note-textarea"
+                          placeholder="Add new note here."
+                          rows="4"
+                          value={formData.newOfficeNote || ""}
+                          onChange={(e) =>
+                            handleDropdownChange(
+                              "newOfficeNote",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </fieldset>
                   </div>
 
                   {/* Office Section Submit Button */}
@@ -1158,10 +1442,13 @@ const WalkoutForm = () => {
                           1. Did LC3 run the Rules Engine?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_RUN_RULES}
+                        >
                           {(() => {
                             const buttons = getRadioButtons(
-                              "6948272c1166cbe2b2c332e0"
+                              FIELD_IDS.LC3_RUN_RULES
                             );
                             console.log("LC3 Radio Buttons:", buttons);
                             console.log(
@@ -1241,9 +1528,18 @@ const WalkoutForm = () => {
                                   e.target.value
                                 )
                               }
+                              data-field-id={
+                                FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                              }
                             >
                               <option value="">Select reason</option>
-                              {/* Dropdown options will be added once API ID is provided */}
+                              {getDropdownOptions(
+                                FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                              ).map((option) => (
+                                <option key={option._id} value={option.name}>
+                                  {option.name}
+                                </option>
+                              ))}
                             </select>
                           </div>
                         )}
@@ -1276,9 +1572,14 @@ const WalkoutForm = () => {
                                         __html: rule.message,
                                       }}
                                     />
-                                    <div className="WF-button-group">
+                                    <div
+                                      className="WF-button-group"
+                                      data-field-id={
+                                        FIELD_IDS.LC3_RULE_ERROR_FOUND
+                                      }
+                                    >
                                       {getRadioButtons(
-                                        "6948272c1166cbe2b2c332e0"
+                                        FIELD_IDS.LC3_RULE_ERROR_FOUND
                                       ).map((button) => (
                                         <button
                                           key={button._id}
@@ -1323,7 +1624,10 @@ const WalkoutForm = () => {
                           (Attachment and Service Based Guidelines)
                         </span>
                       </legend>
-                      <div className="WF-status-toggle">
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_DOCUMENT_CHECK_STATUS}
+                      >
                         <label className="WF-status-label">
                           <input
                             type="radio"
@@ -1528,34 +1832,37 @@ const WalkoutForm = () => {
                           Does the Ortho Questionnaire form available?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948270d1166cbe2b2c332bb").map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.orthoQuestionnaireAvailable ===
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.orthoQuestionnaireAvailable ===
+                                button.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "orthoQuestionnaireAvailable",
                                   button.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "orthoQuestionnaireAvailable",
-                                    button.name
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -1570,7 +1877,10 @@ const WalkoutForm = () => {
                           (Attachment and Service Based Guidelines)
                         </span>
                       </legend>
-                      <div className="WF-status-toggle">
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_ATTACHMENT_CHECK_STATUS}
+                      >
                         <label className="WF-status-label">
                           <input
                             type="radio"
@@ -1701,7 +2011,10 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         D. Patient Portion Check
                       </legend>
-                      <div className="WF-status-toggle">
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_PATIENT_PORTION_STATUS}
+                      >
                         <label className="WF-status-label">
                           <input
                             type="radio"
@@ -1808,8 +2121,11 @@ const WalkoutForm = () => {
                         Is there a signed NVD for the Difference?
                         <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="WF-button-group">
-                        {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                      <div
+                        className="WF-button-group"
+                        data-field-id={FIELD_IDS.LC3_SIGNED_NVD_DIFF}
+                      >
+                        {getRadioButtons(FIELD_IDS.LC3_SIGNED_NVD_DIFF).map(
                           (button) => (
                             <button
                               key={button._id}
@@ -2011,8 +2327,11 @@ const WalkoutForm = () => {
                           payment posted in ES?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_VERIFY_CHECK_ES}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_VERIFY_CHECK_ES).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2047,8 +2366,11 @@ const WalkoutForm = () => {
                           and does the entered ref# by the office match?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_FORTE_CHECK}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_FORTE_CHECK).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2085,7 +2407,10 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         E. Production Details and Walkout Submission/Hold
                       </legend>
-                      <div className="WF-status-toggle">
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_PRODUCTION_DETAILS_STATUS}
+                      >
                         <label className="WF-status-label">
                           <input
                             type="radio"
@@ -2393,8 +2718,11 @@ const WalkoutForm = () => {
                           in the walkout?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_INFORMED_OFFICE}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_INFORMED_OFFICE).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2428,33 +2756,36 @@ const WalkoutForm = () => {
                           Has the request for a Google review been sent?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("69486c7e1166cbe2b2c3c3a8").map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.googleReviewSent === button.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "googleReviewSent",
-                                    button.name
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_GOOGLE_REVIEW_SENT}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_GOOGLE_REVIEW_SENT
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.googleReviewSent === button.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "googleReviewSent",
+                                  button.name
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -2463,8 +2794,11 @@ const WalkoutForm = () => {
                           Does walkout contains Crown/Denture/Implant with
                           Prep/Imp?<span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_CONTAINS_CROWN}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_CONTAINS_CROWN).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2499,8 +2833,11 @@ const WalkoutForm = () => {
                           As per IV crown paid on -{" "}
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948270d1166cbe2b2c332bb").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_CROWN_PAID_ON}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_CROWN_PAID_ON).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2531,33 +2868,36 @@ const WalkoutForm = () => {
                           Does crown/Denture/Implants delivered as per provider
                           notes?<span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.deliveredAsPerNotes === button.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "deliveredAsPerNotes",
-                                    button.name
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_DELIVERED_PER_NOTES}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_DELIVERED_PER_NOTES
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.deliveredAsPerNotes === button.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "deliveredAsPerNotes",
+                                  button.name
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -2566,8 +2906,11 @@ const WalkoutForm = () => {
                           Is Walkout getting on Hold?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_WALKOUT_ON_HOLD}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_WALKOUT_ON_HOLD).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2609,11 +2952,18 @@ const WalkoutForm = () => {
                               e.target.value
                             )
                           }
+                          data-field-id={FIELD_IDS.LC3_ONHOLD_REASONS}
                         >
                           <option value="">
                             Type here for search or select from list.
                           </option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_ONHOLD_REASONS).map(
+                            (option) => (
+                              <option key={option._id} value={option.name}>
+                                {option.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2642,34 +2992,35 @@ const WalkoutForm = () => {
                         Is walkout completing with deficiency?
                         <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      <div className="WF-button-group">
-                        {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                          (button) => (
-                            <button
-                              key={button._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                button.name === "No" ||
-                                button.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.completingWithDeficiency ===
+                      <div
+                        className="WF-button-group"
+                        data-field-id={FIELD_IDS.LC3_COMPLETING_DEFICIENCY}
+                      >
+                        {getRadioButtons(
+                          FIELD_IDS.LC3_COMPLETING_DEFICIENCY
+                        ).map((button) => (
+                          <button
+                            key={button._id}
+                            type="button"
+                            className={`WF-radio-button ${
+                              button.name === "No" || button.name === "Pending"
+                                ? "WF-no-or-pending-button"
+                                : ""
+                            } ${
+                              formData.completingWithDeficiency === button.name
+                                ? "WF-selected"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handleRadioChange(
+                                "completingWithDeficiency",
                                 button.name
-                                  ? "WF-selected"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "completingWithDeficiency",
-                                  button.name
-                                )
-                              }
-                            >
-                              {button.name}
-                            </button>
-                          )
-                        )}
+                              )
+                            }
+                          >
+                            {button.name}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </fieldset>
@@ -2680,7 +3031,10 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         F. Copy "Provider's Note" from Eaglesoft and Paste below
                       </legend>
-                      <div className="WF-status-toggle">
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_PROVIDER_NOTES_STATUS}
+                      >
                         <label className="WF-status-label">
                           <input
                             type="radio"
@@ -2728,33 +3082,36 @@ const WalkoutForm = () => {
                           1. Doctor note completed?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.doctorNoteCompleted === button.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "doctorNoteCompleted",
-                                    button.name
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_DOCTOR_NOTE_COMPLETED}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_DOCTOR_NOTE_COMPLETED
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.doctorNoteCompleted === button.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "doctorNoteCompleted",
+                                  button.name
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -2763,8 +3120,11 @@ const WalkoutForm = () => {
                           2. Does the notes updated on DOS?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_NOTES_UPDATED_DOS}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_NOTES_UPDATED_DOS).map(
                             (button) => (
                               <button
                                 key={button._id}
@@ -2798,34 +3158,36 @@ const WalkoutForm = () => {
                           3. Does the Note include following 4 things?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.noteIncludesFourThings ===
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.LC3_NOTE_INCLUDES_FOUR}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_NOTE_INCLUDES_FOUR
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.noteIncludesFourThings === button.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "noteIncludesFourThings",
                                   button.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "noteIncludesFourThings",
-                                    button.name
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
@@ -3065,32 +3427,32 @@ const WalkoutForm = () => {
                           Discrepancy Found other than LC3 remarks?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                            (btn) => (
-                              <button
-                                key={btn._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  btn.name === "No" || btn.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.discrepancyFound === btn.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "discrepancyFound",
-                                    btn.name
-                                  )
-                                }
-                              >
-                                {btn.name}
-                              </button>
-                            )
-                          )}
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FOUND}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.AUDIT_DISCREPANCY_FOUND
+                          ).map((btn) => (
+                            <button
+                              key={btn._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.discrepancyFound === btn.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange("discrepancyFound", btn.name)
+                              }
+                            >
+                              {btn.name}
+                            </button>
+                          ))}
                         </div>
                         <input
                           type="text"
@@ -3111,32 +3473,32 @@ const WalkoutForm = () => {
                           Discrepancy Fixed by LC3?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <div className="WF-button-group">
-                          {getRadioButtons("6948272c1166cbe2b2c332e0").map(
-                            (btn) => (
-                              <button
-                                key={btn._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  btn.name === "No" || btn.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.discrepancyFixed === btn.name
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "discrepancyFixed",
-                                    btn.name
-                                  )
-                                }
-                              >
-                                {btn.name}
-                              </button>
-                            )
-                          )}
+                        <div
+                          className="WF-button-group"
+                          data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FIXED}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.AUDIT_DISCREPANCY_FIXED
+                          ).map((btn) => (
+                            <button
+                              key={btn._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                btn.name === "No" || btn.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.discrepancyFixed === btn.name
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange("discrepancyFixed", btn.name)
+                              }
+                            >
+                              {btn.name}
+                            </button>
+                          ))}
                         </div>
                         <input
                           type="text"

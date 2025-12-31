@@ -4,6 +4,75 @@ import api from "../../utils/api";
 import "./Management.css";
 import "./DropdownSetManagement.css";
 
+// Import FIELD_IDS from WalkoutForm
+const FIELD_IDS = {
+  PATIENT_TYPE: "WFDRP_PATIENT_TYPE",
+  INSURANCE_TYPE: "WFDRP_INSURANCE_TYPE",
+  INSURANCE: "WFDRP_INSURANCE",
+  PATIENT_PORTION_PRIMARY_MODE: "WFDRP_PP_PRIMARY_MODE",
+  PATIENT_PORTION_SECONDARY_MODE: "WFDRP_PP_SECONDARY_MODE",
+  REASON_LESS_COLLECTION: "WFDRP_REASON_LESS_COLLECTION",
+  RULE_ENGINE_NOT_RUN_REASON: "WFDRP_RULE_ENGINE_NOT_RUN_REASON",
+  GOOGLE_REVIEW_REQUEST: "WFRAD_GOOGLE_REVIEW",
+  RULE_ENGINE_RUN: "WFRAD_RULE_ENGINE_RUN",
+  RULE_ENGINE_ERROR_FOUND: "WFRAD_RULE_ENGINE_ERROR",
+  LC3_RUN_RULES: "WFRAD_LC3_RUN_RULES",
+  LC3_RULE_ERROR_FOUND: "WFRAD_LC3_ERROR_FOUND",
+  LC3_DOCUMENT_CHECK_STATUS: "WFDRP_LC3_DOC_STATUS",
+  LC3_ATTACHMENT_CHECK_STATUS: "WFDRP_LC3_ATTACH_STATUS",
+  LC3_PATIENT_PORTION_STATUS: "WFDRP_LC3_PP_STATUS",
+  LC3_PRODUCTION_DETAILS_STATUS: "WFDRP_LC3_PROD_STATUS",
+  LC3_PROVIDER_NOTES_STATUS: "WFDRP_LC3_PROVIDER_STATUS",
+  LC3_ONHOLD_STATUS: "WFDRP_LC3_ONHOLD_STATUS",
+  AUDIT_DISCREPANCY_FOUND: "WFRAD_AUDIT_DISCREPANCY",
+  AUDIT_DISCREPANCY_FIXED: "WFRAD_AUDIT_FIXED",
+};
+
+// Field ID Labels for dropdown options - ALL DROPDOWNS
+const FIELD_LABELS = {
+  // === OFFICE SECTION - DROPDOWNS (7) ===
+  WFDRP_OFFICE_PATIENT_TYPE: "Office - Patient Type (Dropdown)",
+  WFDRP_OFFICE_INSURANCE_TYPE: "Office - Insurance Type (Dropdown)",
+  WFDRP_OFFICE_INSURANCE: "Office - Insurance (Dropdown)",
+  WFDRP_OFFICE_PP_PRIMARY_MODE:
+    "Office - Patient Portion Primary Mode (Dropdown)",
+  WFDRP_OFFICE_PP_SECONDARY_MODE:
+    "Office - Patient Portion Secondary Mode (Dropdown)",
+  WFDRP_OFFICE_REASON_LESS_COLLECTION:
+    "Office - Reason Office Collected less Patient Portion than Expected? (Dropdown)",
+  WFDRP_OFFICE_RULE_ENGINE_NOT_RUN:
+    "Office - Reason for Rules Engine not run (Dropdown)",
+
+  // === LC3 SECTION - DROPDOWNS (21) ===
+  WFDRP_LC3_REASON_NOT_RUN: "LC3 - Reason for Rules Engine not run (Dropdown)",
+  WFDRP_LC3_SIGNED_TREATMENT_PLAN:
+    "LC3 - Signed Treatment Plan Available (Dropdown)",
+  WFDRP_LC3_PRC_AVAILABLE: "LC3 - PRC Available (Dropdown)",
+  WFDRP_LC3_SIGNED_CONSENT_GENERAL:
+    "LC3 - Signed Consent - General Available (Dropdown)",
+  WFDRP_LC3_NVD_AVAILABLE: "LC3 - NVD Available (Dropdown)",
+  WFDRP_LC3_NARRATIVE_AVAILABLE: "LC3 - Narrative Available (Dropdown)",
+  WFDRP_LC3_SIGNED_CONSENT_TX: "LC3 - Signed Consent Tx. Available (Dropdown)",
+  WFDRP_LC3_PRE_AUTH: "LC3 - Pre Auth Available (Dropdown)",
+  WFDRP_LC3_ROUTE_SHEET: "LC3 - Route Sheet Available (Dropdown)",
+  WFDRP_LC3_PANO: "LC3 - Pano (Dropdown)",
+  WFDRP_LC3_FMX: "LC3 - FMX (Dropdown)",
+  WFDRP_LC3_BITEWING: "LC3 - Bitewing (Dropdown)",
+  WFDRP_LC3_PA: "LC3 - PA (Dropdown)",
+  WFDRP_LC3_PERIO_CHART: "LC3 - Perio Chart (Dropdown)",
+  WFDRP_LC3_PP_PRIMARY_MODE: "LC3 - Pat. Portion Primary Mode (Dropdown)",
+  WFDRP_LC3_PAYMENT_VERIFIED_PRIMARY:
+    "LC3 - Payment verified from (Primary) (Dropdown)",
+  WFDRP_LC3_PP_SECONDARY_MODE: "LC3 - Pat. Portion Secondary Mode (Dropdown)",
+  WFDRP_LC3_PAYMENT_VERIFIED_SECONDARY:
+    "LC3 - Payment verified from (Secondary) (Dropdown)",
+  WFDRP_LC3_REASON_PROD_DIFF:
+    "LC3 - Reason for Difference in Total Production (Dropdown)",
+  WFDRP_LC3_REASON_INS_DIFF:
+    "LC3 - Reason for Difference in Est Insurance (Dropdown)",
+  WFDRP_LC3_ONHOLD_REASONS: "LC3 - On Hold Reasons (Dropdown)",
+};
+
 const DropdownSetManagement = () => {
   const { showSuccess, showError } = useToast();
 
@@ -296,6 +365,46 @@ const DropdownSetManagement = () => {
     return id.length > 8 ? `${id.substring(0, 8)}...` : id;
   };
 
+  // Handle field ID mapping
+  const handleFieldIdMapping = async (setId, fieldId) => {
+    try {
+      if (!fieldId) {
+        // Remove all usedIn references if empty
+        await api.put(`/dropdowns/dropdown-sets/${setId}/used-in`, {
+          references: [],
+        });
+        showSuccess("Field mapping cleared");
+      } else {
+        // STEP 1: Remove this field ID from ALL other sets first
+        // This ensures only ONE set can have a particular field ID
+        const otherSets = dropdownSets.filter((s) => s._id !== setId);
+        for (const otherSet of otherSets) {
+          if (otherSet.usedIn && otherSet.usedIn.includes(fieldId)) {
+            // Remove the field ID from this set
+            const updatedReferences = otherSet.usedIn.filter(
+              (id) => id !== fieldId
+            );
+            await api.put(`/dropdowns/dropdown-sets/${otherSet._id}/used-in`, {
+              references: updatedReferences,
+            });
+            console.log(`Removed ${fieldId} from set: ${otherSet.name}`);
+          }
+        }
+
+        // STEP 2: Now add to the current set
+        await api.put(`/dropdowns/dropdown-sets/${setId}/used-in`, {
+          references: [fieldId],
+        });
+        showSuccess("Field mapped successfully - previous mappings cleared");
+      }
+      fetchDropdownSets(); // Refresh the list
+    } catch (err) {
+      showError(
+        err.response?.data?.message || "Failed to update field mapping"
+      );
+    }
+  };
+
   const renderListView = () => (
     <div className="management-container">
       <div className="page-header">
@@ -325,6 +434,7 @@ const DropdownSetManagement = () => {
                 <th>Set Name</th>
                 <th>Set ID</th>
                 <th>Options Count</th>
+                <th>Used In Field</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -332,7 +442,7 @@ const DropdownSetManagement = () => {
             <tbody>
               {dropdownSets.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="no-data">
+                  <td colSpan="6" className="no-data">
                     No dropdown sets found
                   </td>
                 </tr>
@@ -352,6 +462,25 @@ const DropdownSetManagement = () => {
                       </span>
                     </td>
                     <td>{set.options?.length || 0}</td>
+                    <td>
+                      <select
+                        className="field-id-select"
+                        value={set.usedIn?.[0] || ""}
+                        onChange={(e) =>
+                          handleFieldIdMapping(set._id, e.target.value)
+                        }
+                        title="Map this set to a form field"
+                      >
+                        <option value="">-- Select Field --</option>
+                        {Object.entries(FIELD_LABELS)
+                          .filter(([key]) => key.startsWith("WFDRP_")) // Only dropdown fields
+                          .map(([key, label]) => (
+                            <option key={key} value={key}>
+                              {label}
+                            </option>
+                          ))}
+                      </select>
+                    </td>
                     <td>
                       <span
                         className={`badge ${
