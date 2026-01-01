@@ -83,10 +83,16 @@ const WalkoutForm = () => {
 
   // State for collapsible sections
   const [sections, setSections] = useState({
-    office: false,
+    office: true, // Open by default
     lc3: false,
     audit: false,
   });
+
+  // Walkout state management
+  const [walkoutId, setWalkoutId] = useState(null);
+  const [appointmentId] = useState(appointment?._id || null);
+  const [openTime] = useState(new Date().toISOString());
+  const [isExistingWalkout, setIsExistingWalkout] = useState(false);
 
   // State for radio button sets
   const [radioButtonSets, setRadioButtonSets] = useState([]);
@@ -252,6 +258,44 @@ const WalkoutForm = () => {
     };
     fetchDropdownSets();
   }, []);
+
+  // Check for existing walkout on form open
+  useEffect(() => {
+    const checkExistingWalkout = async () => {
+      if (!appointmentId) return;
+
+      try {
+        const API = "http://localhost:5000/api";
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${API}/walkouts?appointmentId=${appointmentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const result = await response.json();
+
+        if (result.success && result.data.length > 0) {
+          const existingWalkout = result.data[0];
+          setWalkoutId(existingWalkout._id);
+          setIsExistingWalkout(true);
+
+          // Load office section data
+          if (existingWalkout.officeSection) {
+            setFormData(existingWalkout.officeSection);
+          }
+
+          console.log("✅ Existing walkout loaded:", existingWalkout._id);
+        }
+      } catch (error) {
+        console.error("Error checking existing walkout:", error);
+      }
+    };
+
+    checkExistingWalkout();
+  }, [appointmentId]);
 
   // Log field to set mapping when it updates (for debugging)
   useEffect(() => {
@@ -539,10 +583,59 @@ const WalkoutForm = () => {
   };
 
   // Handle form submission
-  const handleOfficeSubmit = () => {
-    console.log("Office Section Data:", formData);
-    alert("Office section submitted successfully!");
-    // TODO: API call to save office section data
+  const handleOfficeSubmit = async () => {
+    try {
+      const API = "http://localhost:5000/api";
+      const token = localStorage.getItem("token");
+
+      // Prepare payload
+      const payload = {
+        appointmentId,
+        openTime,
+        officeSection: formData,
+      };
+
+      let response;
+      if (isExistingWalkout && walkoutId) {
+        // Update existing walkout
+        response = await fetch(`${API}/walkouts/${walkoutId}/office`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Create new walkout
+        response = await fetch(`${API}/walkouts/submit-office`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("Office section submitted successfully!");
+
+        // Save walkoutId after first submit
+        if (!isExistingWalkout && result.data._id) {
+          setWalkoutId(result.data._id);
+          setIsExistingWalkout(true);
+          localStorage.setItem(`walkout_${appointmentId}`, result.data._id);
+        }
+      } else {
+        alert(`Error: ${result.message || "Failed to submit"}`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      alert("Network error. Please check your connection.");
+    }
   };
 
   const handleLC3Submit = async () => {
@@ -761,12 +854,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.patientCame === btn.name
+                                  formData.patientCame === btn.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
-                                  handleRadioChange("patientCame", btn.name)
+                                  handleRadioChange(
+                                    "patientCame",
+                                    btn.incrementalId
+                                  )
                                 }
                               >
                                 {btn.name}
@@ -795,14 +891,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.postOpZeroProduction === btn.name
+                                  formData.postOpZeroProduction ===
+                                  btn.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "postOpZeroProduction",
-                                    btn.name
+                                    btn.incrementalId
                                   )
                                 }
                               >
@@ -856,12 +953,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.hasInsurance === btn.name
+                                  formData.hasInsurance === btn.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
-                                  handleRadioChange("hasInsurance", btn.name)
+                                  handleRadioChange(
+                                    "hasInsurance",
+                                    btn.incrementalId
+                                  )
                                 }
                               >
                                 {btn.name}
@@ -940,14 +1040,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.googleReviewRequest === btn.name
+                                  formData.googleReviewRequest ===
+                                  btn.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "googleReviewRequest",
-                                    btn.name
+                                    btn.incrementalId
                                   )
                                 }
                               >
@@ -1019,7 +1120,7 @@ const WalkoutForm = () => {
                             {getDropdownOptions(
                               FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE
                             ).map((opt) => (
-                              <option key={opt._id} value={opt.name}>
+                              <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
                             ))}
@@ -1055,7 +1156,7 @@ const WalkoutForm = () => {
                             {getDropdownOptions(
                               FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE
                             ).map((opt) => (
-                              <option key={opt._id} value={opt.name}>
+                              <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
                             ))}
@@ -1097,7 +1198,7 @@ const WalkoutForm = () => {
                           {getDropdownOptions(
                             FIELD_IDS.REASON_LESS_COLLECTION
                           ).map((opt) => (
-                            <option key={opt._id} value={opt.name}>
+                            <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
                             </option>
                           ))}
@@ -1132,12 +1233,15 @@ const WalkoutForm = () => {
                                       ? "WF-no-or-pending-button"
                                       : ""
                                   } ${
-                                    formData.ruleEngineRun === btn.name
+                                    formData.ruleEngineRun === btn.incrementalId
                                       ? "WF-selected"
                                       : ""
                                   }`}
                                   onClick={() =>
-                                    handleRadioChange("ruleEngineRun", btn.name)
+                                    handleRadioChange(
+                                      "ruleEngineRun",
+                                      btn.incrementalId
+                                    )
                                   }
                                 >
                                   {btn.name}
@@ -1167,7 +1271,7 @@ const WalkoutForm = () => {
                             {getDropdownOptions(
                               FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
                             ).map((opt) => (
-                              <option key={opt._id} value={opt.name}>
+                              <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
                             ))}
@@ -1196,12 +1300,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.ruleEngineError === btn.name
+                                  formData.ruleEngineError === btn.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
-                                  handleRadioChange("ruleEngineError", btn.name)
+                                  handleRadioChange(
+                                    "ruleEngineError",
+                                    btn.incrementalId
+                                  )
                                 }
                               >
                                 {btn.name}
@@ -1249,12 +1356,15 @@ const WalkoutForm = () => {
                                       ? "WF-no-or-pending-button"
                                       : ""
                                   } ${
-                                    formData.issuesFixed === btn.name
+                                    formData.issuesFixed === btn.incrementalId
                                       ? "WF-selected"
                                       : ""
                                   }`}
                                   onClick={() =>
-                                    handleRadioChange("issuesFixed", btn.name)
+                                    handleRadioChange(
+                                      "issuesFixed",
+                                      btn.incrementalId
+                                    )
                                   }
                                 >
                                   {btn.name}
@@ -1611,12 +1721,16 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  lc3Data.didLc3RunRules === button.name
+                                  lc3Data.didLc3RunRules ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
-                                  handleLc3Change("didLc3RunRules", button.name)
+                                  handleLc3Change(
+                                    "didLc3RunRules",
+                                    button.incrementalId
+                                  )
                                 }
                               >
                                 {button.name}
@@ -2994,12 +3108,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.crownPaidOn === button.name
+                                  formData.crownPaidOn === button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
-                                  handleRadioChange("crownPaidOn", button.name)
+                                  handleRadioChange(
+                                    "crownPaidOn",
+                                    button.incrementalId
+                                  )
                                 }
                               >
                                 {button.name}
@@ -3588,12 +3705,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.discrepancyFound === btn.name
+                                formData.discrepancyFound === btn.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
-                                handleRadioChange("discrepancyFound", btn.name)
+                                handleRadioChange(
+                                  "discrepancyFound",
+                                  btn.incrementalId
+                                )
                               }
                             >
                               {btn.name}
@@ -3634,12 +3754,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.discrepancyFixed === btn.name
+                                formData.discrepancyFixed === btn.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
-                                handleRadioChange("discrepancyFixed", btn.name)
+                                handleRadioChange(
+                                  "discrepancyFixed",
+                                  btn.incrementalId
+                                )
                               }
                             >
                               {btn.name}
