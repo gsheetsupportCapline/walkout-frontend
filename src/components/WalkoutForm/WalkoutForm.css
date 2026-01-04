@@ -7,6 +7,41 @@
   gap: 0;
 }
 
+/* Notification styles */
+.WF-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+}
+
+.WF-notification-success {
+  background: #10b981;
+  color: white;
+}
+
+.WF-notification-error {
+  background: #ef4444;
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Content wrapper with sidebar */
 .WF-content-with-sidebar {
   display: flex;
