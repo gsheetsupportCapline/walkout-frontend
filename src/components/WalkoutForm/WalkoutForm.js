@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./WalkoutForm.css";
+import MultiSelectDropdown from "./MultiSelectDropdown";
 
 const WalkoutForm = () => {
   const location = useLocation();
@@ -92,6 +93,16 @@ const WalkoutForm = () => {
   // State for office section field dependencies
   const [isPatientPresent, setIsPatientPresent] = useState(false);
   const [isZeroProduction, setIsZeroProduction] = useState(false);
+  const [hasInsurance, setHasInsurance] = useState(false);
+  const [showInsuranceDropdown, setShowInsuranceDropdown] = useState(false);
+  const [showPrimaryAmount, setShowPrimaryAmount] = useState(false);
+  const [showSecondaryAmount, setShowSecondaryAmount] = useState(false);
+  const [showLastFourDigits, setShowLastFourDigits] = useState(false);
+  const [showReasonLessCollection, setShowReasonLessCollection] =
+    useState(false);
+  const [showRuleEngineReason, setShowRuleEngineReason] = useState(false);
+  const [showErrorFound, setShowErrorFound] = useState(false);
+  const [showErrorFields, setShowErrorFields] = useState(false);
 
   // State for collapsible sections
   const [sections, setSections] = useState({
@@ -380,7 +391,105 @@ const WalkoutForm = () => {
         formData.postOpZeroProduction === zeroYesButton?.incrementalId
       );
     }
-  }, [formData.patientCame, formData.postOpZeroProduction, radioButtonSets]);
+
+    // Update hasInsurance state
+    if (radioButtonSets.length > 0 && formData.hasInsurance) {
+      const insuranceButtons = getRadioButtons(FIELD_IDS.HAS_INSURANCE);
+      const yesButton = insuranceButtons.find((btn) => btn.name === "Yes");
+      setHasInsurance(formData.hasInsurance === yesButton?.incrementalId);
+    } else {
+      setHasInsurance(false);
+    }
+  }, [
+    formData.patientCame,
+    formData.postOpZeroProduction,
+    formData.hasInsurance,
+    radioButtonSets,
+  ]);
+
+  // Update showInsuranceDropdown when insuranceType changes
+  useEffect(() => {
+    if (formData.insuranceType) {
+      // Child Medicaid = 2, Chip Medicaid = 6
+      if (formData.insuranceType === 2 || formData.insuranceType === 6) {
+        setShowInsuranceDropdown(true);
+      } else {
+        setShowInsuranceDropdown(false);
+      }
+    } else {
+      setShowInsuranceDropdown(false);
+    }
+  }, [formData.insuranceType]);
+
+  // Update patient portion amount fields visibility
+  useEffect(() => {
+    // Show primary amount if primary mode is selected
+    setShowPrimaryAmount(!!formData.patientPortionPrimaryMode);
+
+    // Show secondary amount if secondary mode is selected
+    setShowSecondaryAmount(!!formData.patientPortionSecondaryMode);
+
+    // Show last 4 digits if Personal Check (value 4) is selected in either mode
+    const hasPersonalCheck =
+      formData.patientPortionPrimaryMode === 4 ||
+      formData.patientPortionSecondaryMode === 4;
+    setShowLastFourDigits(hasPersonalCheck);
+  }, [
+    formData.patientPortionPrimaryMode,
+    formData.patientPortionSecondaryMode,
+  ]);
+
+  // Update reason less collection visibility based on negative difference
+  useEffect(() => {
+    const difference = parseFloat(formData.differenceInPatientPortion) || 0;
+    setShowReasonLessCollection(difference < 0);
+  }, [formData.differenceInPatientPortion]);
+
+  // Update rule engine fields visibility
+  useEffect(() => {
+    if (!formData.ruleEngineRun) {
+      // Nothing selected, hide all
+      setShowRuleEngineReason(false);
+      setShowErrorFound(false);
+      setShowErrorFields(false);
+      return;
+    }
+
+    // Get the Yes button to check if rule engine was run
+    const buttons = getRadioButtons(FIELD_IDS.RULE_ENGINE_RUN);
+    const yesButton = buttons.find((btn) => btn.name === "Yes");
+    const noButton = buttons.find((btn) => btn.name === "No");
+
+    if (formData.ruleEngineRun === yesButton?.incrementalId) {
+      // Yes selected - show error found question, hide reason
+      setShowRuleEngineReason(false);
+      setShowErrorFound(true);
+    } else if (formData.ruleEngineRun === noButton?.incrementalId) {
+      // No selected - show reason, hide error found
+      setShowRuleEngineReason(true);
+      setShowErrorFound(false);
+      setShowErrorFields(false);
+    }
+  }, [formData.ruleEngineRun, radioButtonSets]);
+
+  // Update error fields visibility based on error found selection
+  useEffect(() => {
+    if (!formData.ruleEngineError) {
+      setShowErrorFields(false);
+      return;
+    }
+
+    const buttons = getRadioButtons(FIELD_IDS.RULE_ENGINE_ERROR_FOUND);
+    const yesButton = buttons.find((btn) => btn.name === "Yes");
+
+    if (formData.ruleEngineError === yesButton?.incrementalId) {
+      // Yes selected - show remarks and issues fixed
+      setShowErrorFields(true);
+    } else {
+      // No selected - hide fields
+      setShowErrorFields(false);
+    }
+  }, [formData.ruleEngineError, radioButtonSets]);
 
   // Helper function to get radio buttons by set ID or field ID
   const getRadioButtons = (identifier) => {
@@ -442,7 +551,13 @@ const WalkoutForm = () => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // Handle dropdown selection
+  // Handle multi-select dropdown change
+  const handleMultiSelectChange = (fieldName, newValues) => {
+    setFormData((prev) => {
+      return { ...prev, [fieldName]: newValues };
+    });
+  };
+
   const handleDropdownChange = (fieldName, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [fieldName]: value };
@@ -1299,65 +1414,73 @@ const WalkoutForm = () => {
                             </div>
                           </div>
 
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              Insurance Type
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <select
-                              className="WF-walkout-form-select"
-                              data-field-id={FIELD_IDS.INSURANCE_TYPE}
-                              value={formData.insuranceType || ""}
-                              onChange={(e) =>
-                                handleDropdownChange(
-                                  "insuranceType",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">Select</option>
-                              {getDropdownOptions(FIELD_IDS.INSURANCE_TYPE).map(
-                                (opt) => (
+                          {/* Insurance Type - Show only when hasInsurance is Yes */}
+                          {hasInsurance && (
+                            <div className="WF-walkout-form-row">
+                              <label className="WF-walkout-form-label">
+                                Insurance Type
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <select
+                                className="WF-walkout-form-select"
+                                data-field-id={FIELD_IDS.INSURANCE_TYPE}
+                                value={formData.insuranceType || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  handleDropdownChange(
+                                    "insuranceType",
+                                    value === "" ? null : parseInt(value)
+                                  );
+                                }}
+                              >
+                                <option value="">Select</option>
+                                {getDropdownOptions(
+                                  FIELD_IDS.INSURANCE_TYPE
+                                ).map((opt) => (
                                   <option
                                     key={opt._id}
                                     value={opt.incrementalId}
                                   >
                                     {opt.name}
                                   </option>
-                                )
-                              )}
-                            </select>
-                          </div>
+                                ))}
+                              </select>
+                            </div>
+                          )}
 
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              Insurance
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <select
-                              className="WF-walkout-form-select"
-                              data-field-id={FIELD_IDS.INSURANCE}
-                              value={formData.insurance || ""}
-                              onChange={(e) =>
-                                handleDropdownChange(
-                                  "insurance",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">Select</option>
-                              {getDropdownOptions(FIELD_IDS.INSURANCE).map(
-                                (opt) => (
-                                  <option
-                                    key={opt._id}
-                                    value={opt.incrementalId}
-                                  >
-                                    {opt.name}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </div>
+                          {/* Insurance - Show only when Child Medicaid or Chip Medicaid selected */}
+                          {hasInsurance && showInsuranceDropdown && (
+                            <div className="WF-walkout-form-row">
+                              <label className="WF-walkout-form-label">
+                                Insurance
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <select
+                                className="WF-walkout-form-select"
+                                data-field-id={FIELD_IDS.INSURANCE}
+                                value={formData.insurance || ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  handleDropdownChange(
+                                    "insurance",
+                                    value === "" ? null : parseInt(value)
+                                  );
+                                }}
+                              >
+                                <option value="">Select</option>
+                                {getDropdownOptions(FIELD_IDS.INSURANCE).map(
+                                  (opt) => (
+                                    <option
+                                      key={opt._id}
+                                      value={opt.incrementalId}
+                                    >
+                                      {opt.name}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </div>
+                          )}
 
                           <div className="WF-walkout-form-row">
                             <label className="WF-walkout-form-label">
@@ -1494,31 +1617,40 @@ const WalkoutForm = () => {
                             </select>
                           </div>
 
-                          <div className="WF-form-group-inline">
-                            <label className="WF-form-label">
-                              Amount Collected Using Primary Mode
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <input
-                              type="number"
-                              step="1"
-                              min="0"
-                              className="WF-form-input"
-                              value={
-                                formData.amountCollectedPrimaryMode !==
-                                undefined
-                                  ? formData.amountCollectedPrimaryMode
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                handleDropdownChange(
-                                  "amountCollectedPrimaryMode",
-                                  val === "" ? 0 : parseFloat(val)
-                                );
-                              }}
-                            />
-                          </div>
+                          {showPrimaryAmount ? (
+                            <div className="WF-form-group-inline">
+                              <label className="WF-form-label">
+                                Amount Collected Using Primary Mode
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="WF-form-input"
+                                value={
+                                  formData.amountCollectedPrimaryMode !==
+                                  undefined
+                                    ? formData.amountCollectedPrimaryMode
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleDropdownChange(
+                                    "amountCollectedPrimaryMode",
+                                    val === "" ? 0 : parseFloat(val)
+                                  );
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="WF-form-group-inline"
+                              style={{ visibility: "hidden" }}
+                            >
+                              {/* Placeholder to maintain half-size layout */}
+                            </div>
+                          )}
                         </div>
 
                         {/* Third row - Secondary Mode */}
@@ -1551,97 +1683,111 @@ const WalkoutForm = () => {
                             </select>
                           </div>
 
-                          <div className="WF-form-group-inline">
+                          {showSecondaryAmount ? (
+                            <div className="WF-form-group-inline">
+                              <label className="WF-form-label">
+                                Amount Collected Using Secondary Mode
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="WF-form-input"
+                                value={
+                                  formData.amountCollectedSecondaryMode !==
+                                  undefined
+                                    ? formData.amountCollectedSecondaryMode
+                                    : ""
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleDropdownChange(
+                                    "amountCollectedSecondaryMode",
+                                    val === "" ? 0 : parseFloat(val)
+                                  );
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="WF-form-group-inline"
+                              style={{ visibility: "hidden" }}
+                            >
+                              {/* Placeholder to maintain half-size layout */}
+                            </div>
+                          )}
+                        </div>
+
+                        {showLastFourDigits && (
+                          <div className="WF-form-group">
                             <label className="WF-form-label">
-                              Amount Collected Using Secondary Mode
+                              Enter the last four digits of the uploaded check
+                              in Forte (Primary)
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <input
-                              type="number"
-                              step="1"
-                              min="0"
+                              type="text"
+                              maxLength="4"
+                              pattern="\d{4}"
                               className="WF-form-input"
-                              value={
-                                formData.amountCollectedSecondaryMode !==
-                                undefined
-                                  ? formData.amountCollectedSecondaryMode
-                                  : ""
-                              }
+                              placeholder="Enter exactly last 4 digits"
+                              value={formData.lastFourDigitsCheckForte || ""}
                               onChange={(e) => {
-                                const val = e.target.value;
-                                handleDropdownChange(
-                                  "amountCollectedSecondaryMode",
-                                  val === "" ? 0 : parseFloat(val)
-                                );
+                                const value = e.target.value;
+                                // Only allow digits
+                                if (value === "" || /^\d+$/.test(value)) {
+                                  handleDropdownChange(
+                                    "lastFourDigitsCheckForte",
+                                    value
+                                  );
+                                }
                               }}
                             />
+                            {formData.lastFourDigitsCheckForte &&
+                              formData.lastFourDigitsCheckForte.length !==
+                                4 && (
+                                <span
+                                  style={{
+                                    color: "#dc2626",
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  Must be exactly 4 digits
+                                </span>
+                              )}
                           </div>
-                        </div>
+                        )}
 
-                        <div className="WF-form-group">
-                          <label className="WF-form-label">
-                            Enter the last four digits of the uploaded check in
-                            Forte (Primary)
-                            <span style={{ color: "#dc2626" }}>*</span>
-                          </label>
-                          <input
-                            type="text"
-                            maxLength="4"
-                            pattern="\d{4}"
-                            className="WF-form-input"
-                            placeholder="Enter exactly last 4 digits"
-                            value={formData.lastFourDigitsCheckForte || ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              // Only allow digits
-                              if (value === "" || /^\d+$/.test(value)) {
+                        {showReasonLessCollection && (
+                          <div className="WF-form-group">
+                            <label className="WF-form-label">
+                              Reason Office Collected less Patient Portion than
+                              Expected?
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              className="WF-form-select"
+                              data-field-id={FIELD_IDS.REASON_LESS_COLLECTION}
+                              value={formData.reasonLessCollection || ""}
+                              onChange={(e) =>
                                 handleDropdownChange(
-                                  "lastFourDigitsCheckForte",
-                                  value
-                                );
+                                  "reasonLessCollection",
+                                  parseInt(e.target.value)
+                                )
                               }
-                            }}
-                          />
-                          {formData.lastFourDigitsCheckForte &&
-                            formData.lastFourDigitsCheckForte.length !== 4 && (
-                              <span
-                                style={{
-                                  color: "#dc2626",
-                                  fontSize: "12px",
-                                }}
-                              >
-                                Must be exactly 4 digits
-                              </span>
-                            )}
-                        </div>
-
-                        <div className="WF-form-group">
-                          <label className="WF-form-label">
-                            Reason Office Collected less Patient Portion than
-                            Expected?
-                            <span style={{ color: "#dc2626" }}>*</span>
-                          </label>
-                          <select
-                            className="WF-form-select"
-                            data-field-id={FIELD_IDS.REASON_LESS_COLLECTION}
-                            value={formData.reasonLessCollection || ""}
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "reasonLessCollection",
-                                parseInt(e.target.value)
-                              )
-                            }
-                          >
-                            <option value="">Select</option>
-                            {getDropdownOptions(
-                              FIELD_IDS.REASON_LESS_COLLECTION
-                            ).map((opt) => (
-                              <option key={opt._id} value={opt.incrementalId}>
-                                {opt.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                            >
+                              <option value="">Select</option>
+                              {getDropdownOptions(
+                                FIELD_IDS.REASON_LESS_COLLECTION
+                              ).map((opt) => (
+                                <option key={opt._id} value={opt.incrementalId}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </fieldset>
                     )}
 
@@ -1695,107 +1841,57 @@ const WalkoutForm = () => {
                             </div>
                           </div>
 
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              Reason for Rules Engine not run
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <select
-                              className="WF-walkout-form-select"
-                              data-field-id={
-                                FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
-                              }
-                              value={formData.ruleEngineNotRunReason || ""}
-                              onChange={(e) =>
-                                handleDropdownChange(
-                                  "ruleEngineNotRunReason",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">Select</option>
-                              {getDropdownOptions(
-                                FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
-                              ).map((opt) => (
-                                <option key={opt._id} value={opt.incrementalId}>
-                                  {opt.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          {showRuleEngineReason && (
+                            <div className="WF-walkout-form-row">
+                              <label className="WF-walkout-form-label">
+                                Reason for Rules Engine not run
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <select
+                                className="WF-walkout-form-select"
+                                data-field-id={
+                                  FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                                }
+                                value={formData.ruleEngineNotRunReason || ""}
+                                onChange={(e) =>
+                                  handleDropdownChange(
+                                    "ruleEngineNotRunReason",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              >
+                                <option value="">Select</option>
+                                {getDropdownOptions(
+                                  FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                                ).map((opt) => (
+                                  <option
+                                    key={opt._id}
+                                    value={opt.incrementalId}
+                                  >
+                                    {opt.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
                         {/* Row 2: Was error found + Remarks textbox */}
-                        <div className="WF-rule-engine-row">
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              If Yes, Was any error found?
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <div
-                              className="WF-button-group"
-                              data-field-id={FIELD_IDS.RULE_ENGINE_ERROR_FOUND}
-                            >
-                              {getRadioButtons(
-                                FIELD_IDS.RULE_ENGINE_ERROR_FOUND
-                              ).map((btn) => (
-                                <button
-                                  key={btn._id}
-                                  type="button"
-                                  className={`WF-radio-button ${
-                                    btn.name === "No" || btn.name === "Pending"
-                                      ? "WF-no-or-pending-button"
-                                      : ""
-                                  } ${
-                                    formData.ruleEngineError ===
-                                    btn.incrementalId
-                                      ? "WF-selected"
-                                      : ""
-                                  }`}
-                                  onClick={() =>
-                                    handleRadioChange(
-                                      "ruleEngineError",
-                                      btn.incrementalId
-                                    )
-                                  }
-                                >
-                                  {btn.name}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              Enter Remarks explaining the changes made to fix
-                              the Error
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="WF-walkout-form-input"
-                              value={formData.errorFixRemarks || ""}
-                              onChange={(e) =>
-                                handleDropdownChange(
-                                  "errorFixRemarks",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-                        {/* Row 3: Were all issues fixed (single question) */}
-                        <div className="WF-rule-engine-row">
-                          <div className="WF-walkout-form-row">
-                            <label className="WF-walkout-form-label">
-                              Were all the Issues fixed?
-                              <span style={{ color: "#dc2626" }}>*</span>
-                            </label>
-                            <div
-                              className="WF-button-group"
-                              data-field-id={FIELD_IDS.ISSUES_FIXED}
-                            >
-                              {getRadioButtons(FIELD_IDS.ISSUES_FIXED).map(
-                                (btn) => (
+                        {showErrorFound && (
+                          <div className="WF-rule-engine-row">
+                            <div className="WF-walkout-form-row">
+                              <label className="WF-walkout-form-label">
+                                If Yes, Was any error found?
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <div
+                                className="WF-button-group"
+                                data-field-id={
+                                  FIELD_IDS.RULE_ENGINE_ERROR_FOUND
+                                }
+                              >
+                                {getRadioButtons(
+                                  FIELD_IDS.RULE_ENGINE_ERROR_FOUND
+                                ).map((btn) => (
                                   <button
                                     key={btn._id}
                                     type="button"
@@ -1805,24 +1901,89 @@ const WalkoutForm = () => {
                                         ? "WF-no-or-pending-button"
                                         : ""
                                     } ${
-                                      formData.issuesFixed === btn.incrementalId
+                                      formData.ruleEngineError ===
+                                      btn.incrementalId
                                         ? "WF-selected"
                                         : ""
                                     }`}
                                     onClick={() =>
                                       handleRadioChange(
-                                        "issuesFixed",
+                                        "ruleEngineError",
                                         btn.incrementalId
                                       )
                                     }
                                   >
                                     {btn.name}
                                   </button>
-                                )
-                              )}
+                                ))}
+                              </div>
+                            </div>
+
+                            {showErrorFields && (
+                              <div className="WF-walkout-form-row">
+                                <label className="WF-walkout-form-label">
+                                  Enter Remarks explaining the changes made to
+                                  fix the Error
+                                  <span style={{ color: "#dc2626" }}>*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  className="WF-walkout-form-input"
+                                  value={formData.errorFixRemarks || ""}
+                                  onChange={(e) =>
+                                    handleDropdownChange(
+                                      "errorFixRemarks",
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Row 3: Were all issues fixed (single question) */}
+                        {showErrorFields && (
+                          <div className="WF-rule-engine-row">
+                            <div className="WF-walkout-form-row">
+                              <label className="WF-walkout-form-label">
+                                Were all the Issues fixed?
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </label>
+                              <div
+                                className="WF-button-group"
+                                data-field-id={FIELD_IDS.ISSUES_FIXED}
+                              >
+                                {getRadioButtons(FIELD_IDS.ISSUES_FIXED).map(
+                                  (btn) => (
+                                    <button
+                                      key={btn._id}
+                                      type="button"
+                                      className={`WF-radio-button ${
+                                        btn.name === "No" ||
+                                        btn.name === "Pending"
+                                          ? "WF-no-or-pending-button"
+                                          : ""
+                                      } ${
+                                        formData.issuesFixed ===
+                                        btn.incrementalId
+                                          ? "WF-selected"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        handleRadioChange(
+                                          "issuesFixed",
+                                          btn.incrementalId
+                                        )
+                                      }
+                                    >
+                                      {btn.name}
+                                    </button>
+                                  )
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </fieldset>
                     )}
 
@@ -2320,11 +2481,11 @@ const WalkoutForm = () => {
                                       <div
                                         className="WF-button-group"
                                         data-field-id={
-                                          FIELD_IDS.LC3_RULE_ERROR_FOUND
+                                          FIELD_IDS.LC3_FAILED_RULES_RESOLVED
                                         }
                                       >
                                         {getRadioButtons(
-                                          FIELD_IDS.LC3_RULE_ERROR_FOUND
+                                          FIELD_IDS.LC3_FAILED_RULES_RESOLVED
                                         ).map((button) => (
                                           <button
                                             key={button._id}
@@ -2425,16 +2586,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_SIGNED_TREATMENT_PLAN}
                           value={formData.signedTreatmentPlanAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "signedTreatmentPlanAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_SIGNED_TREATMENT_PLAN
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2445,13 +2613,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PRC_AVAILABLE}
                           value={formData.prcAvailable || ""}
                           onChange={(e) =>
-                            handleDropdownChange("prcAvailable", e.target.value)
+                            handleDropdownChange(
+                              "prcAvailable",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_PRC_AVAILABLE).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2462,16 +2640,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_SIGNED_CONSENT_GENERAL}
                           value={formData.signedConsentGeneralAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "signedConsentGeneralAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_SIGNED_CONSENT_GENERAL
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2482,13 +2667,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_NVD_AVAILABLE}
                           value={formData.nvdAvailable || ""}
                           onChange={(e) =>
-                            handleDropdownChange("nvdAvailable", e.target.value)
+                            handleDropdownChange(
+                              "nvdAvailable",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_NVD_AVAILABLE).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2500,16 +2695,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_NARRATIVE_AVAILABLE}
                           value={formData.narrativeAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "narrativeAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_NARRATIVE_AVAILABLE
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2520,16 +2722,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_SIGNED_CONSENT_TX}
                           value={formData.signedConsentTxAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "signedConsentTxAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_SIGNED_CONSENT_TX
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2540,16 +2749,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PRE_AUTH}
                           value={formData.preAuthAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "preAuthAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_PRE_AUTH).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2560,16 +2776,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_ROUTE_SHEET}
                           value={formData.routeSheetAvailable || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "routeSheetAvailable",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_ROUTE_SHEET).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2676,13 +2899,21 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PANO}
                           value={formData.pano || ""}
                           onChange={(e) =>
-                            handleDropdownChange("pano", e.target.value)
+                            handleDropdownChange(
+                              "pano",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_PANO).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2692,13 +2923,21 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_FMX}
                           value={formData.fmx || ""}
                           onChange={(e) =>
-                            handleDropdownChange("fmx", e.target.value)
+                            handleDropdownChange(
+                              "fmx",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_FMX).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2708,13 +2947,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_BITEWING}
                           value={formData.bitewing || ""}
                           onChange={(e) =>
-                            handleDropdownChange("bitewing", e.target.value)
+                            handleDropdownChange(
+                              "bitewing",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_BITEWING).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
 
@@ -2724,13 +2973,18 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PA}
                           value={formData.pa || ""}
                           onChange={(e) =>
-                            handleDropdownChange("pa", e.target.value)
+                            handleDropdownChange("pa", parseInt(e.target.value))
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_PA).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2740,13 +2994,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PERIO_CHART}
                           value={formData.perioChart || ""}
                           onChange={(e) =>
-                            handleDropdownChange("perioChart", e.target.value)
+                            handleDropdownChange(
+                              "perioChart",
+                              parseInt(e.target.value)
+                            )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(FIELD_IDS.LC3_PERIO_CHART).map(
+                            (opt) => (
+                              <option key={opt._id} value={opt.incrementalId}>
+                                {opt.name}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
                     </div>
@@ -2956,16 +3220,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PP_PRIMARY_MODE}
                           value={formData.ppPrimaryMode || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "ppPrimaryMode",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_PP_PRIMARY_MODE
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -2994,16 +3265,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY}
                           value={formData.paymentVerifiedFromPrimary || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "paymentVerifiedFromPrimary",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -3014,16 +3292,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_PP_SECONDARY_MODE}
                           value={formData.ppSecondaryMode || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "ppSecondaryMode",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_PP_SECONDARY_MODE
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -3052,16 +3337,25 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={
+                            FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
+                          }
                           value={formData.paymentVerifiedFromSecondary || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "paymentVerifiedFromSecondary",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -3384,16 +3678,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_REASON_PROD_DIFF}
                           value={formData.reasonTotalProductionDiff || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "reasonTotalProductionDiff",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_REASON_PROD_DIFF
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -3404,16 +3705,23 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className="WF-walkout-form-select"
+                          data-field-id={FIELD_IDS.LC3_REASON_INS_DIFF}
                           value={formData.reasonEstInsuranceDiff || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "reasonEstInsuranceDiff",
-                              e.target.value
+                              parseInt(e.target.value)
                             )
                           }
                         >
                           <option value="">Select</option>
-                          {/* Dropdown options will be added */}
+                          {getDropdownOptions(
+                            FIELD_IDS.LC3_REASON_INS_DIFF
+                          ).map((opt) => (
+                            <option key={opt._id} value={opt.incrementalId}>
+                              {opt.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -3693,31 +4001,17 @@ const WalkoutForm = () => {
                         <label className="WF-form-label-compact">
                           On Hold Reasons
                         </label>
-                        <select
-                          className="WF-walkout-form-select"
-                          value={formData.onHoldReasons || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "onHoldReasons",
-                              e.target.value
-                            )
-                          }
-                          data-field-id={FIELD_IDS.LC3_ONHOLD_REASONS}
-                        >
-                          <option value="">
-                            Type here for search or select from list.
-                          </option>
-                          {getDropdownOptions(FIELD_IDS.LC3_ONHOLD_REASONS).map(
-                            (option) => (
-                              <option
-                                key={option._id}
-                                value={option.incrementalId}
-                              >
-                                {option.name}
-                              </option>
-                            )
+                        <MultiSelectDropdown
+                          options={getDropdownOptions(
+                            FIELD_IDS.LC3_ONHOLD_REASONS
                           )}
-                        </select>
+                          selectedValues={formData.onHoldReasons || []}
+                          onChange={(newValues) =>
+                            handleMultiSelectChange("onHoldReasons", newValues)
+                          }
+                          placeholder="Type here for search or select from list."
+                          fieldId={FIELD_IDS.LC3_ONHOLD_REASONS}
+                        />
                       </div>
 
                       <div className="WF-form-group-compact WF-full-width">

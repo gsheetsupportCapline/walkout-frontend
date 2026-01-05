@@ -44,6 +44,10 @@ const Appointments = () => {
     getStoredData("appointments_page", 1)
   );
   const [limit] = useState(50);
+  const [lastFetchTime, setLastFetchTime] = useState(null);
+  const [searchType, setSearchType] = useState(() =>
+    getStoredData("appointments_searchType", "dateRange")
+  ); // "dateRange" or "patientId"
 
   // Check if user is admin or superAdmin
   const isAdminOrSuper = user?.role === "admin" || user?.role === "superAdmin";
@@ -64,6 +68,7 @@ const Appointments = () => {
   }, []);
 
   // Fetch appointments
+  // Fetch appointments by date range (no patient ID)
   const fetchAppointments = useCallback(async () => {
     if (!filters.officeName) {
       return;
@@ -87,9 +92,6 @@ const Appointments = () => {
       if (filters.endDate && isAdminOrSuper) {
         queryParams += `&endDate=${filters.endDate}`;
       }
-      if (filters.patientId) {
-        queryParams += `&patientId=${encodeURIComponent(filters.patientId)}`;
-      }
 
       console.log("Fetching appointments with params:", queryParams);
       const response = await api.get(`/appointments/list?${queryParams}`);
@@ -100,12 +102,17 @@ const Appointments = () => {
         const total = response.data.total;
         setAppointments(appointmentsData);
         setTotalCount(total);
+        setLastFetchTime(new Date().toISOString());
         // Persist to localStorage
         localStorage.setItem(
           "appointments_data",
           JSON.stringify(appointmentsData)
         );
         localStorage.setItem("appointments_total", JSON.stringify(total));
+        localStorage.setItem(
+          "appointments_lastFetch",
+          new Date().toISOString()
+        );
       }
     } catch (err) {
       showError(err.response?.data?.message || "Failed to fetch appointments");
@@ -116,9 +123,96 @@ const Appointments = () => {
     }
   }, [filters, currentPage, limit, isAdminOrSuper, showError]);
 
+  // Fetch appointments by patient ID (separate API)
+  const fetchAppointmentsByPatient = useCallback(async () => {
+    if (!filters.officeName || !filters.patientId) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const skip = (currentPage - 1) * limit;
+      const queryParams = `officeName=${encodeURIComponent(
+        filters.officeName
+      )}&patientId=${encodeURIComponent(
+        filters.patientId
+      )}&limit=${limit}&skip=${skip}`;
+
+      console.log("Fetching appointments by patient:", queryParams);
+      const response = await api.get(`/appointments/by-patient?${queryParams}`);
+      console.log("Patient API Response:", response.data);
+
+      if (response.data.success) {
+        const appointmentsData = response.data.data;
+        const total = response.data.total;
+        setAppointments(appointmentsData);
+        setTotalCount(total);
+        setLastFetchTime(new Date().toISOString());
+        // Persist to localStorage
+        localStorage.setItem(
+          "appointments_data",
+          JSON.stringify(appointmentsData)
+        );
+        localStorage.setItem("appointments_total", JSON.stringify(total));
+        localStorage.setItem(
+          "appointments_lastFetch",
+          new Date().toISOString()
+        );
+      }
+    } catch (err) {
+      showError(
+        err.response?.data?.message || "Failed to fetch appointments by patient"
+      );
+      setAppointments([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.officeName, filters.patientId, currentPage, limit, showError]);
+
   useEffect(() => {
     fetchOffices();
   }, [fetchOffices]);
+
+  // Refresh on page focus (when coming back from walkout)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && filters.officeName) {
+        console.log("📱 Page became visible - refreshing appointments");
+        fetchAppointments();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [filters.officeName, fetchAppointments]);
+
+  // Polling for real-time updates (every 30 seconds) - ONLY for date range searches
+  useEffect(() => {
+    if (!filters.officeName || searchType !== "dateRange") return;
+
+    const pollInterval = setInterval(() => {
+      console.log("🔄 Polling for updates (date range)...");
+      fetchAppointments();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [filters.officeName, searchType, fetchAppointments]);
+
+  // Refresh when coming back to page (on mount if data exists)
+  useEffect(() => {
+    const lastFetch = localStorage.getItem("appointments_lastFetch");
+    if (lastFetch && filters.officeName) {
+      const timeSinceLastFetch = Date.now() - new Date(lastFetch).getTime();
+      // If last fetch was more than 1 minute ago, refresh
+      if (timeSinceLastFetch > 60000) {
+        console.log("🔃 Data is stale - refreshing appointments");
+        fetchAppointments();
+      }
+    }
+  }, []); // Only on mount
 
   useEffect(() => {
     if (
@@ -148,14 +242,46 @@ const Appointments = () => {
       return;
     }
 
-    if (!filters.startDate && !filters.patientId) {
-      showError("Please select a date or enter patient ID to search");
+    if (!filters.startDate) {
+      showError("Please select a date to search");
       return;
     }
 
     setCurrentPage(1);
+    setSearchType("dateRange");
     localStorage.setItem("appointments_page", JSON.stringify(1));
+    localStorage.setItem(
+      "appointments_searchType",
+      JSON.stringify("dateRange")
+    );
     fetchAppointments();
+  };
+
+  // Handle patient ID search on Enter/Tab
+  const handlePatientSearch = (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      if (!filters.officeName) {
+        showError("Please select an office first");
+        e.preventDefault();
+        return;
+      }
+
+      if (!filters.patientId) {
+        showError("Please enter a patient ID");
+        e.preventDefault();
+        return;
+      }
+
+      setCurrentPage(1);
+      setSearchType("patientId");
+      localStorage.setItem("appointments_page", JSON.stringify(1));
+      localStorage.setItem(
+        "appointments_searchType",
+        JSON.stringify("patientId")
+      );
+      fetchAppointmentsByPatient();
+      e.preventDefault(); // Prevent tab navigation
+    }
   };
 
   const handleClearFilters = () => {
@@ -249,24 +375,13 @@ const Appointments = () => {
               )}
             </div>
 
+            {/* Search and Clear Buttons */}
             <div className="filter-right">
-              <div className="filter-group">
-                <label htmlFor="patientId">Patient ID</label>
-                <input
-                  type="text"
-                  id="patientId"
-                  name="patientId"
-                  value={filters.patientId}
-                  onChange={handleFilterChange}
-                  placeholder="Search Patient ID"
-                  className="filter-input"
-                />
-              </div>
-
               <div className="filter-actions">
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={handleSearch}
+                  disabled={loading}
                 >
                   Search
                 </button>
@@ -277,6 +392,35 @@ const Appointments = () => {
                   Clear
                 </button>
               </div>
+
+              {/* Separate Patient ID Search */}
+              <div className="filter-group" style={{ marginTop: "0" }}>
+                <label htmlFor="patientId">
+                  Patient ID Search
+                  <small
+                    style={{
+                      display: "block",
+                      color: "#666",
+                      fontSize: "10px",
+                      fontWeight: "normal",
+                      marginTop: "2px",
+                    }}
+                  >
+                    (Press Enter or Tab)
+                  </small>
+                </label>
+                <input
+                  type="text"
+                  id="patientId"
+                  name="patientId"
+                  value={filters.patientId}
+                  onChange={handleFilterChange}
+                  onKeyDown={handlePatientSearch}
+                  placeholder="Enter Patient ID"
+                  className="filter-input"
+                  disabled={loading}
+                />
+              </div>
             </div>
           </div>
 
@@ -286,6 +430,7 @@ const Appointments = () => {
               <thead>
                 <tr>
                   <th>Pending with?</th>
+                  {isAdminOrSuper && <th>Date of Service</th>}
                   <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>WO Submit To LC3?</th>
@@ -299,13 +444,19 @@ const Appointments = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="text-center">
+                    <td
+                      colSpan={isAdminOrSuper ? "10" : "9"}
+                      className="text-center"
+                    >
                       Loading appointments...
                     </td>
                   </tr>
                 ) : appointments.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="text-center">
+                    <td
+                      colSpan={isAdminOrSuper ? "10" : "9"}
+                      className="text-center"
+                    >
                       {filters.officeName
                         ? "No appointments found. Please select date or enter patient ID and click Search."
                         : "Please select an office, date/patient ID and click Search"}
@@ -326,6 +477,13 @@ const Appointments = () => {
                       style={{ cursor: "pointer" }}
                     >
                       <td>-</td>
+                      {isAdminOrSuper && (
+                        <td>
+                          <span className="code-badge">
+                            {appt.dos || appt["dos"]}
+                          </span>
+                        </td>
+                      )}
                       <td>
                         <span className="code-badge">{appt["patient-id"]}</span>
                       </td>
