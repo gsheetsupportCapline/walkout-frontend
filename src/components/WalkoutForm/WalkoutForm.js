@@ -3,6 +3,50 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./WalkoutForm.css";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 
+// Note Item Component to fetch and display user name
+const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
+  const [userName, setUserName] = useState("Loading...");
+
+  useEffect(() => {
+    const loadUserName = async () => {
+      console.log("🔍 Loading user name for note:", note);
+      console.log("🔍 addedBy field:", note.addedBy);
+      console.log("🔍 addedBy type:", typeof note.addedBy);
+
+      if (note.addedBy) {
+        // Extract the ID string if addedBy is an object
+        let userId = note.addedBy;
+
+        // If addedBy is an object, get the _id field
+        if (typeof note.addedBy === "object" && note.addedBy !== null) {
+          userId = note.addedBy._id || note.addedBy.id;
+          console.log("🔍 Extracted userId from object:", userId);
+        }
+
+        const name = await fetchUserName(userId);
+        console.log("✅ Fetched user name:", name);
+        setUserName(name);
+      } else {
+        console.log("⚠️ No addedBy field found in note");
+        setUserName("Unknown");
+      }
+    };
+    loadUserName();
+  }, [note.addedBy]);
+
+  return (
+    <div className="WF-note-item">
+      <div className="WF-note-datetime">
+        {note.addedAt ? formatNoteDate(note.addedAt) : "No date"}
+      </div>
+      <div className="WF-note-author">{userName}</div>
+      <div className="WF-note-content">
+        {note.content || note.text || note.note || "No content"}
+      </div>
+    </div>
+  );
+};
+
 const WalkoutForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -203,6 +247,7 @@ const WalkoutForm = () => {
     "Pending Provider Approval",
     "Insurance Verification Required",
   ]); // Sample on-hold reasons - replace with actual data
+  const [userNamesCache, setUserNamesCache] = useState({}); // Cache for user names
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -342,6 +387,16 @@ const WalkoutForm = () => {
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
             setFormData(existingWalkout.officeSection);
+
+            // Debug: Check if historical notes are present
+            console.log(
+              "📝 Office Historical Notes:",
+              existingWalkout.officeSection.officeHistoricalNotes
+            );
+            console.log(
+              "📝 LC3 Historical Notes:",
+              existingWalkout.officeSection.lc3HistoricalNotes
+            );
 
             // Check if patient was present
             const buttons = getRadioButtons(FIELD_IDS.PATIENT_CAME);
@@ -509,6 +564,68 @@ const WalkoutForm = () => {
     // Find the set by ID
     const set = dropdownSets.find((s) => s._id === setId);
     return set?.options.filter((opt) => opt.isActive && opt.visibility) || [];
+  };
+
+  // Function to fetch user name by ID
+  const fetchUserName = async (userId) => {
+    console.log("🔎 fetchUserName called with userId:", userId);
+
+    if (!userId) {
+      console.log("⚠️ No userId provided");
+      return "Unknown";
+    }
+
+    // Check cache first
+    if (userNamesCache[userId]) {
+      console.log("✅ Found in cache:", userNamesCache[userId]);
+      return userNamesCache[userId];
+    }
+
+    try {
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      const token = localStorage.getItem("token");
+      console.log("📡 Fetching user from API:", `${API}/users/${userId}`);
+
+      const response = await fetch(`${API}/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = await response.json();
+
+      console.log("📥 API Response:", result);
+
+      if (result.success && result.data) {
+        const userName = result.data.name || result.data.userName || "Unknown";
+        console.log("✅ User name extracted:", userName);
+        // Update cache
+        setUserNamesCache((prev) => ({ ...prev, [userId]: userName }));
+        return userName;
+      } else {
+        console.log("⚠️ API returned unsuccessful or no data");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching user name:", error);
+    }
+
+    return "Unknown";
+  };
+
+  // Function to format date from ISO string
+  const formatNoteDate = (dateString) => {
+    if (!dateString) return "No date";
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      const seconds = String(date.getSeconds()).padStart(2, "0");
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch (error) {
+      return dateString;
+    }
   };
 
   // Handle radio button selection
@@ -2178,17 +2295,12 @@ const WalkoutForm = () => {
                             {formData.officeHistoricalNotes?.length > 0 ? (
                               formData.officeHistoricalNotes.map(
                                 (note, index) => (
-                                  <div key={index} className="WF-note-item">
-                                    <div className="WF-note-datetime">
-                                      {note.dateTime}
-                                    </div>
-                                    <div className="WF-note-author">
-                                      {note.author}
-                                    </div>
-                                    <div className="WF-note-content">
-                                      {note.content}
-                                    </div>
-                                  </div>
+                                  <NoteItem
+                                    key={index}
+                                    note={note}
+                                    fetchUserName={fetchUserName}
+                                    formatNoteDate={formatNoteDate}
+                                  />
                                 )
                               )
                             ) : (
@@ -2207,17 +2319,12 @@ const WalkoutForm = () => {
                           <div className="WF-notes-list">
                             {formData.lc3HistoricalNotes?.length > 0 ? (
                               formData.lc3HistoricalNotes.map((note, index) => (
-                                <div key={index} className="WF-note-item">
-                                  <div className="WF-note-datetime">
-                                    {note.dateTime}
-                                  </div>
-                                  <div className="WF-note-author">
-                                    {note.author}
-                                  </div>
-                                  <div className="WF-note-content">
-                                    {note.content}
-                                  </div>
-                                </div>
+                                <NoteItem
+                                  key={index}
+                                  note={note}
+                                  fetchUserName={fetchUserName}
+                                  formatNoteDate={formatNoteDate}
+                                />
                               ))
                             ) : (
                               <p className="WF-no-notes-message">

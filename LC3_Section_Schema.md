@@ -162,8 +162,8 @@
   "walkoutOnHold": Number,                  // incrementalId from radio buttons (Yes/No/Pending)
                                             // Question: Is Walkout getting on Hold?
 
-  "onHoldReasons": Number,                  // incrementalId from dropdown (single select, not array)
-                                            // On Hold Reasons dropdown
+  "onHoldReasons": [Number],                // Array of incrementalIds from multi-select dropdown
+                                            // On Hold Reasons dropdown (multiple selection allowed)
 
   "otherReasonNotes": String,               // Other Reason/Notes - Text field
 
@@ -182,15 +182,25 @@
   // Fieldset Status
   "lc3ProviderNotesStatus": String,  // Values: "completed" or "pending"
 
-  // Provider Notes Questions (all radio buttons)
-  "doctorNoteCompleted": String,           // Values: "Yes" or "No" or "Pending"
+  // Provider Notes Questions (all radio buttons - incrementalId)
+  "doctorNoteCompleted": Number,           // incrementalId from radio buttons (Yes/No/Pending)
                                            // Question: Doctor Note Completed?
 
-  "notesUpdatedOnDOS": String,             // Values: "Yes" or "No" or "Pending"
+  "notesUpdatedOnDOS": Number,             // incrementalId from radio buttons (Yes/No/Pending)
                                            // Question: Notes updated on DOS?
 
-  "noteIncludesFourElements": String       // Values: "Yes" or "No" or "Pending"
-                                           // Question: Does the note include all four elements?
+  "noteIncludesFourElements": Number,      // incrementalId from radio buttons (Yes/No/Pending)
+                                           // Question: Does the Note include following 4 things?
+
+  // ========== 4 Required Elements Checkboxes (Auto-generated/Validated) ==========
+  "noteElement1": Boolean,                 // Checkbox - Element 1 present/validated
+  "noteElement2": Boolean,                 // Checkbox - Element 2 present/validated
+  "noteElement3": Boolean,                 // Checkbox - Element 3 present/validated
+  "noteElement4": Boolean,                 // Checkbox - Element 4 present/validated
+
+  // ========== Provider and Hygienist Notes Textareas ==========
+  "providerNotes": String,                 // Text area - Provider's notes
+  "hygienistNotes": String                 // Text area - Hygienist's notes
 }
 ```
 
@@ -260,38 +270,33 @@
 - verifyCheckMatchesES, forteCheckAvailable (radio incrementalIds)
 - reasonTotalProductionDiff, reasonEstInsuranceDiff (dropdown incrementalIds)
 - informedOfficeManager, googleReviewSent, containsCrownDentureImplant, crownPaidOn, deliveredAsPerNotes, walkoutOnHold, completingWithDeficiency (all radio incrementalIds)
-- onHoldReasons (dropdown incrementalId - single value, not array)
+- doctorNoteCompleted, notesUpdatedOnDOS, noteIncludesFourElements (all radio incrementalIds)
 
-### String Type Fields (Radio Buttons - Values: "Yes" / "No" / "Pending")
+### Boolean Type Fields
 
-- fieldsetStatus (but values are "completed" / "pending")
-- lc3DocumentCheckStatus
-- lc3AttachmentsCheckStatus
-- lc3PatientPortionStatus
-- lc3ProductionStatus
-- lc3ProviderNotesStatus
-- orthoQuestionnaireAvailable
-- signedNVDForDifference
-- verifyCheckMatchesES
-- forteCheckAvailable
-- productionAsPerOfficeWO
-- informedOfficeForDifference
-- googleReviewSent
-- containsCrown
-- crownPaidOn
-- crownDeliveredPerNotes
-- walkoutOnHold
-- completingDeficiency
-- doctorNoteCompleted
-- notesUpdatedOnDOS
-- noteIncludesFourElements
-- lc3Remarks (text area)
+- noteElement1, noteElement2, noteElement3, noteElement4 (checkboxes for 4 required elements)
+
+### String Type Fields (Text inputs and text areas)
+
+- fieldsetStatus (values: "completed" / "pending")
+- lc3DocumentCheckStatus (values: "completed" / "pending")
+- lc3AttachmentsCheckStatus (values: "completed" / "pending")
+- lc3PatientPortionStatus (values: "completed" / "pending")
+- lc3ProductionStatus (values: "completed" / "pending")
+- lc3ProviderNotesStatus (values: "completed" / "pending")
 - ruleEngineUniqueId (text input)
+- explanationTotalProductionDiff (text field)
+- explanationEstInsuranceDiff (text field)
+- otherReasonNotes (text field)
+- lc3Remarks (text area)
+- providerNotes (text area)
+- hygienistNotes (text area)
 
 ### Array Type Fields
 
 - failedRules: Array of objects with {message: String, resolved: Number (incrementalId)}
 - lc3HistoricalNotes: Array of Strings
+- onHoldReasons: Array of Numbers (incrementalIds from multi-select dropdown)
 
 ### Dynamic Fields (Created at Runtime)
 
@@ -306,7 +311,7 @@
    - Status fields should only accept "completed" or "pending"
    - Radio button fields store incrementalId (Number type)
    - Dropdown fields store incrementalId (Number type)
-   - Number fields should validate as positive numbers or zero
+   - Amount/Number fields can be positive, negative, zero, or decimal values (e.g., -125.50, 0, 250.75)
    - incrementalId fields should validate against actual dropdown/radio options
 
 2. **Conditional Fields:**
