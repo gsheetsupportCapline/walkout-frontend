@@ -171,7 +171,7 @@ const WalkoutForm = () => {
 
   // State for LC3 section
   const [lc3Data, setLc3Data] = useState({
-    fieldsetStatus: "pending", // completed or pending
+    fieldsetStatus: null, // incrementalId from control panel (Number)
     didLc3RunRules: "",
     ruleEngineUniqueId: "",
     reasonForNotRun: "",
@@ -417,6 +417,196 @@ const WalkoutForm = () => {
             ) {
               setIsZeroProduction(true);
             }
+          }
+
+          // Load LC3 section data if exists
+          if (existingWalkout.lc3Section) {
+            const lc3 = existingWalkout.lc3Section;
+            console.log("📋 Loading LC3 section data:", lc3);
+
+            // Load Rule Engine data into lc3Data state
+            if (lc3.ruleEngine) {
+              setLc3Data({
+                fieldsetStatus: lc3.ruleEngine.fieldsetStatus || null,
+                didLc3RunRules: lc3.ruleEngine.didLc3RunRules || "",
+                ruleEngineUniqueId: lc3.ruleEngine.ruleEngineUniqueId || "",
+                reasonForNotRun: lc3.ruleEngine.reasonForNotRun || "",
+                failedRules: lc3.ruleEngine.failedRules || [],
+                showUpdateButton: false,
+                lastFetchedId: lc3.ruleEngine.lastFetchedId || "",
+              });
+            }
+
+            // Load all other LC3 fields into formData
+            const lc3FormData = {};
+
+            // Document Check fieldset - Backend field names match frontend exactly
+            if (lc3.documentCheck) {
+              lc3FormData.lc3DocumentCheckStatus =
+                lc3.documentCheck.lc3DocumentCheckStatus;
+              // All field names are same in backend and frontend
+              lc3FormData.signedTreatmentPlanAvailable =
+                lc3.documentCheck.signedTreatmentPlanAvailable;
+              lc3FormData.prcAvailable = lc3.documentCheck.prcAvailable;
+              lc3FormData.signedConsentGeneralAvailable =
+                lc3.documentCheck.signedConsentGeneralAvailable;
+              lc3FormData.nvdAvailable = lc3.documentCheck.nvdAvailable;
+              lc3FormData.narrativeAvailable =
+                lc3.documentCheck.narrativeAvailable;
+              lc3FormData.signedConsentTxAvailable =
+                lc3.documentCheck.signedConsentTxAvailable;
+              lc3FormData.preAuthAvailable = lc3.documentCheck.preAuthAvailable;
+              lc3FormData.routeSheetAvailable =
+                lc3.documentCheck.routeSheetAvailable;
+              lc3FormData.orthoQuestionnaireAvailable =
+                lc3.documentCheck.orthoQuestionnaireAvailable;
+            }
+
+            // Attachments Check fieldset - Backend field names match frontend exactly
+            if (lc3.attachmentsCheck) {
+              lc3FormData.lc3AttachmentsCheckStatus =
+                lc3.attachmentsCheck.lc3AttachmentsCheckStatus;
+              // All field names are same in backend and frontend
+              lc3FormData.pano = lc3.attachmentsCheck.pano;
+              lc3FormData.fmx = lc3.attachmentsCheck.fmx;
+              lc3FormData.bitewing = lc3.attachmentsCheck.bitewing;
+              lc3FormData.pa = lc3.attachmentsCheck.pa;
+              lc3FormData.perioChart = lc3.attachmentsCheck.perioChart;
+            }
+
+            // Patient Portion Check fieldset - Backend field names match frontend exactly (15 fields)
+            if (lc3.patientPortionCheck) {
+              lc3FormData.lc3PatientPortionStatus =
+                lc3.patientPortionCheck.lc3PatientPortionStatus;
+              // Office calculations
+              lc3FormData.expectedPPOffice =
+                lc3.patientPortionCheck.expectedPPOffice;
+              lc3FormData.ppCollectedOffice =
+                lc3.patientPortionCheck.ppCollectedOffice;
+              lc3FormData.ppDifferenceOffice =
+                lc3.patientPortionCheck.ppDifferenceOffice;
+              // NVD question
+              lc3FormData.signedNVDForDifference =
+                lc3.patientPortionCheck.signedNVDForDifference;
+              // LC3 calculations
+              lc3FormData.expectedPPLC3 = lc3.patientPortionCheck.expectedPPLC3;
+              lc3FormData.ppDifferenceLC3 =
+                lc3.patientPortionCheck.ppDifferenceLC3;
+              // Primary payment verification
+              lc3FormData.ppPrimaryMode = lc3.patientPortionCheck.ppPrimaryMode;
+              lc3FormData.amountPrimaryMode =
+                lc3.patientPortionCheck.amountPrimaryMode;
+              lc3FormData.paymentVerifiedFromPrimary =
+                lc3.patientPortionCheck.paymentVerifiedFromPrimary;
+              // Secondary payment verification
+              lc3FormData.ppSecondaryMode =
+                lc3.patientPortionCheck.ppSecondaryMode;
+              lc3FormData.amountSecondaryMode =
+                lc3.patientPortionCheck.amountSecondaryMode;
+              lc3FormData.paymentVerifiedFromSecondary =
+                lc3.patientPortionCheck.paymentVerifiedFromSecondary;
+              // Bottom questions
+              lc3FormData.verifyCheckMatchesES =
+                lc3.patientPortionCheck.verifyCheckMatchesES;
+              lc3FormData.forteCheckAvailable =
+                lc3.patientPortionCheck.forteCheckAvailable;
+            }
+
+            // Production Details fieldset - Backend field names match frontend exactly (24 fields)
+            if (lc3.productionDetails) {
+              lc3FormData.lc3ProductionStatus =
+                lc3.productionDetails.lc3ProductionStatus;
+              // Office production calculations
+              lc3FormData.totalProductionOffice =
+                lc3.productionDetails.totalProductionOffice;
+              lc3FormData.estInsuranceOffice =
+                lc3.productionDetails.estInsuranceOffice;
+              lc3FormData.expectedPPOfficeProduction =
+                lc3.productionDetails.expectedPPOfficeProduction;
+              // LC3 production calculations
+              lc3FormData.totalProductionLC3 =
+                lc3.productionDetails.totalProductionLC3;
+              lc3FormData.estInsuranceLC3 =
+                lc3.productionDetails.estInsuranceLC3;
+              lc3FormData.expectedPPLC3Production =
+                lc3.productionDetails.expectedPPLC3Production;
+              // Differences
+              lc3FormData.totalProductionDifference =
+                lc3.productionDetails.totalProductionDifference;
+              lc3FormData.estInsuranceDifference =
+                lc3.productionDetails.estInsuranceDifference;
+              lc3FormData.expectedPPDifference =
+                lc3.productionDetails.expectedPPDifference;
+              // Reason fields
+              lc3FormData.reasonTotalProductionDiff =
+                lc3.productionDetails.reasonTotalProductionDiff;
+              lc3FormData.reasonEstInsuranceDiff =
+                lc3.productionDetails.reasonEstInsuranceDiff;
+              // Explanation fields
+              lc3FormData.explanationTotalProductionDiff =
+                lc3.productionDetails.explanationTotalProductionDiff;
+              lc3FormData.explanationEstInsuranceDiff =
+                lc3.productionDetails.explanationEstInsuranceDiff;
+              // Walkout questions
+              lc3FormData.informedOfficeManager =
+                lc3.productionDetails.informedOfficeManager;
+              lc3FormData.googleReviewSent =
+                lc3.productionDetails.googleReviewSent;
+              lc3FormData.containsCrownDentureImplant =
+                lc3.productionDetails.containsCrownDentureImplant;
+              lc3FormData.crownPaidOn = lc3.productionDetails.crownPaidOn;
+              lc3FormData.deliveredAsPerNotes =
+                lc3.productionDetails.deliveredAsPerNotes;
+              lc3FormData.walkoutOnHold = lc3.productionDetails.walkoutOnHold;
+              lc3FormData.onHoldReasons =
+                lc3.productionDetails.onHoldReasons || [];
+              lc3FormData.otherReasonNotes =
+                lc3.productionDetails.otherReasonNotes;
+              lc3FormData.completingWithDeficiency =
+                lc3.productionDetails.completingWithDeficiency;
+            }
+
+            // Provider Notes fieldset - Backend field names match frontend exactly (10 fields)
+            if (lc3.providerNotes) {
+              lc3FormData.lc3ProviderNotesStatus =
+                lc3.providerNotes.lc3ProviderNotesStatus;
+              // 3 main questions
+              lc3FormData.doctorNoteCompleted =
+                lc3.providerNotes.doctorNoteCompleted;
+              lc3FormData.notesUpdatedOnDOS =
+                lc3.providerNotes.notesUpdatedOnDOS;
+              lc3FormData.noteIncludesFourElements =
+                lc3.providerNotes.noteIncludesFourElements;
+              // 4 element checkboxes
+              lc3FormData.noteElement1 = lc3.providerNotes.noteElement1;
+              lc3FormData.noteElement2 = lc3.providerNotes.noteElement2;
+              lc3FormData.noteElement3 = lc3.providerNotes.noteElement3;
+              lc3FormData.noteElement4 = lc3.providerNotes.noteElement4;
+              // 2 text areas - map backend fields to frontend field names
+              lc3FormData.providerNotesFromES = lc3.providerNotes.providerNotes;
+              lc3FormData.hygienistNotesFromES =
+                lc3.providerNotes.hygienistNotes;
+            }
+
+            // LC3 Remarks
+            if (lc3.lc3Remarks) {
+              lc3FormData.lc3Remarks = lc3.lc3Remarks;
+            }
+
+            // LC3 Historical Notes (for display)
+            if (lc3.lc3HistoricalNotes && lc3.lc3HistoricalNotes.length > 0) {
+              lc3FormData.lc3HistoricalNotes = lc3.lc3HistoricalNotes;
+            }
+
+            // On Hold Notes (structured notes with user info)
+            if (lc3.onHoldNotes && lc3.onHoldNotes.length > 0) {
+              lc3FormData.onHoldNotes = lc3.onHoldNotes;
+            }
+
+            // Merge LC3 data into formData
+            setFormData((prev) => ({ ...prev, ...lc3FormData }));
+
+            console.log("✅ LC3 section loaded successfully");
           }
 
           console.log("✅ Existing walkout loaded:", existingWalkout._id);
@@ -1173,6 +1363,18 @@ const WalkoutForm = () => {
   };
 
   const handleLC3Submit = async () => {
+    if (!walkoutId) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "No walkout ID found. Please submit office section first.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
     // Stop timer and save session for LC3 team
     if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
       clearInterval(timerInterval);
@@ -1210,35 +1412,200 @@ const WalkoutForm = () => {
           sessionHistory: [...prev.timer.sessionHistory, sessionRecord],
         },
       }));
+    }
 
-      // Prepare data to send to backend
-      const submitData = {
-        formData,
-        lc3Data,
-        sidebarData: {
-          ...sidebarData,
-          timer: {
-            lastSession: {
-              user: userName,
-              duration: sessionDuration,
-              completedAt: completedAt,
-            },
-            totalTime: newTotalTime,
-            sessionHistory: [
-              ...sidebarData.timer.sessionHistory,
-              sessionRecord,
-            ],
-          },
+    try {
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+      const token = localStorage.getItem("token");
+
+      // Build LC3 payload according to EXACT backend schema from LC3_IMPLEMENTATION_SUMMARY.md
+      const lc3Payload = {
+        // 1. Rule Engine
+        ruleEngine: {
+          fieldsetStatus: lc3Data.fieldsetStatus, // "incomplete" | "complete"
+          didLc3RunRules: lc3Data.didLc3RunRules, // Number (1=Yes, 2=No)
+          ruleEngineUniqueId: lc3Data.ruleEngineUniqueId, // String
+          reasonForNotRun: lc3Data.reasonForNotRun, // String
+          failedRules: lc3Data.failedRules || [], // Array of {message: String, resolved: Boolean}
+          lastFetchedId: lc3Data.lastFetchedId, // String
         },
+
+        // 2. Document Check - 10 fields (status + 9 documents)
+        documentCheck: {
+          lc3DocumentCheckStatus: formData.lc3DocumentCheckStatus, // Number (incrementalId)
+          signedTreatmentPlanAvailable: formData.signedTreatmentPlanAvailable, // Number
+          prcAvailable: formData.prcAvailable, // Number
+          signedConsentGeneralAvailable: formData.signedConsentGeneralAvailable, // Number
+          nvdAvailable: formData.nvdAvailable, // Number
+          narrativeAvailable: formData.narrativeAvailable, // Number
+          signedConsentTxAvailable: formData.signedConsentTxAvailable, // Number
+          preAuthAvailable: formData.preAuthAvailable, // Number
+          routeSheetAvailable: formData.routeSheetAvailable, // Number
+          orthoQuestionnaireAvailable: formData.orthoQuestionnaireAvailable, // Number
+        },
+
+        // 3. Attachments Check - 6 fields (status + 5 attachments)
+        attachmentsCheck: {
+          lc3AttachmentsCheckStatus: formData.lc3AttachmentsCheckStatus, // Number (incrementalId)
+          pano: formData.pano, // Number
+          fmx: formData.fmx, // Number
+          bitewing: formData.bitewing, // Number
+          pa: formData.pa, // Number
+          perioChart: formData.perioChart, // Number
+        },
+
+        // 4. Patient Portion Check - 15 fields as per backend schema
+        patientPortionCheck: {
+          lc3PatientPortionStatus: formData.lc3PatientPortionStatus, // Number (incrementalId)
+          // Office calculations (3 fields)
+          expectedPPOffice: formData.expectedPPOffice, // Number
+          ppCollectedOffice: formData.ppCollectedOffice, // Number
+          ppDifferenceOffice: formData.ppDifferenceOffice, // Number
+          // NVD question
+          signedNVDForDifference: formData.signedNVDForDifference, // Number (1=Yes, 2=No)
+          // LC3 calculations (2 fields)
+          expectedPPLC3: formData.expectedPPLC3, // Number
+          ppDifferenceLC3: formData.ppDifferenceLC3, // Number (calculated)
+          // Primary payment verification (3 fields)
+          ppPrimaryMode: formData.ppPrimaryMode, // Number (dropdown ID)
+          amountPrimaryMode: formData.amountPrimaryMode, // Number
+          paymentVerifiedFromPrimary: formData.paymentVerifiedFromPrimary, // Number (dropdown ID)
+          // Secondary payment verification (3 fields)
+          ppSecondaryMode: formData.ppSecondaryMode, // Number (dropdown ID)
+          amountSecondaryMode: formData.amountSecondaryMode, // Number
+          paymentVerifiedFromSecondary: formData.paymentVerifiedFromSecondary, // Number (dropdown ID)
+          // Bottom questions (2 fields)
+          verifyCheckMatchesES: formData.verifyCheckMatchesES, // Number (1=Yes, 2=No)
+          forteCheckAvailable: formData.forteCheckAvailable, // Number (1=Yes, 2=No)
+        },
+
+        // 5. Production Details - 24 fields as per backend schema
+        productionDetails: {
+          lc3ProductionStatus: formData.lc3ProductionStatus, // Number (incrementalId)
+          // Office production calculations (3 fields)
+          totalProductionOffice: formData.totalProductionOffice, // Number
+          estInsuranceOffice: formData.estInsuranceOffice, // Number
+          expectedPPOfficeProduction: formData.expectedPPOfficeProduction, // Number
+          // LC3 production calculations (3 fields)
+          totalProductionLC3: formData.totalProductionLC3, // Number
+          estInsuranceLC3: formData.estInsuranceLC3, // Number
+          expectedPPLC3Production: formData.expectedPPLC3Production, // Number
+          // Differences [LC3 - Office] (3 fields)
+          totalProductionDifference: formData.totalProductionDifference, // Number (calculated)
+          estInsuranceDifference: formData.estInsuranceDifference, // Number (calculated)
+          expectedPPDifference: formData.expectedPPDifference, // Number (calculated)
+          // Reason fields (2 fields)
+          reasonTotalProductionDiff: formData.reasonTotalProductionDiff, // Number (dropdown ID)
+          reasonEstInsuranceDiff: formData.reasonEstInsuranceDiff, // Number (dropdown ID)
+          // Explanation fields (2 fields)
+          explanationTotalProductionDiff:
+            formData.explanationTotalProductionDiff, // String
+          explanationEstInsuranceDiff: formData.explanationEstInsuranceDiff, // String
+          // Walkout questions (9 fields)
+          informedOfficeManager: formData.informedOfficeManager, // Number (1=Yes, 2=No)
+          googleReviewSent: formData.googleReviewSent, // Number (1=Yes, 2=No)
+          containsCrownDentureImplant: formData.containsCrownDentureImplant, // Number (1=Yes, 2=No)
+          crownPaidOn: formData.crownPaidOn, // Number (dropdown ID)
+          deliveredAsPerNotes: formData.deliveredAsPerNotes, // Number (1=Yes, 2=No)
+          walkoutOnHold: formData.walkoutOnHold, // Number (1=Yes, 2=No)
+          onHoldReasons: formData.onHoldReasons || [], // Array of Numbers (dropdown IDs)
+          otherReasonNotes: formData.otherReasonNotes, // String
+          completingWithDeficiency: formData.completingWithDeficiency, // Number (1=Yes, 2=No)
+        },
+
+        // 6. Provider Notes - 10 fields as per backend schema
+        providerNotes: {
+          lc3ProviderNotesStatus: formData.lc3ProviderNotesStatus, // Number (incrementalId)
+          // 3 main questions
+          doctorNoteCompleted: formData.doctorNoteCompleted, // Number (1=Yes, 2=No)
+          notesUpdatedOnDOS: formData.notesUpdatedOnDOS, // Number (1=Yes, 2=No)
+          noteIncludesFourElements: formData.noteIncludesFourElements, // Number (1=Yes, 2=No)
+          // 4 element checkboxes
+          noteElement1: formData.noteElement1, // String or Boolean
+          noteElement2: formData.noteElement2, // String or Boolean
+          noteElement3: formData.noteElement3, // String or Boolean
+          noteElement4: formData.noteElement4, // String or Boolean
+          // 2 text areas - map frontend field names to backend fields
+          providerNotes: formData.providerNotesFromES, // String
+          hygienistNotes: formData.hygienistNotesFromES, // String
+        },
+
+        // Additional LC3 Fields
+        lc3Remarks: formData.lc3Remarks, // String - Overall LC3 remarks
       };
 
-      console.log("LC3 Section Data with Timer:", submitData);
-      alert("LC3 section submitted successfully! Timer session saved.");
-      // TODO: API call to save LC3 section data with timer info
-    } else {
-      console.log("LC3 Section Data:", { formData, lc3Data });
-      alert("LC3 section submitted successfully!");
-      // TODO: API call to save LC3 section data
+      // Add current lc3Remarks to lc3HistoricalNotes array if present
+      if (formData.lc3Remarks && formData.lc3Remarks.trim()) {
+        lc3Payload.lc3HistoricalNotes = [
+          ...(formData.lc3HistoricalNotes || []),
+          formData.lc3Remarks.trim(),
+        ];
+      }
+
+      // Add on-hold note if present (backend will add to onHoldNotes array)
+      if (formData.newOnHoldNote && formData.newOnHoldNote.trim()) {
+        lc3Payload.onHoldNote = formData.newOnHoldNote.trim();
+      }
+
+      console.log("📤 Submitting LC3 Payload:", lc3Payload);
+
+      const response = await fetch(`${API}/walkouts/${walkoutId}/lc3`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(lc3Payload),
+      });
+
+      const result = await response.json();
+
+      console.log("📥 LC3 Backend Response:", result);
+
+      if (response.ok && result.success) {
+        setNotification({
+          show: true,
+          type: "success",
+          message: result.message || "LC3 section submitted successfully!",
+        });
+
+        // Clear the new note field after successful submission
+        setFormData((prev) => ({ ...prev, newOnHoldNote: "" }));
+
+        // Update the walkout data if needed
+        if (result.data && result.data.lc3Section) {
+          // Update onHoldNotes if they exist in response
+          if (result.data.lc3Section.onHoldNotes) {
+            setFormData((prev) => ({
+              ...prev,
+              onHoldNotes: result.data.lc3Section.onHoldNotes,
+            }));
+          }
+        }
+
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "" });
+        }, 3000);
+      } else {
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message || "Failed to submit LC3 section",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "" });
+        }, 3000);
+      }
+    } catch (error) {
+      console.error("❌ Error submitting LC3 section:", error);
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Error submitting LC3 section. Please try again.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
     }
   };
 
@@ -2311,16 +2678,16 @@ const WalkoutForm = () => {
                           </div>
                         </div>
 
-                        {/* LC3 Historical Notes Section */}
+                        {/* LC3 On Hold Notes Section */}
                         <div className="WF-notes-subsection">
                           <h4 className="WF-notes-subheading">
                             On Hold Details & Notes by LC3 Team:
                           </h4>
                           <div className="WF-notes-list">
-                            {formData.lc3HistoricalNotes?.length > 0 ? (
-                              formData.lc3HistoricalNotes.map((note, index) => (
+                            {formData.onHoldNotes?.length > 0 ? (
+                              formData.onHoldNotes.map((note, index) => (
                                 <NoteItem
-                                  key={index}
+                                  key={note._id || index}
                                   note={note}
                                   fetchUserName={fetchUserName}
                                   formatNoteDate={formatNoteDate}
@@ -2385,35 +2752,40 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         A. Rule Engine Check
                       </legend>
-                      <div className="WF-status-toggle">
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3FieldsetStatus"
-                            value="completed"
-                            checked={lc3Data.fieldsetStatus === "completed"}
-                            onChange={(e) =>
-                              handleLc3Change("fieldsetStatus", e.target.value)
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3FieldsetStatus"
-                            value="pending"
-                            checked={lc3Data.fieldsetStatus === "pending"}
-                            onChange={(e) =>
-                              handleLc3Change("fieldsetStatus", e.target.value)
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                      <div
+                        className="WF-status-toggle"
+                        data-field-id={FIELD_IDS.LC3_RULE_ENGINE_STATUS}
+                      >
+                        {getRadioButtons(FIELD_IDS.LC3_RULE_ENGINE_STATUS).map(
+                          (button) => (
+                            <label key={button._id} className="WF-status-label">
+                              <input
+                                type="radio"
+                                name="lc3FieldsetStatus"
+                                value={button.incrementalId}
+                                checked={
+                                  lc3Data.fieldsetStatus ===
+                                  button.incrementalId
+                                }
+                                onChange={(e) =>
+                                  handleLc3Change(
+                                    "fieldsetStatus",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              />
+                              <span
+                                className={`WF-status-text ${
+                                  button.name === "Completed"
+                                    ? "WF-completed"
+                                    : "WF-pending"
+                                }`}
+                              >
+                                {button.name}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -2604,14 +2976,14 @@ const WalkoutForm = () => {
                                                 : ""
                                             } ${
                                               formData[`failedRule${index}`] ===
-                                              button.name
+                                              button.incrementalId
                                                 ? "WF-selected"
                                                 : ""
                                             }`}
                                             onClick={() =>
                                               handleRadioChange(
                                                 `failedRule${index}`,
-                                                button.name
+                                                button.incrementalId
                                               )
                                             }
                                           >
@@ -2641,46 +3013,38 @@ const WalkoutForm = () => {
                       </legend>
                       <div
                         className="WF-status-toggle"
-                        data-field-id={FIELD_IDS.LC3_DOCUMENT_CHECK_STATUS}
+                        data-field-id={FIELD_IDS.LC3_DOC_CHECK_STATUS}
                       >
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3DocumentCheckStatus"
-                            value="completed"
-                            checked={
-                              formData.lc3DocumentCheckStatus === "completed"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3DocumentCheckStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3DocumentCheckStatus"
-                            value="pending"
-                            checked={
-                              formData.lc3DocumentCheckStatus === "pending"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3DocumentCheckStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                        {getRadioButtons(FIELD_IDS.LC3_DOC_CHECK_STATUS).map(
+                          (button) => (
+                            <label key={button._id} className="WF-status-label">
+                              <input
+                                type="radio"
+                                name="lc3DocumentCheckStatus"
+                                value={button.incrementalId}
+                                checked={
+                                  formData.lc3DocumentCheckStatus ===
+                                  button.incrementalId
+                                }
+                                onChange={(e) =>
+                                  handleRadioChange(
+                                    "lc3DocumentCheckStatus",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              />
+                              <span
+                                className={`WF-status-text ${
+                                  button.name === "Completed"
+                                    ? "WF-completed"
+                                    : "WF-pending"
+                                }`}
+                              >
+                                {button.name}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -2926,14 +3290,14 @@ const WalkoutForm = () => {
                                   : ""
                               } ${
                                 formData.orthoQuestionnaireAvailable ===
-                                button.name
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
                                   "orthoQuestionnaireAvailable",
-                                  button.name
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -2956,46 +3320,38 @@ const WalkoutForm = () => {
                       </legend>
                       <div
                         className="WF-status-toggle"
-                        data-field-id={FIELD_IDS.LC3_ATTACHMENT_CHECK_STATUS}
+                        data-field-id={FIELD_IDS.LC3_ATTACH_CHECK_STATUS}
                       >
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3AttachmentsCheckStatus"
-                            value="completed"
-                            checked={
-                              formData.lc3AttachmentsCheckStatus === "completed"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3AttachmentsCheckStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3AttachmentsCheckStatus"
-                            value="pending"
-                            checked={
-                              formData.lc3AttachmentsCheckStatus === "pending"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3AttachmentsCheckStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                        {getRadioButtons(FIELD_IDS.LC3_ATTACH_CHECK_STATUS).map(
+                          (button) => (
+                            <label key={button._id} className="WF-status-label">
+                              <input
+                                type="radio"
+                                name="lc3AttachmentsCheckStatus"
+                                value={button.incrementalId}
+                                checked={
+                                  formData.lc3AttachmentsCheckStatus ===
+                                  button.incrementalId
+                                }
+                                onChange={(e) =>
+                                  handleRadioChange(
+                                    "lc3AttachmentsCheckStatus",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              />
+                              <span
+                                className={`WF-status-text ${
+                                  button.name === "Completed"
+                                    ? "WF-completed"
+                                    : "WF-pending"
+                                }`}
+                              >
+                                {button.name}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -3131,46 +3487,38 @@ const WalkoutForm = () => {
                       </legend>
                       <div
                         className="WF-status-toggle"
-                        data-field-id={FIELD_IDS.LC3_PATIENT_PORTION_STATUS}
+                        data-field-id={FIELD_IDS.LC3_PP_CHECK_STATUS}
                       >
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3PatientPortionStatus"
-                            value="completed"
-                            checked={
-                              formData.lc3PatientPortionStatus === "completed"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3PatientPortionStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3PatientPortionStatus"
-                            value="pending"
-                            checked={
-                              formData.lc3PatientPortionStatus === "pending"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3PatientPortionStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                        {getRadioButtons(FIELD_IDS.LC3_PP_CHECK_STATUS).map(
+                          (button) => (
+                            <label key={button._id} className="WF-status-label">
+                              <input
+                                type="radio"
+                                name="lc3PatientPortionStatus"
+                                value={button.incrementalId}
+                                checked={
+                                  formData.lc3PatientPortionStatus ===
+                                  button.incrementalId
+                                }
+                                onChange={(e) =>
+                                  handleRadioChange(
+                                    "lc3PatientPortionStatus",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              />
+                              <span
+                                className={`WF-status-text ${
+                                  button.name === "Completed"
+                                    ? "WF-completed"
+                                    : "WF-pending"
+                                }`}
+                              >
+                                {button.name}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -3254,14 +3602,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.signedNVDForDifference === button.name
+                                formData.signedNVDForDifference ===
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
                                   "signedNVDForDifference",
-                                  button.name
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -3490,14 +3839,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.verifyCheckMatchesES === button.name
+                                  formData.verifyCheckMatchesES ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "verifyCheckMatchesES",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -3529,14 +3879,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.forteCheckAvailable === button.name
+                                  formData.forteCheckAvailable ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "forteCheckAvailable",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -3557,44 +3908,38 @@ const WalkoutForm = () => {
                       </legend>
                       <div
                         className="WF-status-toggle"
-                        data-field-id={FIELD_IDS.LC3_PRODUCTION_DETAILS_STATUS}
+                        data-field-id={FIELD_IDS.LC3_PROD_STATUS}
                       >
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3ProductionStatus"
-                            value="completed"
-                            checked={
-                              formData.lc3ProductionStatus === "completed"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3ProductionStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3ProductionStatus"
-                            value="pending"
-                            checked={formData.lc3ProductionStatus === "pending"}
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3ProductionStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                        {getRadioButtons(FIELD_IDS.LC3_PROD_STATUS).map(
+                          (button) => (
+                            <label key={button._id} className="WF-status-label">
+                              <input
+                                type="radio"
+                                name="lc3ProductionStatus"
+                                value={button.incrementalId}
+                                checked={
+                                  formData.lc3ProductionStatus ===
+                                  button.incrementalId
+                                }
+                                onChange={(e) =>
+                                  handleRadioChange(
+                                    "lc3ProductionStatus",
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                              />
+                              <span
+                                className={`WF-status-text ${
+                                  button.name === "Completed"
+                                    ? "WF-completed"
+                                    : "WF-pending"
+                                }`}
+                              >
+                                {button.name}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -3895,14 +4240,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.informedOfficeManager === button.name
+                                  formData.informedOfficeManager ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "informedOfficeManager",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -3934,14 +4280,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.googleReviewSent === button.name
+                                formData.googleReviewSent ===
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
                                   "googleReviewSent",
-                                  button.name
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -3972,14 +4319,14 @@ const WalkoutForm = () => {
                                     : ""
                                 } ${
                                   formData.containsCrownDentureImplant ===
-                                  button.name
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "containsCrownDentureImplant",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -4049,14 +4396,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.deliveredAsPerNotes === button.name
+                                formData.deliveredAsPerNotes ===
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
                                   "deliveredAsPerNotes",
-                                  button.name
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -4086,14 +4434,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.walkoutOnHold === button.name
+                                  formData.walkoutOnHold ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "walkoutOnHold",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -4161,14 +4510,15 @@ const WalkoutForm = () => {
                                 ? "WF-no-or-pending-button"
                                 : ""
                             } ${
-                              formData.completingWithDeficiency === button.name
+                              formData.completingWithDeficiency ===
+                              button.incrementalId
                                 ? "WF-selected"
                                 : ""
                             }`}
                             onClick={() =>
                               handleRadioChange(
                                 "completingWithDeficiency",
-                                button.name
+                                button.incrementalId
                               )
                             }
                           >
@@ -4189,44 +4539,36 @@ const WalkoutForm = () => {
                         className="WF-status-toggle"
                         data-field-id={FIELD_IDS.LC3_PROVIDER_NOTES_STATUS}
                       >
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3ProviderNotesStatus"
-                            value="completed"
-                            checked={
-                              formData.lc3ProviderNotesStatus === "completed"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3ProviderNotesStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-completed">
-                            Completed
-                          </span>
-                        </label>
-                        <label className="WF-status-label">
-                          <input
-                            type="radio"
-                            name="lc3ProviderNotesStatus"
-                            value="pending"
-                            checked={
-                              formData.lc3ProviderNotesStatus === "pending"
-                            }
-                            onChange={(e) =>
-                              handleDropdownChange(
-                                "lc3ProviderNotesStatus",
-                                e.target.value
-                              )
-                            }
-                          />
-                          <span className="WF-status-text WF-pending">
-                            Pending
-                          </span>
-                        </label>
+                        {getRadioButtons(
+                          FIELD_IDS.LC3_PROVIDER_NOTES_STATUS
+                        ).map((button) => (
+                          <label key={button._id} className="WF-status-label">
+                            <input
+                              type="radio"
+                              name="lc3ProviderNotesStatus"
+                              value={button.incrementalId}
+                              checked={
+                                formData.lc3ProviderNotesStatus ===
+                                button.incrementalId
+                              }
+                              onChange={(e) =>
+                                handleRadioChange(
+                                  "lc3ProviderNotesStatus",
+                                  parseInt(e.target.value)
+                                )
+                              }
+                            />
+                            <span
+                              className={`WF-status-text ${
+                                button.name === "Completed"
+                                  ? "WF-completed"
+                                  : "WF-pending"
+                              }`}
+                            >
+                              {button.name}
+                            </span>
+                          </label>
+                        ))}
                       </div>
                     </div>
 
@@ -4252,14 +4594,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.doctorNoteCompleted === button.name
+                                formData.doctorNoteCompleted ===
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
                                   "doctorNoteCompleted",
-                                  button.name
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -4289,14 +4632,15 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.notesUpdatedOnDOS === button.name
+                                  formData.notesUpdatedOnDOS ===
+                                  button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
                                     "notesUpdatedOnDOS",
-                                    button.name
+                                    button.incrementalId
                                   )
                                 }
                               >
@@ -4328,14 +4672,15 @@ const WalkoutForm = () => {
                                   ? "WF-no-or-pending-button"
                                   : ""
                               } ${
-                                formData.noteIncludesFourThings === button.name
+                                formData.noteIncludesFourElements ===
+                                button.incrementalId
                                   ? "WF-selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 handleRadioChange(
-                                  "noteIncludesFourThings",
-                                  button.name
+                                  "noteIncludesFourElements",
+                                  button.incrementalId
                                 )
                               }
                             >
@@ -4430,18 +4775,26 @@ const WalkoutForm = () => {
                   {/* On Hold Details & Notes */}
                   <fieldset className="WF-form-fieldset WF-lc3-onhold-notes-fieldset">
                     <legend className="WF-legend">
-                      On Hold Details & Notes (1)
+                      On Hold Details & Notes (
+                      {formData.onHoldNotes?.length || 0})
                     </legend>
 
                     {/* Existing Notes Display */}
                     <div className="WF-onhold-notes-list">
-                      <div className="WF-onhold-note-item">
-                        <div className="WF-note-datetime">
-                          2025-12-22 17:49:45
-                        </div>
-                        <div className="WF-note-author">Soransh Sharma</div>
-                        <div className="WF-note-content">WO completed.</div>
-                      </div>
+                      {formData.onHoldNotes?.length > 0 ? (
+                        formData.onHoldNotes.map((note, index) => (
+                          <NoteItem
+                            key={note._id || index}
+                            note={note}
+                            fetchUserName={fetchUserName}
+                            formatNoteDate={formatNoteDate}
+                          />
+                        ))
+                      ) : (
+                        <p className="WF-no-notes-message">
+                          No on-hold notes yet.
+                        </p>
+                      )}
                     </div>
 
                     {/* Add New Note */}
