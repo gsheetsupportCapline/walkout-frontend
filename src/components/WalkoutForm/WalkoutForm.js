@@ -389,9 +389,17 @@ const WalkoutForm = () => {
 
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
-            console.log("📋 Loading existing office section:", existingWalkout.officeSection);
-            console.log("🔍 patientCame value:", existingWalkout.officeSection.patientCame, "Type:", typeof existingWalkout.officeSection.patientCame);
-            
+            console.log(
+              "📋 Loading existing office section:",
+              existingWalkout.officeSection
+            );
+            console.log(
+              "🔍 patientCame value:",
+              existingWalkout.officeSection.patientCame,
+              "Type:",
+              typeof existingWalkout.officeSection.patientCame
+            );
+
             // Extract only valid form fields (exclude backend-only fields like timestamps, historical notes, etc.)
             const {
               officeSubmittedBy,
@@ -405,7 +413,7 @@ const WalkoutForm = () => {
               __v,
               ...validFormFields
             } = existingWalkout.officeSection;
-            
+
             console.log("✅ Loading only valid form fields:", validFormFields);
             setFormData(validFormFields);
 
@@ -1360,7 +1368,12 @@ const WalkoutForm = () => {
       }
 
       // Add all form fields as-is (backend handles type conversion)
-      console.log("📤 Submitting formData.patientCame:", formData.patientCame, "Type:", typeof formData.patientCame);
+      console.log(
+        "📤 Submitting formData.patientCame:",
+        formData.patientCame,
+        "Type:",
+        typeof formData.patientCame
+      );
       if (formData.patientCame !== undefined && formData.patientCame !== null) {
         formDataPayload.append("patientCame", formData.patientCame);
         console.log("✅ patientCame appended to FormData");
@@ -1646,7 +1659,7 @@ const WalkoutForm = () => {
       }
 
       console.log("📤 Sending FormData Payload for Office Section");
-      
+
       // Debug: Log all FormData entries
       console.log("🔍 FormData Contents:");
       for (let [key, value] of formDataPayload.entries()) {
@@ -1656,7 +1669,7 @@ const WalkoutForm = () => {
           console.log(`  ${key}: ${value} (type: ${typeof value})`);
         }
       }
-      
+
       console.log("🔍 Submit State Check:", {
         isExistingWalkout,
         walkoutId,
