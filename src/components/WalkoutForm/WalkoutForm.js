@@ -2,6 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./WalkoutForm.css";
 import MultiSelectDropdown from "./MultiSelectDropdown";
+import { fetchWithAuth } from "../../utils/api";
+import {
+  validateLC3Section,
+  clearValidationError,
+  hasValidationErrors,
+} from "./walkoutValidation";
 
 // Note Item Component to fetch and display user name
 const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
@@ -32,6 +38,7 @@ const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
       }
     };
     loadUserName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.addedBy]);
 
   return (
@@ -198,9 +205,9 @@ const WalkoutForm = () => {
     },
     walkoutStatus: "pending", // completed, office-pending, lc3-pending
     images: {
-      officeWO: { imageId: "", zoom: 100 },
-      checkImage: { imageId: "", zoom: 100 },
-      lc3WO: { imageId: "", zoom: 100 },
+      officeWO: { file: null, previewUrl: "", imageId: "", zoom: 100 },
+      checkImage: { file: null, previewUrl: "", imageId: "", zoom: 100 },
+      lc3WO: { file: null, previewUrl: "", imageId: "", zoom: 100 },
     },
   });
 
@@ -248,6 +255,7 @@ const WalkoutForm = () => {
     "Insurance Verification Required",
   ]); // Sample on-hold reasons - replace with actual data
   const [userNamesCache, setUserNamesCache] = useState({}); // Cache for user names
+  const [lc3ValidationErrors, setLc3ValidationErrors] = useState({}); // LC3 validation errors
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -262,7 +270,7 @@ const WalkoutForm = () => {
   useEffect(() => {
     const fetchRadioButtonSets = async () => {
       try {
-        const response = await fetch(
+        const response = await fetchWithAuth(
           `${process.env.REACT_APP_API_URL}/radio-buttons/button-sets?isActive=true`
         );
         const result = await response.json();
@@ -306,7 +314,7 @@ const WalkoutForm = () => {
   useEffect(() => {
     const fetchDropdownSets = async () => {
       try {
-        const response = await fetch(
+        const response = await fetchWithAuth(
           `${process.env.REACT_APP_API_URL}/dropdowns/dropdown-sets?isActive=true`
         );
         const result = await response.json();
@@ -358,6 +366,7 @@ const WalkoutForm = () => {
         }));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [radioButtonSets]);
 
   // Check for existing walkout on form open
@@ -367,15 +376,9 @@ const WalkoutForm = () => {
 
       try {
         const API = "http://localhost:5000/api";
-        const token = localStorage.getItem("token");
         // Use formRefId to match with appointment ID
-        const response = await fetch(
-          `${API}/walkouts?formRefId=${appointmentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const response = await fetchWithAuth(
+          `${API}/walkouts?formRefId=${appointmentId}`
         );
         const result = await response.json();
 
@@ -386,7 +389,25 @@ const WalkoutForm = () => {
 
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
-            setFormData(existingWalkout.officeSection);
+            console.log("📋 Loading existing office section:", existingWalkout.officeSection);
+            console.log("🔍 patientCame value:", existingWalkout.officeSection.patientCame, "Type:", typeof existingWalkout.officeSection.patientCame);
+            
+            // Extract only valid form fields (exclude backend-only fields like timestamps, historical notes, etc.)
+            const {
+              officeSubmittedBy,
+              officeSubmittedAt,
+              officeLastUpdatedBy,
+              officeLastUpdatedAt,
+              officeHistoricalNotes,
+              lc3HistoricalNotes,
+              onHoldNotes,
+              _id,
+              __v,
+              ...validFormFields
+            } = existingWalkout.officeSection;
+            
+            console.log("✅ Loading only valid form fields:", validFormFields);
+            setFormData(validFormFields);
 
             // Debug: Check if historical notes are present
             console.log(
@@ -397,6 +418,28 @@ const WalkoutForm = () => {
               "📝 LC3 Historical Notes:",
               existingWalkout.officeSection.lc3HistoricalNotes
             );
+
+            // Load Office WO Snip image if exists (from officeWalkoutSnip object)
+            if (existingWalkout.officeWalkoutSnip?.imageId) {
+              setSidebarData((prev) => ({
+                ...prev,
+                images: {
+                  ...prev.images,
+                  officeWO: {
+                    file: null,
+                    previewUrl: "",
+                    imageId: existingWalkout.officeWalkoutSnip.imageId,
+                    zoom: 100,
+                  },
+                },
+              }));
+              console.log(
+                "🖼️ Office WO Image loaded:",
+                existingWalkout.officeWalkoutSnip.imageId,
+                "| File:",
+                existingWalkout.officeWalkoutSnip.fileName
+              );
+            }
 
             // Check if patient was present
             const buttons = getRadioButtons(FIELD_IDS.PATIENT_CAME);
@@ -619,6 +662,7 @@ const WalkoutForm = () => {
     };
 
     checkExistingWalkout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId]);
 
   // Update isPatientPresent and isZeroProduction when formData changes or radioButtonSets load
@@ -645,6 +689,7 @@ const WalkoutForm = () => {
     } else {
       setHasInsurance(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     formData.patientCame,
     formData.postOpZeroProduction,
@@ -715,6 +760,7 @@ const WalkoutForm = () => {
       setShowErrorFound(false);
       setShowErrorFields(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.ruleEngineRun, radioButtonSets]);
 
   // Update error fields visibility based on error found selection
@@ -734,6 +780,7 @@ const WalkoutForm = () => {
       // No selected - hide fields
       setShowErrorFields(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.ruleEngineError, radioButtonSets]);
 
   // Helper function to get radio buttons by set ID or field ID
@@ -773,14 +820,9 @@ const WalkoutForm = () => {
 
     try {
       const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-      const token = localStorage.getItem("token");
       console.log("📡 Fetching user from API:", `${API}/users/${userId}`);
 
-      const response = await fetch(`${API}/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetchWithAuth(`${API}/users/${userId}`);
       const result = await response.json();
 
       console.log("📥 API Response:", result);
@@ -820,6 +862,11 @@ const WalkoutForm = () => {
 
   // Handle radio button selection
   const handleRadioChange = (fieldName, value) => {
+    // Clear validation error for this field
+    if (lc3ValidationErrors[fieldName]) {
+      setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+
     // Special handling for "Did Patient come to the appointment?"
     if (fieldName === "patientCame") {
       const buttons = getRadioButtons(FIELD_IDS.PATIENT_CAME);
@@ -866,10 +913,15 @@ const WalkoutForm = () => {
   };
 
   const handleDropdownChange = (fieldName, value) => {
+    // Clear validation error for this field
+    if (lc3ValidationErrors[fieldName]) {
+      setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+
     setFormData((prev) => {
       const updated = { ...prev, [fieldName]: value };
 
-      // Auto-calculate patient portion collected and difference
+      // Auto-calculate patient portion collected and difference (Office Section)
       if (
         fieldName === "amountCollectedPrimaryMode" ||
         fieldName === "amountCollectedSecondaryMode" ||
@@ -898,12 +950,129 @@ const WalkoutForm = () => {
         updated.differenceInPatientPortion = difference;
       }
 
+      // Auto-calculate Patient Portion fields in LC3 Section
+      if (
+        fieldName === "expectedPPOffice" ||
+        fieldName === "ppCollectedOffice" ||
+        fieldName === "expectedPPLC3"
+      ) {
+        const expectedOffice = parseFloat(
+          fieldName === "expectedPPOffice"
+            ? value
+            : updated.expectedPPOffice || 0
+        );
+        const collectedOffice = parseFloat(
+          fieldName === "ppCollectedOffice"
+            ? value
+            : updated.ppCollectedOffice || 0
+        );
+        const expectedLC3 = parseFloat(
+          fieldName === "expectedPPLC3" ? value : updated.expectedPPLC3 || 0
+        );
+
+        // Calculate ppDifferenceOffice = ppCollectedOffice - expectedPPOffice
+        updated.ppDifferenceOffice = collectedOffice - expectedOffice;
+
+        // Calculate ppDifferenceLC3 = expectedPPLC3 - expectedPPOffice
+        updated.ppDifferenceLC3 = expectedLC3 - expectedOffice;
+      }
+
+      // Auto-calculate Production Details fields
+      if (
+        fieldName === "totalProductionOffice" ||
+        fieldName === "estInsuranceOffice" ||
+        fieldName === "totalProductionLC3" ||
+        fieldName === "estInsuranceLC3"
+      ) {
+        const totalProdOffice = parseFloat(
+          fieldName === "totalProductionOffice"
+            ? value
+            : updated.totalProductionOffice || 0
+        );
+        const estInsOffice = parseFloat(
+          fieldName === "estInsuranceOffice"
+            ? value
+            : updated.estInsuranceOffice || 0
+        );
+        const totalProdLC3 = parseFloat(
+          fieldName === "totalProductionLC3"
+            ? value
+            : updated.totalProductionLC3 || 0
+        );
+        const estInsLC3 = parseFloat(
+          fieldName === "estInsuranceLC3" ? value : updated.estInsuranceLC3 || 0
+        );
+
+        // Calculate Expected PP (Office) = Total Production (Office) - Est. Insurance (Office)
+        updated.expectedPPOfficeProduction = totalProdOffice - estInsOffice;
+
+        // Calculate Expected PP (LC3) = Total Production (LC3) - Est. Insurance (LC3)
+        updated.expectedPPLC3Production = totalProdLC3 - estInsLC3;
+
+        // Calculate Total Production Difference = Total Production (LC3) - Total Production (Office)
+        updated.totalProductionDifference = totalProdLC3 - totalProdOffice;
+
+        // Calculate Est Insurance Difference = Est. Insurance (LC3) - Est. Insurance (Office)
+        updated.estInsuranceDifference = estInsLC3 - estInsOffice;
+
+        // Calculate Expected PP Difference = Total Production Difference - Est Insurance Difference
+        updated.expectedPPDifference =
+          updated.totalProductionDifference - updated.estInsuranceDifference;
+
+        // Clear conditional fields if difference becomes 0
+        if (updated.totalProductionDifference === 0) {
+          updated.reasonTotalProductionDiff = "";
+          updated.explanationTotalProductionDiff = "";
+        }
+        if (updated.estInsuranceDifference === 0) {
+          updated.reasonEstInsuranceDiff = "";
+          updated.explanationEstInsuranceDiff = "";
+        }
+        // Clear informedOfficeManager if both differences become 0
+        if (
+          updated.totalProductionDifference === 0 &&
+          updated.estInsuranceDifference === 0
+        ) {
+          updated.informedOfficeManager = "";
+        }
+      }
+
+      // Auto-clear crown dependency chain
+      if (fieldName === "containsCrownDentureImplant" && value !== 1) {
+        // If "Does walkout contains Crown/Denture/Implant" is NOT Yes (1), clear dependent fields
+        updated.crownPaidOn = "";
+        updated.deliveredAsPerNotes = "";
+      }
+
+      if (fieldName === "crownPaidOn" && value !== 2) {
+        // If "As per IV crown paid on" is NOT 2, clear deliveredAsPerNotes
+        updated.deliveredAsPerNotes = "";
+      }
+
+      // Auto-clear walkout on hold dependency chain
+      if (fieldName === "walkoutOnHold") {
+        if (value !== 2) {
+          // If NOT on hold (value !== 2), clear on-hold related fields
+          updated.onHoldReasons = [];
+          updated.otherReasonNotes = "";
+        }
+        if (value !== 1) {
+          // If NOT completing (value !== 1), clear deficiency question
+          updated.completingWithDeficiency = "";
+        }
+      }
+
       return updated;
     });
   };
 
   // Handle LC3 data changes
   const handleLc3Change = (fieldName, value) => {
+    // Clear validation error for this field
+    if (lc3ValidationErrors[fieldName]) {
+      setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+
     if (fieldName === "ruleEngineUniqueId") {
       // Show update button when value changes and is not empty
       setLc3Data((prev) => ({
@@ -1034,50 +1203,37 @@ const WalkoutForm = () => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Image upload functions - Backend handles upload, returns imageId
-  const handleImageUpload = async (type, file) => {
+  // Store image locally - Will upload when Office section is submitted
+  const handleImageUpload = (type, file) => {
     if (file && file.type.startsWith("image/")) {
-      try {
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("type", type);
+      // Create preview URL for the image
+      const previewUrl = URL.createObjectURL(file);
 
-        // TODO: Replace with actual API endpoint
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/upload-image`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+      setSidebarData((prev) => ({
+        ...prev,
+        images: {
+          ...prev.images,
+          [type]: {
+            file: file,
+            previewUrl: previewUrl,
+            imageId: prev.images[type].imageId, // Keep existing imageId if any
+            zoom: 100,
+          },
+        },
+      }));
 
-        const data = await response.json();
-
-        if (data.imageId) {
-          setSidebarData((prev) => ({
-            ...prev,
-            images: {
-              ...prev.images,
-              [type]: { imageId: data.imageId, zoom: 100 },
-            },
-          }));
-          alert("Image uploaded successfully!");
-        }
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        alert("Failed to upload image. Please try again.");
-      }
+      console.log(`📁 Image stored locally for ${type}:`, file.name);
     }
   };
 
-  const handlePasteImage = async (type, event) => {
+  const handlePasteImage = (type, event) => {
     const items = event.clipboardData?.items;
     if (!items) return;
 
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
         const file = items[i].getAsFile();
-        await handleImageUpload(type, file);
+        handleImageUpload(type, file);
         break;
       }
     }
@@ -1096,34 +1252,39 @@ const WalkoutForm = () => {
     }));
   };
 
-  const handleRemoveImage = async (type) => {
-    const imageId = sidebarData.images[type].imageId;
-
-    if (imageId) {
-      try {
-        // TODO: Optional - Delete from Google Drive if needed
-        // await fetch(`${process.env.REACT_APP_API_URL}/delete-image/${imageId}`, { method: 'DELETE' });
-
-        setSidebarData((prev) => ({
-          ...prev,
-          images: {
-            ...prev.images,
-            [type]: { imageId: "", zoom: 100 },
-          },
-        }));
-        alert("Image removed successfully!");
-      } catch (error) {
-        console.error("Image removal failed:", error);
-        alert("Failed to remove image.");
-      }
+  const handleRemoveImage = (type) => {
+    // Revoke preview URL to free memory
+    if (sidebarData.images[type].previewUrl) {
+      URL.revokeObjectURL(sidebarData.images[type].previewUrl);
     }
+
+    setSidebarData((prev) => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        [type]: { file: null, previewUrl: "", imageId: "", zoom: 100 },
+      },
+    }));
+
+    console.log(`🗑️ Image removed for ${type}`);
   };
 
-  // Generate image URL from imageId (Google Drive)
-  const getImageUrl = (imageId) => {
-    if (!imageId) return null;
-    // TODO: Replace with actual Google Drive URL format
-    return `https://drive.google.com/uc?id=${imageId}`;
+  // Generate image URL - use previewUrl if available (before submit), otherwise use imageId (after submit)
+  const getImageUrl = (type) => {
+    const imageData = sidebarData.images[type];
+
+    // If file is selected but not yet uploaded, use preview URL
+    if (imageData.previewUrl) {
+      return imageData.previewUrl;
+    }
+
+    // If image was uploaded and we have imageId from backend, use API endpoint
+    if (imageData.imageId) {
+      const API = "http://localhost:5000/api";
+      return `${API}/walkouts/image/${imageData.imageId}`;
+    }
+
+    return null;
   };
 
   const handleImageClick = (type, event) => {
@@ -1144,7 +1305,6 @@ const WalkoutForm = () => {
   const handleOfficeSubmit = async () => {
     try {
       const API = "http://localhost:5000/api";
-      const token = localStorage.getItem("token");
 
       // Validation: Check if lastFourDigitsCheckForte is required and valid
       if (
@@ -1166,108 +1326,337 @@ const WalkoutForm = () => {
         return;
       }
 
-      // Prepare base payload with all form fields
-      const basePayload = {
-        ...formData,
-        // Convert number fields from strings to actual numbers
-        patientCame: formData.patientCame
-          ? Number(formData.patientCame)
-          : undefined,
-        postOpZeroProduction: formData.postOpZeroProduction
-          ? Number(formData.postOpZeroProduction)
-          : undefined,
-        patientType: formData.patientType
-          ? Number(formData.patientType)
-          : undefined,
-        hasInsurance: formData.hasInsurance
-          ? Number(formData.hasInsurance)
-          : undefined,
-        insuranceType: formData.insuranceType
-          ? Number(formData.insuranceType)
-          : undefined,
-        insurance: formData.insurance ? Number(formData.insurance) : undefined,
-        googleReviewRequest: formData.googleReviewRequest
-          ? Number(formData.googleReviewRequest)
-          : undefined,
-        expectedPatientPortionOfficeWO:
-          formData.expectedPatientPortionOfficeWO !== undefined &&
-          formData.expectedPatientPortionOfficeWO !== null &&
-          formData.expectedPatientPortionOfficeWO !== ""
-            ? parseFloat(formData.expectedPatientPortionOfficeWO)
-            : undefined,
-        patientPortionCollected:
-          formData.patientPortionCollected !== undefined &&
-          formData.patientPortionCollected !== null &&
-          formData.patientPortionCollected !== ""
-            ? parseFloat(formData.patientPortionCollected)
-            : undefined,
-        differenceInPatientPortion:
-          formData.differenceInPatientPortion !== undefined &&
-          formData.differenceInPatientPortion !== null &&
-          formData.differenceInPatientPortion !== ""
-            ? parseFloat(formData.differenceInPatientPortion)
-            : undefined,
-        patientPortionPrimaryMode: formData.patientPortionPrimaryMode
-          ? Number(formData.patientPortionPrimaryMode)
-          : undefined,
-        amountCollectedPrimaryMode:
-          formData.amountCollectedPrimaryMode !== undefined &&
-          formData.amountCollectedPrimaryMode !== null &&
-          formData.amountCollectedPrimaryMode !== ""
-            ? parseFloat(formData.amountCollectedPrimaryMode)
-            : undefined,
-        patientPortionSecondaryMode: formData.patientPortionSecondaryMode
-          ? Number(formData.patientPortionSecondaryMode)
-          : undefined,
-        amountCollectedSecondaryMode:
-          formData.amountCollectedSecondaryMode !== undefined &&
-          formData.amountCollectedSecondaryMode !== null &&
-          formData.amountCollectedSecondaryMode !== ""
-            ? parseFloat(formData.amountCollectedSecondaryMode)
-            : undefined,
-        lastFourDigitsCheckForte: formData.lastFourDigitsCheckForte
-          ? Number(formData.lastFourDigitsCheckForte)
-          : undefined,
-        reasonLessCollection: formData.reasonLessCollection
-          ? Number(formData.reasonLessCollection)
-          : undefined,
-        ruleEngineRun: formData.ruleEngineRun
-          ? Number(formData.ruleEngineRun)
-          : undefined,
-        ruleEngineNotRunReason: formData.ruleEngineNotRunReason
-          ? Number(formData.ruleEngineNotRunReason)
-          : undefined,
-        ruleEngineError: formData.ruleEngineError
-          ? Number(formData.ruleEngineError)
-          : undefined,
-        issuesFixed: formData.issuesFixed
-          ? Number(formData.issuesFixed)
-          : undefined,
-      };
+      // Create FormData for multipart/form-data submission
+      const formDataPayload = new FormData();
 
-      // Build final payload based on operation type
-      let payload;
-      if (isExistingWalkout && walkoutId) {
-        // PUT request - only send updated fields (no formRefId, appointmentId, openTime)
-        payload = basePayload;
-      } else {
-        // POST request - send all fields including formRefId, appointmentId, openTime
-        payload = {
-          formRefId: appointmentId,
-          appointmentId,
-          openTime,
-          ...basePayload,
-        };
+      // 1. appointmentInfo (Required JSON string for image upload)
+      formDataPayload.append(
+        "appointmentInfo",
+        JSON.stringify({
+          patientId: appointmentDetails.patientId,
+          dateOfService: appointmentDetails.dateOfService,
+          officeName: appointmentDetails.office,
+        })
+      );
+
+      // 2. Office WO Snip image (Optional - send actual file if user selected)
+      if (sidebarData.images.officeWO.file) {
+        formDataPayload.append(
+          "officeWalkoutSnip",
+          sidebarData.images.officeWO.file
+        );
+        console.log(
+          "📤 Uploading Office WO image:",
+          sidebarData.images.officeWO.file.name
+        );
       }
 
-      // Remove undefined values to keep payload clean
-      Object.keys(payload).forEach((key) => {
-        if (payload[key] === undefined) {
-          delete payload[key];
-        }
-      });
+      // 3. Add all office section fields directly to FormData
+      // Backend will automatically convert strings to numbers
+      if (!isExistingWalkout || !walkoutId) {
+        formDataPayload.append("formRefId", appointmentId);
+        formDataPayload.append("appointmentId", appointmentId);
+        formDataPayload.append("openTime", openTime);
+      }
 
-      console.log("📤 Sending Payload:", payload);
+      // Add all form fields as-is (backend handles type conversion)
+      console.log("📤 Submitting formData.patientCame:", formData.patientCame, "Type:", typeof formData.patientCame);
+      if (formData.patientCame !== undefined && formData.patientCame !== null) {
+        formDataPayload.append("patientCame", formData.patientCame);
+        console.log("✅ patientCame appended to FormData");
+      } else {
+        console.log("❌ patientCame is undefined or null - NOT appended!");
+      }
+      if (
+        formData.postOpZeroProduction !== undefined &&
+        formData.postOpZeroProduction !== null
+      ) {
+        formDataPayload.append(
+          "postOpZeroProduction",
+          formData.postOpZeroProduction
+        );
+      }
+      if (formData.patientType !== undefined && formData.patientType !== null) {
+        formDataPayload.append("patientType", formData.patientType);
+      }
+      if (
+        formData.hasInsurance !== undefined &&
+        formData.hasInsurance !== null
+      ) {
+        formDataPayload.append("hasInsurance", formData.hasInsurance);
+      }
+      if (
+        formData.insuranceType !== undefined &&
+        formData.insuranceType !== null
+      ) {
+        formDataPayload.append("insuranceType", formData.insuranceType);
+      }
+      if (formData.insurance !== undefined && formData.insurance !== null) {
+        formDataPayload.append("insurance", formData.insurance);
+      }
+      if (
+        formData.googleReviewRequest !== undefined &&
+        formData.googleReviewRequest !== null
+      ) {
+        formDataPayload.append(
+          "googleReviewRequest",
+          formData.googleReviewRequest
+        );
+      }
+      if (
+        formData.expectedPatientPortionOfficeWO !== undefined &&
+        formData.expectedPatientPortionOfficeWO !== null &&
+        formData.expectedPatientPortionOfficeWO !== ""
+      ) {
+        formDataPayload.append(
+          "expectedPatientPortionOfficeWO",
+          formData.expectedPatientPortionOfficeWO
+        );
+      }
+      if (
+        formData.patientPortionCollected !== undefined &&
+        formData.patientPortionCollected !== null &&
+        formData.patientPortionCollected !== ""
+      ) {
+        formDataPayload.append(
+          "patientPortionCollected",
+          formData.patientPortionCollected
+        );
+      }
+      if (
+        formData.differenceInPatientPortion !== undefined &&
+        formData.differenceInPatientPortion !== null &&
+        formData.differenceInPatientPortion !== ""
+      ) {
+        formDataPayload.append(
+          "differenceInPatientPortion",
+          formData.differenceInPatientPortion
+        );
+      }
+      if (
+        formData.patientPortionPrimaryMode !== undefined &&
+        formData.patientPortionPrimaryMode !== null
+      ) {
+        formDataPayload.append(
+          "patientPortionPrimaryMode",
+          formData.patientPortionPrimaryMode
+        );
+      }
+      if (
+        formData.amountCollectedPrimaryMode !== undefined &&
+        formData.amountCollectedPrimaryMode !== null &&
+        formData.amountCollectedPrimaryMode !== ""
+      ) {
+        formDataPayload.append(
+          "amountCollectedPrimaryMode",
+          formData.amountCollectedPrimaryMode
+        );
+      }
+      if (
+        formData.patientPortionSecondaryMode !== undefined &&
+        formData.patientPortionSecondaryMode !== null
+      ) {
+        formDataPayload.append(
+          "patientPortionSecondaryMode",
+          formData.patientPortionSecondaryMode
+        );
+      }
+      if (
+        formData.amountCollectedSecondaryMode !== undefined &&
+        formData.amountCollectedSecondaryMode !== null &&
+        formData.amountCollectedSecondaryMode !== ""
+      ) {
+        formDataPayload.append(
+          "amountCollectedSecondaryMode",
+          formData.amountCollectedSecondaryMode
+        );
+      }
+      if (
+        formData.lastFourDigitsCheckForte !== undefined &&
+        formData.lastFourDigitsCheckForte !== null &&
+        formData.lastFourDigitsCheckForte !== ""
+      ) {
+        formDataPayload.append(
+          "lastFourDigitsCheckForte",
+          formData.lastFourDigitsCheckForte
+        );
+      }
+      if (
+        formData.reasonLessCollection !== undefined &&
+        formData.reasonLessCollection !== null
+      ) {
+        formDataPayload.append(
+          "reasonLessCollection",
+          formData.reasonLessCollection
+        );
+      }
+      if (
+        formData.ruleEngineRun !== undefined &&
+        formData.ruleEngineRun !== null
+      ) {
+        formDataPayload.append("ruleEngineRun", formData.ruleEngineRun);
+      }
+      if (
+        formData.ruleEngineNotRunReason !== undefined &&
+        formData.ruleEngineNotRunReason !== null
+      ) {
+        formDataPayload.append(
+          "ruleEngineNotRunReason",
+          formData.ruleEngineNotRunReason
+        );
+      }
+      if (
+        formData.ruleEngineError !== undefined &&
+        formData.ruleEngineError !== null
+      ) {
+        formDataPayload.append("ruleEngineError", formData.ruleEngineError);
+      }
+      if (formData.issuesFixed !== undefined && formData.issuesFixed !== null) {
+        formDataPayload.append("issuesFixed", formData.issuesFixed);
+      }
+      if (
+        formData.officeRemarks !== undefined &&
+        formData.officeRemarks !== null
+      ) {
+        formDataPayload.append("officeRemarks", formData.officeRemarks);
+      }
+
+      // Patient Portion fields - additional
+      if (
+        formData.lastFourDigitsCreditCardPatientCharge !== undefined &&
+        formData.lastFourDigitsCreditCardPatientCharge !== null &&
+        formData.lastFourDigitsCreditCardPatientCharge !== ""
+      ) {
+        formDataPayload.append(
+          "lastFourDigitsCreditCardPatientCharge",
+          formData.lastFourDigitsCreditCardPatientCharge
+        );
+      }
+      if (
+        formData.lastFourDigitsCheckPatientCharge !== undefined &&
+        formData.lastFourDigitsCheckPatientCharge !== null &&
+        formData.lastFourDigitsCheckPatientCharge !== ""
+      ) {
+        formDataPayload.append(
+          "lastFourDigitsCheckPatientCharge",
+          formData.lastFourDigitsCheckPatientCharge
+        );
+      }
+      if (
+        formData.patientPaidAnyAtOffice !== undefined &&
+        formData.patientPaidAnyAtOffice !== null
+      ) {
+        formDataPayload.append(
+          "patientPaidAnyAtOffice",
+          formData.patientPaidAnyAtOffice
+        );
+      }
+      if (
+        formData.ifPaidHowMuchPatient !== undefined &&
+        formData.ifPaidHowMuchPatient !== null &&
+        formData.ifPaidHowMuchPatient !== ""
+      ) {
+        formDataPayload.append(
+          "ifPaidHowMuchPatient",
+          formData.ifPaidHowMuchPatient
+        );
+      }
+      if (
+        formData.lastFourDigitsCreditCardForte !== undefined &&
+        formData.lastFourDigitsCreditCardForte !== null &&
+        formData.lastFourDigitsCreditCardForte !== ""
+      ) {
+        formDataPayload.append(
+          "lastFourDigitsCreditCardForte",
+          formData.lastFourDigitsCreditCardForte
+        );
+      }
+
+      // Rule Engine fields - additional
+      if (
+        formData.errorFixRemarks !== undefined &&
+        formData.errorFixRemarks !== null
+      ) {
+        formDataPayload.append("errorFixRemarks", formData.errorFixRemarks);
+      }
+
+      // Document checkboxes
+      if (
+        formData.signedGeneralConsent !== undefined &&
+        formData.signedGeneralConsent !== null
+      ) {
+        formDataPayload.append(
+          "signedGeneralConsent",
+          formData.signedGeneralConsent
+        );
+      }
+      if (
+        formData.signedTreatmentConsent !== undefined &&
+        formData.signedTreatmentConsent !== null
+      ) {
+        formDataPayload.append(
+          "signedTreatmentConsent",
+          formData.signedTreatmentConsent
+        );
+      }
+      if (
+        formData.preAuthAvailable !== undefined &&
+        formData.preAuthAvailable !== null
+      ) {
+        formDataPayload.append("preAuthAvailable", formData.preAuthAvailable);
+      }
+      if (
+        formData.signedTxPlan !== undefined &&
+        formData.signedTxPlan !== null
+      ) {
+        formDataPayload.append("signedTxPlan", formData.signedTxPlan);
+      }
+      if (formData.perioChart !== undefined && formData.perioChart !== null) {
+        formDataPayload.append("perioChart", formData.perioChart);
+      }
+      if (formData.nvd !== undefined && formData.nvd !== null) {
+        formDataPayload.append("nvd", formData.nvd);
+      }
+      if (
+        formData.xRayPanoAttached !== undefined &&
+        formData.xRayPanoAttached !== null
+      ) {
+        formDataPayload.append("xRayPanoAttached", formData.xRayPanoAttached);
+      }
+      if (
+        formData.majorServiceForm !== undefined &&
+        formData.majorServiceForm !== null
+      ) {
+        formDataPayload.append("majorServiceForm", formData.majorServiceForm);
+      }
+      if (formData.routeSheet !== undefined && formData.routeSheet !== null) {
+        formDataPayload.append("routeSheet", formData.routeSheet);
+      }
+      if (
+        formData.prcUpdatedInRouteSheet !== undefined &&
+        formData.prcUpdatedInRouteSheet !== null
+      ) {
+        formDataPayload.append(
+          "prcUpdatedInRouteSheet",
+          formData.prcUpdatedInRouteSheet
+        );
+      }
+      if (formData.narrative !== undefined && formData.narrative !== null) {
+        formDataPayload.append("narrative", formData.narrative);
+      }
+
+      console.log("📤 Sending FormData Payload for Office Section");
+      
+      // Debug: Log all FormData entries
+      console.log("🔍 FormData Contents:");
+      for (let [key, value] of formDataPayload.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}: [File] ${value.name}`);
+        } else {
+          console.log(`  ${key}: ${value} (type: ${typeof value})`);
+        }
+      }
+      
       console.log("🔍 Submit State Check:", {
         isExistingWalkout,
         walkoutId,
@@ -1282,24 +1671,18 @@ const WalkoutForm = () => {
       if (isExistingWalkout && walkoutId) {
         // Update existing walkout
         console.log(`🔄 Updating existing walkout: ${walkoutId}`);
-        response = await fetch(`${API}/walkouts/${walkoutId}/office`, {
+        response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/office`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+          // Don't set Content-Type - browser will set it automatically with boundary
+          body: formDataPayload,
         });
       } else {
         // Create new walkout
         console.log("✨ Creating new walkout");
-        response = await fetch(`${API}/walkouts/submit-office`, {
+        response = await fetchWithAuth(`${API}/walkouts/submit-office`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+          // Don't set Content-Type - browser will set it automatically with boundary
+          body: formDataPayload,
         });
       }
 
@@ -1314,6 +1697,31 @@ const WalkoutForm = () => {
       });
 
       if (response.ok) {
+        // Update imageId from response if image was uploaded
+        if (result.data?.officeWalkoutSnip?.imageId) {
+          // Revoke preview URL to free memory
+          if (sidebarData.images.officeWO.previewUrl) {
+            URL.revokeObjectURL(sidebarData.images.officeWO.previewUrl);
+          }
+
+          setSidebarData((prev) => ({
+            ...prev,
+            images: {
+              ...prev.images,
+              officeWO: {
+                file: null, // Clear file after upload
+                previewUrl: "", // Clear preview URL
+                imageId: result.data.officeWalkoutSnip.imageId, // Save imageId from backend
+                zoom: 100,
+              },
+            },
+          }));
+          console.log(
+            "🖼️ Office WO Image uploaded successfully! ImageId:",
+            result.data.officeWalkoutSnip.imageId
+          );
+        }
+
         // Show success notification
         setNotification({
           show: true,
@@ -1375,6 +1783,22 @@ const WalkoutForm = () => {
       return;
     }
 
+    // Validate LC3 section before submitting
+    const errors = validateLC3Section(lc3Data, formData);
+    setLc3ValidationErrors(errors);
+
+    if (hasValidationErrors(errors)) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Please fill all mandatory fields highlighted in red.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
     // Stop timer and save session for LC3 team
     if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
       clearInterval(timerInterval);
@@ -1416,7 +1840,6 @@ const WalkoutForm = () => {
 
     try {
       const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-      const token = localStorage.getItem("token");
 
       // Build LC3 payload according to EXACT backend schema from LC3_IMPLEMENTATION_SUMMARY.md
       const lc3Payload = {
@@ -1494,23 +1917,58 @@ const WalkoutForm = () => {
           totalProductionDifference: formData.totalProductionDifference, // Number (calculated)
           estInsuranceDifference: formData.estInsuranceDifference, // Number (calculated)
           expectedPPDifference: formData.expectedPPDifference, // Number (calculated)
-          // Reason fields (2 fields)
-          reasonTotalProductionDiff: formData.reasonTotalProductionDiff, // Number (dropdown ID)
-          reasonEstInsuranceDiff: formData.reasonEstInsuranceDiff, // Number (dropdown ID)
-          // Explanation fields (2 fields)
+          // Reason fields - only send if difference != 0
+          reasonTotalProductionDiff:
+            (Number(formData.totalProductionDifference) || 0) !== 0
+              ? formData.reasonTotalProductionDiff
+              : "", // Number (dropdown ID) or empty
+          reasonEstInsuranceDiff:
+            (Number(formData.estInsuranceDifference) || 0) !== 0
+              ? formData.reasonEstInsuranceDiff
+              : "", // Number (dropdown ID) or empty
+          // Explanation fields - only send if difference != 0
           explanationTotalProductionDiff:
-            formData.explanationTotalProductionDiff, // String
-          explanationEstInsuranceDiff: formData.explanationEstInsuranceDiff, // String
+            (Number(formData.totalProductionDifference) || 0) !== 0
+              ? formData.explanationTotalProductionDiff
+              : "", // String or empty
+          explanationEstInsuranceDiff:
+            (Number(formData.estInsuranceDifference) || 0) !== 0
+              ? formData.explanationEstInsuranceDiff
+              : "", // String or empty
           // Walkout questions (9 fields)
-          informedOfficeManager: formData.informedOfficeManager, // Number (1=Yes, 2=No)
-          googleReviewSent: formData.googleReviewSent, // Number (1=Yes, 2=No)
+          // informedOfficeManager - only send if any difference != 0
+          informedOfficeManager:
+            (Number(formData.totalProductionDifference) || 0) !== 0 ||
+            (Number(formData.estInsuranceDifference) || 0) !== 0
+              ? formData.informedOfficeManager
+              : "", // Number (1=Yes, 2=No) or empty
+          // googleReviewSent - only send if Office googleReviewRequest === 1
+          googleReviewSent:
+            formData.googleReviewRequest === 1 ? formData.googleReviewSent : "", // Number (1=Yes, 2=No) or empty
           containsCrownDentureImplant: formData.containsCrownDentureImplant, // Number (1=Yes, 2=No)
-          crownPaidOn: formData.crownPaidOn, // Number (dropdown ID)
-          deliveredAsPerNotes: formData.deliveredAsPerNotes, // Number (1=Yes, 2=No)
+          // crownPaidOn - only send if containsCrownDentureImplant === 1
+          crownPaidOn:
+            formData.containsCrownDentureImplant === 1
+              ? formData.crownPaidOn
+              : "", // Number (dropdown ID) or empty
+          // deliveredAsPerNotes - only send if crownPaidOn === 2
+          deliveredAsPerNotes:
+            formData.containsCrownDentureImplant === 1 &&
+            formData.crownPaidOn === 2
+              ? formData.deliveredAsPerNotes
+              : "", // Number (1=Yes, 2=No) or empty
           walkoutOnHold: formData.walkoutOnHold, // Number (1=Yes, 2=No)
-          onHoldReasons: formData.onHoldReasons || [], // Array of Numbers (dropdown IDs)
-          otherReasonNotes: formData.otherReasonNotes, // String
-          completingWithDeficiency: formData.completingWithDeficiency, // Number (1=Yes, 2=No)
+          // onHoldReasons - only send if walkoutOnHold === 2
+          onHoldReasons:
+            formData.walkoutOnHold === 2 ? formData.onHoldReasons || [] : [], // Array of Numbers or empty array
+          // otherReasonNotes - only send if walkoutOnHold === 2
+          otherReasonNotes:
+            formData.walkoutOnHold === 2 ? formData.otherReasonNotes : "", // String or empty
+          // completingWithDeficiency - only send if walkoutOnHold === 1
+          completingWithDeficiency:
+            formData.walkoutOnHold === 1
+              ? formData.completingWithDeficiency
+              : "", // Number (1=Yes, 2=No) or empty
         },
 
         // 6. Provider Notes - 10 fields as per backend schema
@@ -1549,11 +2007,10 @@ const WalkoutForm = () => {
 
       console.log("📤 Submitting LC3 Payload:", lc3Payload);
 
-      const response = await fetch(`${API}/walkouts/${walkoutId}/lc3`, {
+      const response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/lc3`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(lc3Payload),
       });
@@ -1618,7 +2075,7 @@ const WalkoutForm = () => {
   // Render compact image buttons
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
-    const hasImage = imageData.imageId !== "";
+    const hasImage = imageData.file !== null || imageData.imageId !== "";
 
     return (
       <div className="WF-image-button-group">
@@ -2083,12 +2540,13 @@ const WalkoutForm = () => {
                                 FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE
                               }
                               value={formData.patientPortionPrimaryMode || ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const value = e.target.value;
                                 handleDropdownChange(
                                   "patientPortionPrimaryMode",
-                                  parseInt(e.target.value)
-                                )
-                              }
+                                  value === "" ? null : parseInt(value)
+                                );
+                              }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
@@ -2149,12 +2607,13 @@ const WalkoutForm = () => {
                                 FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE
                               }
                               value={formData.patientPortionSecondaryMode || ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const value = e.target.value;
                                 handleDropdownChange(
                                   "patientPortionSecondaryMode",
-                                  parseInt(e.target.value)
-                                )
-                              }
+                                  value === "" ? null : parseInt(value)
+                                );
+                              }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
@@ -2254,12 +2713,13 @@ const WalkoutForm = () => {
                               className="WF-form-select"
                               data-field-id={FIELD_IDS.REASON_LESS_COLLECTION}
                               value={formData.reasonLessCollection || ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const value = e.target.value;
                                 handleDropdownChange(
                                   "reasonLessCollection",
-                                  parseInt(e.target.value)
-                                )
-                              }
+                                  value === "" ? null : parseInt(value)
+                                );
+                              }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
@@ -2337,12 +2797,13 @@ const WalkoutForm = () => {
                                   FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
                                 }
                                 value={formData.ruleEngineNotRunReason || ""}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const value = e.target.value;
                                   handleDropdownChange(
                                     "ruleEngineNotRunReason",
-                                    parseInt(e.target.value)
-                                  )
-                                }
+                                    value === "" ? null : parseInt(value)
+                                  );
+                                }}
                               >
                                 <option value="">Select</option>
                                 {getDropdownOptions(
@@ -2753,7 +3214,11 @@ const WalkoutForm = () => {
                         A. Rule Engine Check
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.fieldsetStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_RULE_ENGINE_STATUS}
                       >
                         {getRadioButtons(FIELD_IDS.LC3_RULE_ENGINE_STATUS).map(
@@ -2798,7 +3263,11 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.didLc3RunRules
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_RUN_RULES}
                         >
                           {(() => {
@@ -2854,7 +3323,11 @@ const WalkoutForm = () => {
                                 <div className="WF-unique-id-input-row">
                                   <input
                                     type="text"
-                                    className="WF-form-input"
+                                    className={`WF-form-input ${
+                                      lc3ValidationErrors.ruleEngineUniqueId
+                                        ? "WF-validation-error"
+                                        : ""
+                                    }`}
                                     value={lc3Data.ruleEngineUniqueId}
                                     onChange={(e) =>
                                       handleLc3Change(
@@ -2894,7 +3367,11 @@ const WalkoutForm = () => {
                                   Reason for Rules Engine not run
                                 </label>
                                 <select
-                                  className="WF-walkout-form-select"
+                                  className={`WF-walkout-form-select ${
+                                    lc3ValidationErrors.reasonForNotRun
+                                      ? "WF-validation-error"
+                                      : ""
+                                  }`}
                                   value={lc3Data.reasonForNotRun}
                                   onChange={(e) =>
                                     handleLc3Change(
@@ -3012,7 +3489,11 @@ const WalkoutForm = () => {
                         </span>
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.lc3DocumentCheckStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_DOC_CHECK_STATUS}
                       >
                         {getRadioButtons(FIELD_IDS.LC3_DOC_CHECK_STATUS).map(
@@ -3056,15 +3537,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.signedTreatmentPlanAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_SIGNED_TREATMENT_PLAN}
                           value={formData.signedTreatmentPlanAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "signedTreatmentPlanAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3083,15 +3569,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.prcAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_PRC_AVAILABLE}
                           value={formData.prcAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "prcAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_PRC_AVAILABLE).map(
@@ -3110,15 +3601,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.signedConsentGeneralAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_SIGNED_CONSENT_GENERAL}
                           value={formData.signedConsentGeneralAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "signedConsentGeneralAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3137,15 +3633,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.nvdAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_NVD_AVAILABLE}
                           value={formData.nvdAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "nvdAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_NVD_AVAILABLE).map(
@@ -3165,15 +3666,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.narrativeAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_NARRATIVE_AVAILABLE}
                           value={formData.narrativeAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "narrativeAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3192,15 +3698,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.signedConsentTxAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_SIGNED_CONSENT_TX}
                           value={formData.signedConsentTxAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "signedConsentTxAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3219,15 +3730,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.preAuthAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_PRE_AUTH}
                           value={formData.preAuthAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "preAuthAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_PRE_AUTH).map(
@@ -3246,15 +3762,20 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.routeSheetAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_ROUTE_SHEET}
                           value={formData.routeSheetAvailable || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "routeSheetAvailable",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_ROUTE_SHEET).map(
@@ -3274,7 +3795,11 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.orthoQuestionnaireAvailable
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE}
                         >
                           {getRadioButtons(
@@ -3319,7 +3844,11 @@ const WalkoutForm = () => {
                         </span>
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.lc3AttachmentsCheckStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_ATTACH_CHECK_STATUS}
                       >
                         {getRadioButtons(FIELD_IDS.LC3_ATTACH_CHECK_STATUS).map(
@@ -3361,15 +3890,20 @@ const WalkoutForm = () => {
                           Pano<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.pano
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_PANO}
                           value={formData.pano || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "pano",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_PANO).map((opt) => (
@@ -3385,15 +3919,18 @@ const WalkoutForm = () => {
                           FMX<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.fmx ? "WF-validation-error" : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_FMX}
                           value={formData.fmx || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "fmx",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_FMX).map((opt) => (
@@ -3409,15 +3946,20 @@ const WalkoutForm = () => {
                           Bitewing<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.bitewing
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_BITEWING}
                           value={formData.bitewing || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "bitewing",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_BITEWING).map(
@@ -3435,12 +3977,18 @@ const WalkoutForm = () => {
                           PA<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.pa ? "WF-validation-error" : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_PA}
                           value={formData.pa || ""}
-                          onChange={(e) =>
-                            handleDropdownChange("pa", parseInt(e.target.value))
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            handleDropdownChange(
+                              "pa",
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_PA).map((opt) => (
@@ -3456,15 +4004,20 @@ const WalkoutForm = () => {
                           Perio Chart<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <select
-                          className="WF-walkout-form-select"
+                          className={`WF-walkout-form-select ${
+                            lc3ValidationErrors.perioChart
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_PERIO_CHART}
                           value={formData.perioChart || ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const value = e.target.value;
                             handleDropdownChange(
                               "perioChart",
-                              parseInt(e.target.value)
-                            )
-                          }
+                              value === "" ? null : parseInt(value)
+                            );
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(FIELD_IDS.LC3_PERIO_CHART).map(
@@ -3486,7 +4039,11 @@ const WalkoutForm = () => {
                         D. Patient Portion Check
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.lc3PatientPortionStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_PP_CHECK_STATUS}
                       >
                         {getRadioButtons(FIELD_IDS.LC3_PP_CHECK_STATUS).map(
@@ -3535,7 +4092,11 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.expectedPPOffice
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           value={formData.expectedPPOffice || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -3553,7 +4114,11 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.ppCollectedOffice
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           value={formData.ppCollectedOffice || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -3571,55 +4136,61 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.ppDifferenceOffice || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "ppDifferenceOffice",
-                              e.target.value
-                            )
-                          }
+                          value={formData.ppDifferenceOffice || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
                       </div>
                     </div>
 
-                    <div className="WF-nvd-question-row">
-                      <label className="WF-form-label-compact">
-                        Is there a signed NVD for the Difference?
-                        <span style={{ color: "#dc2626" }}>*</span>
-                      </label>
-                      <div
-                        className="WF-button-group"
-                        data-field-id={FIELD_IDS.LC3_SIGNED_NVD_DIFF}
-                      >
-                        {getRadioButtons(FIELD_IDS.LC3_SIGNED_NVD_DIFF).map(
-                          (button) => (
-                            <button
-                              key={button._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                button.name === "No" ||
-                                button.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.signedNVDForDifference ===
-                                button.incrementalId
-                                  ? "WF-selected"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "signedNVDForDifference",
+                    {/* NVD Question - Conditionally shown only if ppDifferenceOffice is negative */}
+                    {formData.ppDifferenceOffice < 0 && (
+                      <div className="WF-nvd-question-row">
+                        <label className="WF-form-label-compact">
+                          Is there a signed NVD for the Difference?
+                          <span style={{ color: "#dc2626" }}>*</span>
+                        </label>
+                        <div
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.signedNVDForDifference
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          data-field-id={FIELD_IDS.LC3_SIGNED_NVD_DIFF}
+                        >
+                          {getRadioButtons(FIELD_IDS.LC3_SIGNED_NVD_DIFF).map(
+                            (button) => (
+                              <button
+                                key={button._id}
+                                type="button"
+                                className={`WF-radio-button ${
+                                  button.name === "No" ||
+                                  button.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
+                                  formData.signedNVDForDifference ===
                                   button.incrementalId
-                                )
-                              }
-                            >
-                              {button.name}
-                            </button>
-                          )
-                        )}
+                                    ? "WF-selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleRadioChange(
+                                    "signedNVDForDifference",
+                                    button.incrementalId
+                                  )
+                                }
+                              >
+                                {button.name}
+                              </button>
+                            )
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Patient Portion Calculations by LC3 */}
                     <div className="WF-section-subheader">
@@ -3634,7 +4205,11 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.expectedPPLC3
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           value={formData.expectedPPLC3 || ""}
                           onChange={(e) =>
                             handleDropdownChange(
@@ -3652,13 +4227,12 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.ppDifferenceLC3 || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "ppDifferenceLC3",
-                              e.target.value
-                            )
-                          }
+                          value={formData.ppDifferenceLC3 || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
                       </div>
                     </div>
@@ -3668,8 +4242,8 @@ const WalkoutForm = () => {
                       Verification of Patient Portion Payment
                     </div>
 
+                    {/* Primary Mode Row */}
                     <div className="WF-payment-verification-grid">
-                      {/* Row 1 */}
                       <div className="WF-form-group-compact">
                         <label className="WF-form-label-compact">
                           Pat. Portion Primary Mode
@@ -3678,12 +4252,20 @@ const WalkoutForm = () => {
                           className="WF-walkout-form-select"
                           data-field-id={FIELD_IDS.LC3_PP_PRIMARY_MODE}
                           value={formData.ppPrimaryMode || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "ppPrimaryMode",
-                              parseInt(e.target.value)
-                            )
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value
+                              ? parseInt(e.target.value)
+                              : null;
+                            handleDropdownChange("ppPrimaryMode", value);
+                            // Clear related fields if deselected
+                            if (!value) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                amountPrimaryMode: "",
+                                paymentVerifiedFromPrimary: "",
+                              }));
+                            }
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3696,52 +4278,72 @@ const WalkoutForm = () => {
                         </select>
                       </div>
 
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Amount Collected Using Primary Mode
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <input
-                          type="number"
-                          className="WF-form-input"
-                          value={formData.amountPrimaryMode || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "amountPrimaryMode",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                      {/* Conditionally show if Primary Mode is selected */}
+                      {formData.ppPrimaryMode && (
+                        <>
+                          <div className="WF-form-group-compact">
+                            <label className="WF-form-label-compact">
+                              Amount Collected Using Primary Mode
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              type="number"
+                              className={`WF-form-input ${
+                                lc3ValidationErrors.amountPrimaryMode
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              value={formData.amountPrimaryMode || ""}
+                              onChange={(e) =>
+                                handleDropdownChange(
+                                  "amountPrimaryMode",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
 
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Payment verified from
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <select
-                          className="WF-walkout-form-select"
-                          data-field-id={FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY}
-                          value={formData.paymentVerifiedFromPrimary || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "paymentVerifiedFromPrimary",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {getDropdownOptions(
-                            FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY
-                          ).map((opt) => (
-                            <option key={opt._id} value={opt.incrementalId}>
-                              {opt.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                          <div className="WF-form-group-compact">
+                            <label className="WF-form-label-compact">
+                              Payment verified from
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              className={`WF-walkout-form-select ${
+                                lc3ValidationErrors.paymentVerifiedFromPrimary
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              data-field-id={
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY
+                              }
+                              value={formData.paymentVerifiedFromPrimary || ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null;
+                                handleDropdownChange(
+                                  "paymentVerifiedFromPrimary",
+                                  value
+                                );
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {getDropdownOptions(
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY
+                              ).map((opt) => (
+                                <option key={opt._id} value={opt.incrementalId}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
-                      {/* Row 2 */}
+                    {/* Secondary Mode Row */}
+                    <div className="WF-payment-verification-grid">
                       <div className="WF-form-group-compact">
                         <label className="WF-form-label-compact">
                           Pat. Portion Secondary Mode
@@ -3750,12 +4352,20 @@ const WalkoutForm = () => {
                           className="WF-walkout-form-select"
                           data-field-id={FIELD_IDS.LC3_PP_SECONDARY_MODE}
                           value={formData.ppSecondaryMode || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "ppSecondaryMode",
-                              parseInt(e.target.value)
-                            )
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value
+                              ? parseInt(e.target.value)
+                              : null;
+                            handleDropdownChange("ppSecondaryMode", value);
+                            // Clear related fields if deselected
+                            if (!value) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                amountSecondaryMode: "",
+                                paymentVerifiedFromSecondary: "",
+                              }));
+                            }
+                          }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
@@ -3768,136 +4378,165 @@ const WalkoutForm = () => {
                         </select>
                       </div>
 
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Amount Collected Using Secondary Mode
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <input
-                          type="number"
-                          className="WF-form-input"
-                          value={formData.amountSecondaryMode || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "amountSecondaryMode",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
+                      {/* Conditionally show if Secondary Mode is selected */}
+                      {formData.ppSecondaryMode && (
+                        <>
+                          <div className="WF-form-group-compact">
+                            <label className="WF-form-label-compact">
+                              Amount Collected Using Secondary Mode
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              type="number"
+                              className={`WF-form-input ${
+                                lc3ValidationErrors.amountSecondaryMode
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              value={formData.amountSecondaryMode || ""}
+                              onChange={(e) =>
+                                handleDropdownChange(
+                                  "amountSecondaryMode",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
 
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Payment verified from
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <select
-                          className="WF-walkout-form-select"
-                          data-field-id={
-                            FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
-                          }
-                          value={formData.paymentVerifiedFromSecondary || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "paymentVerifiedFromSecondary",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {getDropdownOptions(
-                            FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
-                          ).map((opt) => (
-                            <option key={opt._id} value={opt.incrementalId}>
-                              {opt.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                          <div className="WF-form-group-compact">
+                            <label className="WF-form-label-compact">
+                              Payment verified from
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              className={`WF-walkout-form-select ${
+                                lc3ValidationErrors.paymentVerifiedFromSecondary
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              data-field-id={
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
+                              }
+                              value={
+                                formData.paymentVerifiedFromSecondary || ""
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null;
+                                handleDropdownChange(
+                                  "paymentVerifiedFromSecondary",
+                                  value
+                                );
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {getDropdownOptions(
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
+                              ).map((opt) => (
+                                <option key={opt._id} value={opt.incrementalId}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    {/* Bottom Questions */}
-                    <div className="WF-payment-questions">
-                      <div className="WF-payment-question-row">
-                        <label className="WF-form-label-compact">
-                          Did you verify if the attached check matches the
-                          payment posted in ES?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_VERIFY_CHECK_ES}
-                        >
-                          {getRadioButtons(FIELD_IDS.LC3_VERIFY_CHECK_ES).map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.verifyCheckMatchesES ===
-                                  button.incrementalId
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "verifyCheckMatchesES",
+                    {/* Bottom Questions - Conditionally shown if Personal Check (incrementalId = 4) selected */}
+                    {(formData.ppPrimaryMode === 4 ||
+                      formData.ppSecondaryMode === 4) && (
+                      <div className="WF-payment-questions">
+                        <div className="WF-payment-question-row">
+                          <label className="WF-form-label-compact">
+                            Did you verify if the attached check matches the
+                            payment posted in ES?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className={`WF-button-group ${
+                              lc3ValidationErrors.verifyCheckMatchesES
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            data-field-id={FIELD_IDS.LC3_VERIFY_CHECK_ES}
+                          >
+                            {getRadioButtons(FIELD_IDS.LC3_VERIFY_CHECK_ES).map(
+                              (button) => (
+                                <button
+                                  key={button._id}
+                                  type="button"
+                                  className={`WF-radio-button ${
+                                    button.name === "No" ||
+                                    button.name === "Pending"
+                                      ? "WF-no-or-pending-button"
+                                      : ""
+                                  } ${
+                                    formData.verifyCheckMatchesES ===
                                     button.incrementalId
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                                      ? "WF-selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleRadioChange(
+                                      "verifyCheckMatchesES",
+                                      button.incrementalId
+                                    )
+                                  }
+                                >
+                                  {button.name}
+                                </button>
+                              )
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="WF-payment-question-row">
-                        <label className="WF-form-label-compact">
-                          Do we have the uploaded Forte check available in SD,
-                          and does the entered ref# by the office match?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_FORTE_CHECK}
-                        >
-                          {getRadioButtons(FIELD_IDS.LC3_FORTE_CHECK).map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.forteCheckAvailable ===
-                                  button.incrementalId
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "forteCheckAvailable",
+                        <div className="WF-payment-question-row">
+                          <label className="WF-form-label-compact">
+                            Do we have the uploaded Forte check available in SD,
+                            and does the entered ref# by the office match?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className={`WF-button-group ${
+                              lc3ValidationErrors.forteCheckAvailable
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            data-field-id={FIELD_IDS.LC3_FORTE_CHECK}
+                          >
+                            {getRadioButtons(FIELD_IDS.LC3_FORTE_CHECK).map(
+                              (button) => (
+                                <button
+                                  key={button._id}
+                                  type="button"
+                                  className={`WF-radio-button ${
+                                    button.name === "No" ||
+                                    button.name === "Pending"
+                                      ? "WF-no-or-pending-button"
+                                      : ""
+                                  } ${
+                                    formData.forteCheckAvailable ===
                                     button.incrementalId
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                                      ? "WF-selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleRadioChange(
+                                      "forteCheckAvailable",
+                                      button.incrementalId
+                                    )
+                                  }
+                                >
+                                  {button.name}
+                                </button>
+                              )
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </fieldset>
 
                   {/* E. Production Details and Walkout Submission/Hold */}
@@ -3907,7 +4546,11 @@ const WalkoutForm = () => {
                         E. Production Details and Walkout Submission/Hold
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.lc3ProductionStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_PROD_STATUS}
                       >
                         {getRadioButtons(FIELD_IDS.LC3_PROD_STATUS).map(
@@ -3956,8 +4599,17 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
-                          value={formData.totalProductionOffice || ""}
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.totalProductionOffice
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          value={
+                            formData.totalProductionOffice !== null &&
+                            formData.totalProductionOffice !== undefined
+                              ? formData.totalProductionOffice
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "totalProductionOffice",
@@ -3974,8 +4626,17 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
-                          value={formData.estInsuranceOffice || ""}
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.estInsuranceOffice
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          value={
+                            formData.estInsuranceOffice !== null &&
+                            formData.estInsuranceOffice !== undefined
+                              ? formData.estInsuranceOffice
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "estInsuranceOffice",
@@ -3992,13 +4653,12 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.expectedPPOfficeProduction || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "expectedPPOfficeProduction",
-                              e.target.value
-                            )
-                          }
+                          value={formData.expectedPPOfficeProduction || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
                       </div>
                     </div>
@@ -4016,8 +4676,17 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
-                          value={formData.totalProductionLC3 || ""}
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.totalProductionLC3
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          value={
+                            formData.totalProductionLC3 !== null &&
+                            formData.totalProductionLC3 !== undefined
+                              ? formData.totalProductionLC3
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "totalProductionLC3",
@@ -4034,8 +4703,17 @@ const WalkoutForm = () => {
                         </label>
                         <input
                           type="number"
-                          className="WF-form-input"
-                          value={formData.estInsuranceLC3 || ""}
+                          className={`WF-form-input ${
+                            lc3ValidationErrors.estInsuranceLC3
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          value={
+                            formData.estInsuranceLC3 !== null &&
+                            formData.estInsuranceLC3 !== undefined
+                              ? formData.estInsuranceLC3
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "estInsuranceLC3",
@@ -4052,13 +4730,12 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.expectedPPLC3Production || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "expectedPPLC3Production",
-                              e.target.value
-                            )
-                          }
+                          value={formData.expectedPPLC3Production || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
                       </div>
                     </div>
@@ -4070,6 +4747,7 @@ const WalkoutForm = () => {
                     </div>
 
                     <div className="WF-production-difference-grid">
+                      {/* Column 1: Total Production Difference and related fields */}
                       <div className="WF-form-group-compact">
                         <label className="WF-form-label-compact">
                           Total Production Difference
@@ -4077,16 +4755,83 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.totalProductionDifference || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "totalProductionDifference",
-                              e.target.value
-                            )
-                          }
+                          value={formData.totalProductionDifference || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
+
+                        {/* Conditional: Show if Total Production Difference != 0 */}
+                        {(Number(formData.totalProductionDifference) || 0) !==
+                          0 && (
+                          <>
+                            <label
+                              className="WF-form-label-compact"
+                              style={{ marginTop: "12px" }}
+                            >
+                              Reason for Difference in Total Production
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              className={`WF-walkout-form-select ${
+                                lc3ValidationErrors.reasonTotalProductionDiff
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              data-field-id={FIELD_IDS.LC3_REASON_PROD_DIFF}
+                              value={formData.reasonTotalProductionDiff || ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null;
+                                handleDropdownChange(
+                                  "reasonTotalProductionDiff",
+                                  value
+                                );
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {getDropdownOptions(
+                                FIELD_IDS.LC3_REASON_PROD_DIFF
+                              ).map((opt) => (
+                                <option key={opt._id} value={opt.incrementalId}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <label
+                              className="WF-form-label-compact"
+                              style={{ marginTop: "12px" }}
+                            >
+                              Explanation of reason for Difference in Total
+                              Production
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={`WF-form-input ${
+                                lc3ValidationErrors.explanationTotalProductionDiff
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              value={
+                                formData.explanationTotalProductionDiff || ""
+                              }
+                              onChange={(e) =>
+                                handleDropdownChange(
+                                  "explanationTotalProductionDiff",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </>
+                        )}
                       </div>
 
+                      {/* Column 2: Est Insurance Difference and related fields */}
                       <div className="WF-form-group-compact">
                         <label className="WF-form-label-compact">
                           Est Insurance Difference
@@ -4094,16 +4839,81 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.estInsuranceDifference || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "estInsuranceDifference",
-                              e.target.value
-                            )
-                          }
+                          value={formData.estInsuranceDifference || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
+
+                        {/* Conditional: Show if Est Insurance Difference != 0 */}
+                        {(Number(formData.estInsuranceDifference) || 0) !==
+                          0 && (
+                          <>
+                            <label
+                              className="WF-form-label-compact"
+                              style={{ marginTop: "12px" }}
+                            >
+                              Reason for Difference in Est Insurance
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <select
+                              className={`WF-walkout-form-select ${
+                                lc3ValidationErrors.reasonEstInsuranceDiff
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              data-field-id={FIELD_IDS.LC3_REASON_INS_DIFF}
+                              value={formData.reasonEstInsuranceDiff || ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null;
+                                handleDropdownChange(
+                                  "reasonEstInsuranceDiff",
+                                  value
+                                );
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {getDropdownOptions(
+                                FIELD_IDS.LC3_REASON_INS_DIFF
+                              ).map((opt) => (
+                                <option key={opt._id} value={opt.incrementalId}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <label
+                              className="WF-form-label-compact"
+                              style={{ marginTop: "12px" }}
+                            >
+                              Explanation of reason for Difference in Est
+                              Insurance
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={`WF-form-input ${
+                                lc3ValidationErrors.explanationEstInsuranceDiff
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              value={formData.explanationEstInsuranceDiff || ""}
+                              onChange={(e) =>
+                                handleDropdownChange(
+                                  "explanationEstInsuranceDiff",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </>
+                        )}
                       </div>
 
+                      {/* Column 3: Expected PP Difference (no conditional fields) */}
                       <div className="WF-form-group-compact">
                         <label className="WF-form-label-compact">
                           Expected PP Difference
@@ -4111,126 +4921,86 @@ const WalkoutForm = () => {
                         <input
                           type="number"
                           className="WF-form-input"
-                          value={formData.expectedPPDifference || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "expectedPPDifference",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="WF-production-reason-grid">
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Reason for Difference in Total Production
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <select
-                          className="WF-walkout-form-select"
-                          data-field-id={FIELD_IDS.LC3_REASON_PROD_DIFF}
-                          value={formData.reasonTotalProductionDiff || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "reasonTotalProductionDiff",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {getDropdownOptions(
-                            FIELD_IDS.LC3_REASON_PROD_DIFF
-                          ).map((opt) => (
-                            <option key={opt._id} value={opt.incrementalId}>
-                              {opt.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Reason for Difference in Est Insurance
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <select
-                          className="WF-walkout-form-select"
-                          data-field-id={FIELD_IDS.LC3_REASON_INS_DIFF}
-                          value={formData.reasonEstInsuranceDiff || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "reasonEstInsuranceDiff",
-                              parseInt(e.target.value)
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {getDropdownOptions(
-                            FIELD_IDS.LC3_REASON_INS_DIFF
-                          ).map((opt) => (
-                            <option key={opt._id} value={opt.incrementalId}>
-                              {opt.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="WF-production-explanation-grid">
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Explanation of reason for Difference in Total
-                          Production
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="WF-form-input"
-                          value={formData.explanationTotalProductionDiff || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "explanationTotalProductionDiff",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-
-                      <div className="WF-form-group-compact">
-                        <label className="WF-form-label-compact">
-                          Explanation of reason for Difference in Est Insurance
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="WF-form-input"
-                          value={formData.explanationEstInsuranceDiff || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "explanationEstInsuranceDiff",
-                              e.target.value
-                            )
-                          }
+                          value={formData.expectedPPDifference || 0}
+                          readOnly
+                          style={{
+                            backgroundColor: "#f3f4f6",
+                            cursor: "not-allowed",
+                          }}
                         />
                       </div>
                     </div>
 
                     {/* Walkout Questions */}
                     <div className="WF-walkout-questions">
-                      <div className="WF-walkout-question-row">
-                        <label className="WF-form-label-compact">
-                          Have we informed office manager on HQ for changes made
-                          in the walkout?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_INFORMED_OFFICE}
-                        >
-                          {getRadioButtons(FIELD_IDS.LC3_INFORMED_OFFICE).map(
-                            (button) => (
+                      {/* Conditional: Show if Total Production Difference != 0 OR Est Insurance Difference != 0 */}
+                      {((Number(formData.totalProductionDifference) || 0) !==
+                        0 ||
+                        (Number(formData.estInsuranceDifference) || 0) !==
+                          0) && (
+                        <div className="WF-walkout-question-row">
+                          <label className="WF-form-label-compact">
+                            Have we informed office manager on HQ for changes
+                            made in the walkout?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className={`WF-button-group ${
+                              lc3ValidationErrors.informedOfficeManager
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            data-field-id={FIELD_IDS.LC3_INFORMED_OFFICE}
+                          >
+                            {getRadioButtons(FIELD_IDS.LC3_INFORMED_OFFICE).map(
+                              (button) => (
+                                <button
+                                  key={button._id}
+                                  type="button"
+                                  className={`WF-radio-button ${
+                                    button.name === "No" ||
+                                    button.name === "Pending"
+                                      ? "WF-no-or-pending-button"
+                                      : ""
+                                  } ${
+                                    formData.informedOfficeManager ===
+                                    button.incrementalId
+                                      ? "WF-selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleRadioChange(
+                                      "informedOfficeManager",
+                                      button.incrementalId
+                                    )
+                                  }
+                                >
+                                  {button.name}
+                                </button>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Conditional: Show only if Office googleReviewRequest === 1 (Patient Happy, Send) */}
+                      {formData.googleReviewRequest === 1 && (
+                        <div className="WF-walkout-question-row">
+                          <label className="WF-form-label-compact">
+                            Has the request for a Google review been sent?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className={`WF-button-group ${
+                              lc3ValidationErrors.googleReviewSent
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            data-field-id={FIELD_IDS.LC3_GOOGLE_REVIEW_SENT}
+                          >
+                            {getRadioButtons(
+                              FIELD_IDS.LC3_GOOGLE_REVIEW_SENT
+                            ).map((button) => (
                               <button
                                 key={button._id}
                                 type="button"
@@ -4240,63 +5010,24 @@ const WalkoutForm = () => {
                                     ? "WF-no-or-pending-button"
                                     : ""
                                 } ${
-                                  formData.informedOfficeManager ===
+                                  formData.googleReviewSent ===
                                   button.incrementalId
                                     ? "WF-selected"
                                     : ""
                                 }`}
                                 onClick={() =>
                                   handleRadioChange(
-                                    "informedOfficeManager",
+                                    "googleReviewSent",
                                     button.incrementalId
                                   )
                                 }
                               >
                                 {button.name}
                               </button>
-                            )
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="WF-walkout-question-row">
-                        <label className="WF-form-label-compact">
-                          Has the request for a Google review been sent?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_GOOGLE_REVIEW_SENT}
-                        >
-                          {getRadioButtons(
-                            FIELD_IDS.LC3_GOOGLE_REVIEW_SENT
-                          ).map((button) => (
-                            <button
-                              key={button._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                button.name === "No" ||
-                                button.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.googleReviewSent ===
-                                button.incrementalId
-                                  ? "WF-selected"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "googleReviewSent",
-                                  button.incrementalId
-                                )
-                              }
-                            >
-                              {button.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      )}
 
                       <div className="WF-walkout-question-row">
                         <label className="WF-form-label-compact">
@@ -4304,7 +5035,11 @@ const WalkoutForm = () => {
                           Prep/Imp?<span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.containsCrownDentureImplant
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_CONTAINS_CROWN}
                         >
                           {getRadioButtons(FIELD_IDS.LC3_CONTAINS_CROWN).map(
@@ -4337,82 +5072,99 @@ const WalkoutForm = () => {
                         </div>
                       </div>
 
-                      <div className="WF-walkout-question-row">
-                        <label className="WF-form-label-compact">
-                          As per IV crown paid on -{" "}
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_CROWN_PAID_ON}
-                        >
-                          {getRadioButtons(FIELD_IDS.LC3_CROWN_PAID_ON).map(
-                            (button) => (
-                              <button
-                                key={button._id}
-                                type="button"
-                                className={`WF-radio-button ${
-                                  button.name === "No" ||
-                                  button.name === "Pending"
-                                    ? "WF-no-or-pending-button"
-                                    : ""
-                                } ${
-                                  formData.crownPaidOn === button.incrementalId
-                                    ? "WF-selected"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRadioChange(
-                                    "crownPaidOn",
+                      {/* Conditional: Show only if containsCrownDentureImplant === 1 (Yes) */}
+                      {formData.containsCrownDentureImplant === 1 && (
+                        <div className="WF-walkout-question-row">
+                          <label className="WF-form-label-compact">
+                            As per IV crown paid on -{" "}
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className={`WF-button-group ${
+                              lc3ValidationErrors.crownPaidOn
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            data-field-id={FIELD_IDS.LC3_CROWN_PAID_ON}
+                          >
+                            {getRadioButtons(FIELD_IDS.LC3_CROWN_PAID_ON).map(
+                              (button) => (
+                                <button
+                                  key={button._id}
+                                  type="button"
+                                  className={`WF-radio-button ${
+                                    button.name === "No" ||
+                                    button.name === "Pending"
+                                      ? "WF-no-or-pending-button"
+                                      : ""
+                                  } ${
+                                    formData.crownPaidOn ===
                                     button.incrementalId
-                                  )
-                                }
-                              >
-                                {button.name}
-                              </button>
-                            )
-                          )}
+                                      ? "WF-selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleRadioChange(
+                                      "crownPaidOn",
+                                      button.incrementalId
+                                    )
+                                  }
+                                >
+                                  {button.name}
+                                </button>
+                              )
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="WF-walkout-question-row">
-                        <label className="WF-form-label-compact">
-                          Does crown/Denture/Implants delivered as per provider
-                          notes?<span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.LC3_DELIVERED_PER_NOTES}
-                        >
-                          {getRadioButtons(
-                            FIELD_IDS.LC3_DELIVERED_PER_NOTES
-                          ).map((button) => (
-                            <button
-                              key={button._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                button.name === "No" ||
-                                button.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.deliveredAsPerNotes ===
-                                button.incrementalId
-                                  ? "WF-selected"
+                      {/* Conditional: Show only if crownPaidOn === 2 */}
+                      {formData.containsCrownDentureImplant === 1 &&
+                        formData.crownPaidOn === 2 && (
+                          <div className="WF-walkout-question-row">
+                            <label className="WF-form-label-compact">
+                              Does crown/Denture/Implants delivered as per
+                              provider notes?
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <div
+                              className={`WF-button-group ${
+                                lc3ValidationErrors.deliveredAsPerNotes
+                                  ? "WF-validation-error"
                                   : ""
                               }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "deliveredAsPerNotes",
-                                  button.incrementalId
-                                )
-                              }
+                              data-field-id={FIELD_IDS.LC3_DELIVERED_PER_NOTES}
                             >
-                              {button.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                              {getRadioButtons(
+                                FIELD_IDS.LC3_DELIVERED_PER_NOTES
+                              ).map((button) => (
+                                <button
+                                  key={button._id}
+                                  type="button"
+                                  className={`WF-radio-button ${
+                                    button.name === "No" ||
+                                    button.name === "Pending"
+                                      ? "WF-no-or-pending-button"
+                                      : ""
+                                  } ${
+                                    formData.deliveredAsPerNotes ===
+                                    button.incrementalId
+                                      ? "WF-selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleRadioChange(
+                                      "deliveredAsPerNotes",
+                                      button.incrementalId
+                                    )
+                                  }
+                                >
+                                  {button.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                       <div className="WF-walkout-question-row">
                         <label className="WF-form-label-compact">
@@ -4420,7 +5172,11 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.walkoutOnHold
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_WALKOUT_ON_HOLD}
                         >
                           {getRadioButtons(FIELD_IDS.LC3_WALKOUT_ON_HOLD).map(
@@ -4453,80 +5209,101 @@ const WalkoutForm = () => {
                         </div>
                       </div>
 
-                      <div className="WF-form-group-compact WF-full-width">
-                        <label className="WF-form-label-compact">
-                          On Hold Reasons
-                        </label>
-                        <MultiSelectDropdown
-                          options={getDropdownOptions(
-                            FIELD_IDS.LC3_ONHOLD_REASONS
-                          )}
-                          selectedValues={formData.onHoldReasons || []}
-                          onChange={(newValues) =>
-                            handleMultiSelectChange("onHoldReasons", newValues)
-                          }
-                          placeholder="Type here for search or select from list."
-                          fieldId={FIELD_IDS.LC3_ONHOLD_REASONS}
-                        />
-                      </div>
+                      {/* Conditional: Show only if walkoutOnHold === 2 (No/Hold) */}
+                      {formData.walkoutOnHold === 2 && (
+                        <>
+                          <div className="WF-form-group-compact WF-full-width">
+                            <label className="WF-form-label-compact">
+                              On Hold Reasons
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <MultiSelectDropdown
+                              options={getDropdownOptions(
+                                FIELD_IDS.LC3_ONHOLD_REASONS
+                              )}
+                              selectedValues={formData.onHoldReasons || []}
+                              onChange={(newValues) =>
+                                handleMultiSelectChange(
+                                  "onHoldReasons",
+                                  newValues
+                                )
+                              }
+                              placeholder="Type here for search or select from list."
+                              fieldId={FIELD_IDS.LC3_ONHOLD_REASONS}
+                              hasError={lc3ValidationErrors.onHoldReasons}
+                            />
+                          </div>
 
-                      <div className="WF-form-group-compact WF-full-width">
+                          <div className="WF-form-group-compact WF-full-width">
+                            <label className="WF-form-label-compact">
+                              Other Reason/Notes
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={`WF-form-input ${
+                                lc3ValidationErrors.otherReasonNotes
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                              value={formData.otherReasonNotes || ""}
+                              onChange={(e) =>
+                                handleDropdownChange(
+                                  "otherReasonNotes",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Conditional: Show only if walkoutOnHold === 1 (Yes/Completing) */}
+                    {formData.walkoutOnHold === 1 && (
+                      <div className="WF-final-question-row">
                         <label className="WF-form-label-compact">
-                          Other Reason/Notes
+                          Is walkout completing with deficiency?
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
-                        <input
-                          type="text"
-                          className="WF-form-input"
-                          value={formData.otherReasonNotes || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "otherReasonNotes",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* Final Question */}
-                    <div className="WF-final-question-row">
-                      <label className="WF-form-label-compact">
-                        Is walkout completing with deficiency?
-                        <span style={{ color: "#dc2626" }}>*</span>
-                      </label>
-                      <div
-                        className="WF-button-group"
-                        data-field-id={FIELD_IDS.LC3_COMPLETING_DEFICIENCY}
-                      >
-                        {getRadioButtons(
-                          FIELD_IDS.LC3_COMPLETING_DEFICIENCY
-                        ).map((button) => (
-                          <button
-                            key={button._id}
-                            type="button"
-                            className={`WF-radio-button ${
-                              button.name === "No" || button.name === "Pending"
-                                ? "WF-no-or-pending-button"
-                                : ""
-                            } ${
-                              formData.completingWithDeficiency ===
-                              button.incrementalId
-                                ? "WF-selected"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              handleRadioChange(
-                                "completingWithDeficiency",
+                        <div
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.completingWithDeficiency
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          data-field-id={FIELD_IDS.LC3_COMPLETING_DEFICIENCY}
+                        >
+                          {getRadioButtons(
+                            FIELD_IDS.LC3_COMPLETING_DEFICIENCY
+                          ).map((button) => (
+                            <button
+                              key={button._id}
+                              type="button"
+                              className={`WF-radio-button ${
+                                button.name === "No" ||
+                                button.name === "Pending"
+                                  ? "WF-no-or-pending-button"
+                                  : ""
+                              } ${
+                                formData.completingWithDeficiency ===
                                 button.incrementalId
-                              )
-                            }
-                          >
-                            {button.name}
-                          </button>
-                        ))}
+                                  ? "WF-selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleRadioChange(
+                                  "completingWithDeficiency",
+                                  button.incrementalId
+                                )
+                              }
+                            >
+                              {button.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </fieldset>
 
                   {/* F. Copy "Provider's Note" from Eaglesoft and Paste below */}
@@ -4536,7 +5313,11 @@ const WalkoutForm = () => {
                         F. Copy "Provider's Note" from Eaglesoft and Paste below
                       </legend>
                       <div
-                        className="WF-status-toggle"
+                        className={`WF-status-toggle ${
+                          lc3ValidationErrors.lc3ProviderNotesStatus
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
                         data-field-id={FIELD_IDS.LC3_PROVIDER_NOTES_STATUS}
                       >
                         {getRadioButtons(
@@ -5240,7 +6021,8 @@ const WalkoutForm = () => {
 
       {/* Image Preview Modal - Fullscreen */}
       {previewModal.isOpen &&
-        sidebarData.images[previewModal.type]?.imageId && (
+        (sidebarData.images[previewModal.type]?.imageId ||
+          sidebarData.images[previewModal.type]?.previewUrl) && (
           <div
             className="WF-fullscreen-preview"
             onClick={() => setPreviewModal({ isOpen: false, type: null })}
@@ -5252,7 +6034,7 @@ const WalkoutForm = () => {
               ×
             </button>
             <img
-              src={getImageUrl(sidebarData.images[previewModal.type].imageId)}
+              src={getImageUrl(previewModal.type)}
               alt="Preview"
               style={{
                 transform: `scale(${
@@ -5262,6 +6044,22 @@ const WalkoutForm = () => {
               className="WF-fullscreen-image"
               onClick={(e) => handleImageClick(previewModal.type, e)}
               onContextMenu={(e) => handleImageRightClick(previewModal.type, e)}
+              onError={(e) => {
+                console.error("❌ Image failed to load!");
+                console.error("Image URL:", getImageUrl(previewModal.type));
+                console.error(
+                  "ImageId:",
+                  sidebarData.images[previewModal.type].imageId
+                );
+                console.error(
+                  "PreviewUrl:",
+                  sidebarData.images[previewModal.type].previewUrl
+                );
+              }}
+              onLoad={() => {
+                console.log("✅ Image loaded successfully!");
+                console.log("Image URL:", getImageUrl(previewModal.type));
+              }}
             />
             <div className="WF-zoom-indicator">
               {sidebarData.images[previewModal.type].zoom}%

@@ -1,5 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import api from "../utils/api";
+import {
+  clearToken,
+  setToken as saveToken,
+  getToken,
+} from "../utils/tokenManager";
 
 const AuthContext = createContext();
 
@@ -17,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem("token");
+    const token = getToken();
     const userData = localStorage.getItem("user");
 
     if (token && userData) {
@@ -35,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data.success) {
         const { token, data } = response.data;
-        localStorage.setItem("token", token);
+        saveToken(token);
         localStorage.setItem("user", JSON.stringify(data));
         setUser(data);
         return { success: true };
@@ -64,8 +69,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearToken();
     setUser(null);
   };
 

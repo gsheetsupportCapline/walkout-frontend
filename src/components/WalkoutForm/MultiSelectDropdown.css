@@ -20,6 +20,16 @@
   border-color: #999;
 }
 
+/* Validation error state */
+.multi-select-header.multi-select-error {
+  border-color: #dc2626;
+  border-width: 2px;
+}
+
+.multi-select-header.multi-select-error:hover {
+  border-color: #dc2626;
+}
+
 .multi-select-selected {
   flex: 1;
   min-width: 0;

@@ -7,6 +7,7 @@ const MultiSelectDropdown = ({
   onChange,
   placeholder = "Select options",
   fieldId,
+  hasError = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,7 +73,12 @@ const MultiSelectDropdown = ({
       ref={dropdownRef}
       data-field-id={fieldId}
     >
-      <div className="multi-select-header" onClick={handleToggle}>
+      <div
+        className={`multi-select-header ${
+          hasError ? "multi-select-error" : ""
+        }`}
+        onClick={handleToggle}
+      >
         <div className="multi-select-selected">
           {selectedValues.length > 0 ? (
             <div className="selected-items-inline">
