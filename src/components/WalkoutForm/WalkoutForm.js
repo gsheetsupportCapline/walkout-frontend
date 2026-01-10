@@ -449,6 +449,28 @@ const WalkoutForm = () => {
               );
             }
 
+            // Load Check Image if exists (from checkImage object)
+            if (existingWalkout.checkImage?.imageId) {
+              setSidebarData((prev) => ({
+                ...prev,
+                images: {
+                  ...prev.images,
+                  checkImage: {
+                    file: null,
+                    previewUrl: "",
+                    imageId: existingWalkout.checkImage.imageId,
+                    zoom: 100,
+                  },
+                },
+              }));
+              console.log(
+                "🖼️ Check Image loaded:",
+                existingWalkout.checkImage.imageId,
+                "| File:",
+                existingWalkout.checkImage.fileName
+              );
+            }
+
             // Check if patient was present
             const buttons = getRadioButtons(FIELD_IDS.PATIENT_CAME);
             const yesButton = buttons.find((btn) => btn.name === "Yes");
@@ -1359,6 +1381,18 @@ const WalkoutForm = () => {
         );
       }
 
+      // 2b. Check Image (Optional - send actual file if user selected)
+      if (sidebarData.images.checkImage.file) {
+        formDataPayload.append(
+          "checkImage",
+          sidebarData.images.checkImage.file
+        );
+        console.log(
+          "📤 Uploading Check Image:",
+          sidebarData.images.checkImage.file.name
+        );
+      }
+
       // 3. Add all office section fields directly to FormData
       // Backend will automatically convert strings to numbers
       if (!isExistingWalkout || !walkoutId) {
@@ -1732,6 +1766,31 @@ const WalkoutForm = () => {
           console.log(
             "🖼️ Office WO Image uploaded successfully! ImageId:",
             result.data.officeWalkoutSnip.imageId
+          );
+        }
+
+        // Update Check Image imageId from response if image was uploaded
+        if (result.data?.checkImage?.imageId) {
+          // Revoke preview URL to free memory
+          if (sidebarData.images.checkImage.previewUrl) {
+            URL.revokeObjectURL(sidebarData.images.checkImage.previewUrl);
+          }
+
+          setSidebarData((prev) => ({
+            ...prev,
+            images: {
+              ...prev.images,
+              checkImage: {
+                file: null, // Clear file after upload
+                previewUrl: "", // Clear preview URL
+                imageId: result.data.checkImage.imageId, // Save imageId from backend
+                zoom: 100,
+              },
+            },
+          }));
+          console.log(
+            "🖼️ Check Image uploaded successfully! ImageId:",
+            result.data.checkImage.imageId
           );
         }
 
