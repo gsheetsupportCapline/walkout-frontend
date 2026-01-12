@@ -471,6 +471,28 @@ const WalkoutForm = () => {
               );
             }
 
+            // Load LC3 WO Image if exists (from lc3WalkoutImage object)
+            if (existingWalkout.lc3WalkoutImage?.imageId) {
+              setSidebarData((prev) => ({
+                ...prev,
+                images: {
+                  ...prev.images,
+                  lc3WO: {
+                    file: null,
+                    previewUrl: "",
+                    imageId: existingWalkout.lc3WalkoutImage.imageId,
+                    zoom: 100,
+                  },
+                },
+              }));
+              console.log(
+                "🖼️ LC3 WO Image loaded:",
+                existingWalkout.lc3WalkoutImage.imageId,
+                "| File:",
+                existingWalkout.lc3WalkoutImage.fileName
+              );
+            }
+
             // Check if patient was present
             const buttons = getRadioButtons(FIELD_IDS.PATIENT_CAME);
             const yesButton = buttons.find((btn) => btn.name === "Yes");
@@ -2092,6 +2114,61 @@ const WalkoutForm = () => {
       console.log("📥 LC3 Backend Response:", result);
 
       if (response.ok && result.success) {
+        // Upload LC3 WO Image separately if present
+        if (sidebarData.images.lc3WO.file) {
+          try {
+            const imageFormData = new FormData();
+            imageFormData.append(
+              "lc3WalkoutImage",
+              sidebarData.images.lc3WO.file
+            );
+
+            console.log(
+              "📤 Uploading LC3 WO image separately:",
+              sidebarData.images.lc3WO.file.name
+            );
+
+            const imageResponse = await fetchWithAuth(
+              `${API}/walkouts/${walkoutId}/lc3-image`,
+              {
+                method: "PUT",
+                body: imageFormData,
+              }
+            );
+
+            const imageResult = await imageResponse.json();
+
+            if (imageResponse.ok && imageResult.success) {
+              // Revoke preview URL to free memory
+              if (sidebarData.images.lc3WO.previewUrl) {
+                URL.revokeObjectURL(sidebarData.images.lc3WO.previewUrl);
+              }
+
+              setSidebarData((prev) => ({
+                ...prev,
+                images: {
+                  ...prev.images,
+                  lc3WO: {
+                    file: null,
+                    previewUrl: "",
+                    imageId: imageResult.data?.lc3WalkoutImage?.imageId || "",
+                    zoom: 100,
+                  },
+                },
+              }));
+
+              console.log(
+                "🖼️ LC3 WO Image uploaded successfully! ImageId:",
+                imageResult.data?.lc3WalkoutImage?.imageId
+              );
+            } else {
+              console.error("❌ LC3 Image upload failed:", imageResult.message);
+            }
+          } catch (imageError) {
+            console.error("❌ Error uploading LC3 image:", imageError);
+          }
+        }
+
         setNotification({
           show: true,
           type: "success",
