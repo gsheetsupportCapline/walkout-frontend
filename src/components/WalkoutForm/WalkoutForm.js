@@ -59,6 +59,14 @@ const WalkoutForm = () => {
   const navigate = useNavigate();
   const { appointment, officeName } = location.state || {};
 
+  // Provider schedule state
+  const [providerSchedule, setProviderSchedule] = useState({
+    doctor1: "",
+    doctor2: "",
+    hygienist1: "",
+    hygienist2: "",
+  });
+
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
@@ -353,6 +361,110 @@ const WalkoutForm = () => {
     };
     fetchDropdownSets();
   }, []);
+
+  // Fetch provider schedule based on office and DOS
+  useEffect(() => {
+    const fetchProviderSchedule = async () => {
+      if (!officeName || !appointment?.dos) {
+        console.log("⚠️ Missing required data for provider schedule fetch:", {
+          officeName,
+          dos: appointment?.dos,
+        });
+        return;
+      }
+
+      try {
+        const API =
+          process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
+        // Convert DOS from yyyy-mm-dd to mm/dd/yyyy format
+        const convertDateFormat = (dateStr) => {
+          // dateStr is in format: yyyy-mm-dd
+          const parts = dateStr.split("-");
+          if (parts.length === 3) {
+            const [year, month, day] = parts;
+            return `${month}/${day}/${year}`; // mm/dd/yyyy
+          }
+          return dateStr; // Return as-is if format is unexpected
+        };
+
+        const dosFormatted = convertDateFormat(appointment.dos);
+
+        console.log("📅 Fetching provider schedule for:", {
+          office: officeName,
+          dos: dosFormatted,
+          originalDOS: appointment.dos,
+        });
+
+        const response = await fetchWithAuth(
+          `${API}/provider-schedule/get-by-office-dos`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              office: officeName,
+              dos: dosFormatted,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        console.log("📅 Provider schedule API response:", {
+          status: response.status,
+          ok: response.ok,
+          result: result,
+        });
+
+        if (response.ok && result.success && result.data) {
+          console.log("📅 Provider schedule fetched:", result.data);
+
+          // Map provider-hygienist values to appointment fields
+          const scheduleData = {
+            doctor1: "",
+            doctor2: "",
+            hygienist1: "",
+            hygienist2: "",
+          };
+
+          result.data.forEach((provider) => {
+            const providerType = provider["provider-hygienist"];
+            const providerCode = provider["provider-code-with-type"];
+
+            console.log(
+              `📋 Mapping provider: ${providerType} → ${providerCode}`
+            );
+
+            if (providerType === "Doc - 1") {
+              scheduleData.doctor1 = providerCode;
+            } else if (providerType === "Doc - 2") {
+              scheduleData.doctor2 = providerCode;
+            } else if (providerType === "Hyg - 1") {
+              scheduleData.hygienist1 = providerCode;
+            } else if (providerType === "Hyg - 2") {
+              scheduleData.hygienist2 = providerCode;
+            }
+          });
+
+          setProviderSchedule(scheduleData);
+          console.log("✅ Provider schedule updated:", scheduleData);
+        } else {
+          console.log("⚠️ No provider schedule found:", {
+            status: response.status,
+            success: result.success,
+            message: result.message,
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error fetching provider schedule:", error);
+      }
+    };
+
+    fetchProviderSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [officeName, appointment?.dos]);
 
   // Set default value for postOpZeroProduction to "No"
   useEffect(() => {
@@ -2251,12 +2363,14 @@ const WalkoutForm = () => {
   // Extract data from appointment object
   const appointmentDetails = {
     office: officeName || "N/A",
-    doctor1: appointment?.["doctor-1"] || "N/A",
-    doctor2: appointment?.["doctor-2"] || "N/A",
-    doctor3: appointment?.["doctor-3"] || "N/A",
-    hygienist1: appointment?.["hygienist-1"] || "N/A",
-    hygienist2: appointment?.["hygienist-2"] || "N/A",
-    hygienist3: appointment?.["hygienist-3"] || "N/A",
+    doctor1: providerSchedule.doctor1 || appointment?.["doctor-1"] || "-",
+    doctor2: providerSchedule.doctor2 || appointment?.["doctor-2"] || "-",
+    doctor3: appointment?.["doctor-3"] || "-",
+    hygienist1:
+      providerSchedule.hygienist1 || appointment?.["hygienist-1"] || "-",
+    hygienist2:
+      providerSchedule.hygienist2 || appointment?.["hygienist-2"] || "-",
+    hygienist3: appointment?.["hygienist-3"] || "-",
     patientId: appointment?.["patient-id"] || "N/A",
     patientName: appointment?.["patient-name"] || "N/A",
     dateOfService: appointment?.dos || "N/A",
