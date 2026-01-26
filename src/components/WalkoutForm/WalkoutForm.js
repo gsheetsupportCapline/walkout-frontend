@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./WalkoutForm.css";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import { fetchWithAuth } from "../../utils/api";
+import { getGeminiResponse } from "../../utils/providerNotesChecker";
 import {
   validateLC3Section,
   clearValidationError,
@@ -249,7 +250,7 @@ const WalkoutForm = () => {
 
     // Check if any team in teamName array has LC3_TEAM_ID
     return currentUser.teamName.some(
-      (team) => team.teamId && team.teamId._id === LC3_TEAM_ID
+      (team) => team.teamId && team.teamId._id === LC3_TEAM_ID,
     );
   };
   const [imageModal, setImageModal] = useState({ isOpen: false, type: null }); // Modal for adding image
@@ -257,6 +258,10 @@ const WalkoutForm = () => {
     isOpen: false,
     type: null,
   }); // Modal for preview
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [onHoldReasons] = useState([
     "Missing Documentation",
     "Pending Provider Approval",
@@ -264,6 +269,21 @@ const WalkoutForm = () => {
   ]); // Sample on-hold reasons - replace with actual data
   const [userNamesCache, setUserNamesCache] = useState({}); // Cache for user names
   const [lc3ValidationErrors, setLc3ValidationErrors] = useState({}); // LC3 validation errors
+  const [noteElements, setNoteElements] = useState({
+    noteElement1: false, // Procedure Name
+    noteElement2: false, // Tooth#/Quads/Arch
+    noteElement3: false, // Provider Name
+    noteElement4: false, // Hygienist Name
+  });
+  const [isCheckingWithAI, setIsCheckingWithAI] = useState(false);
+  const [checkedByAi, setCheckedByAi] = useState(false); // Track if AI check was performed
+  const [officeWalkoutData, setOfficeWalkoutData] = useState(null); // Store officeWalkoutSnip data from backend
+  const [isRegeneratingOfficeData, setIsRegeneratingOfficeData] =
+    useState(false); // Regeneration loading state
+  const [regenerationDetails, setRegenerationDetails] = useState(null); // AI regeneration details for rate limiting
+  const [lc3WalkoutData, setLc3WalkoutData] = useState(null); // Store lc3WalkoutImage data from backend
+  const [isRegeneratingLc3Data, setIsRegeneratingLc3Data] = useState(false); // LC3 regeneration loading state
+  const [lc3RegenerationDetails, setLc3RegenerationDetails] = useState(null); // LC3 AI regeneration details
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -279,7 +299,7 @@ const WalkoutForm = () => {
     const fetchRadioButtonSets = async () => {
       try {
         const response = await fetchWithAuth(
-          `${process.env.REACT_APP_API_URL}/radio-buttons/button-sets?isActive=true`
+          `${process.env.REACT_APP_API_URL}/radio-buttons/button-sets?isActive=true`,
         );
         const result = await response.json();
         if (result.success) {
@@ -297,7 +317,7 @@ const WalkoutForm = () => {
                     `⚠️ Duplicate field ID mapping detected: ${fieldId}`,
                     `\nPreviously mapped to set: ${mapping[fieldId]}`,
                     `\nNow being mapped to: ${set._id}`,
-                    `\nSet name: ${set.name}`
+                    `\nSet name: ${set.name}`,
                   );
                 }
                 mapping[fieldId] = set._id;
@@ -323,7 +343,7 @@ const WalkoutForm = () => {
     const fetchDropdownSets = async () => {
       try {
         const response = await fetchWithAuth(
-          `${process.env.REACT_APP_API_URL}/dropdowns/dropdown-sets?isActive=true`
+          `${process.env.REACT_APP_API_URL}/dropdowns/dropdown-sets?isActive=true`,
         );
         const result = await response.json();
         if (result.success) {
@@ -341,7 +361,7 @@ const WalkoutForm = () => {
                     `⚠️ Duplicate field ID mapping detected: ${fieldId}`,
                     `\nPreviously mapped to set: ${mapping[fieldId]}`,
                     `\nNow being mapped to: ${set._id}`,
-                    `\nSet name: ${set.name}`
+                    `\nSet name: ${set.name}`,
                   );
                 }
                 mapping[fieldId] = set._id;
@@ -407,7 +427,7 @@ const WalkoutForm = () => {
               office: officeName,
               dos: dosFormatted,
             }),
-          }
+          },
         );
 
         const result = await response.json();
@@ -434,7 +454,7 @@ const WalkoutForm = () => {
             const providerCode = provider["provider-code-with-type"];
 
             console.log(
-              `📋 Mapping provider: ${providerType} → ${providerCode}`
+              `📋 Mapping provider: ${providerType} → ${providerCode}`,
             );
 
             if (providerType === "Doc - 1") {
@@ -490,7 +510,7 @@ const WalkoutForm = () => {
         const API = "http://localhost:5000/api";
         // Use formRefId to match with appointment ID
         const response = await fetchWithAuth(
-          `${API}/walkouts?formRefId=${appointmentId}`
+          `${API}/walkouts?formRefId=${appointmentId}`,
         );
         const result = await response.json();
 
@@ -503,13 +523,13 @@ const WalkoutForm = () => {
           if (existingWalkout.officeSection) {
             console.log(
               "📋 Loading existing office section:",
-              existingWalkout.officeSection
+              existingWalkout.officeSection,
             );
             console.log(
               "🔍 patientCame value:",
               existingWalkout.officeSection.patientCame,
               "Type:",
-              typeof existingWalkout.officeSection.patientCame
+              typeof existingWalkout.officeSection.patientCame,
             );
 
             // Extract only valid form fields (exclude backend-only fields like timestamps, historical notes, etc.)
@@ -532,15 +552,41 @@ const WalkoutForm = () => {
             // Debug: Check if historical notes are present
             console.log(
               "📝 Office Historical Notes:",
-              existingWalkout.officeSection.officeHistoricalNotes
+              existingWalkout.officeSection.officeHistoricalNotes,
             );
             console.log(
               "📝 LC3 Historical Notes:",
-              existingWalkout.officeSection.lc3HistoricalNotes
+              existingWalkout.officeSection.lc3HistoricalNotes,
             );
+
+            // Load Office Historical Notes (for display)
+            if (officeHistoricalNotes && officeHistoricalNotes.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                officeHistoricalNotes: officeHistoricalNotes,
+              }));
+            }
+
+            // Load LC3 On Hold Notes (for display in office section)
+            if (onHoldNotes && onHoldNotes.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                onHoldNotes: onHoldNotes,
+              }));
+            }
 
             // Load Office WO Snip image if exists (from officeWalkoutSnip object)
             if (existingWalkout.officeWalkoutSnip?.imageId) {
+              // Store the complete officeWalkoutSnip data including extractedData
+              setOfficeWalkoutData(existingWalkout.officeWalkoutSnip);
+
+              // Store AI regeneration details for rate limiting
+              if (existingWalkout.officeWalkoutSnip.aiRegenerationDetails) {
+                setRegenerationDetails(
+                  existingWalkout.officeWalkoutSnip.aiRegenerationDetails,
+                );
+              }
+
               setSidebarData((prev) => ({
                 ...prev,
                 images: {
@@ -557,8 +603,15 @@ const WalkoutForm = () => {
                 "🖼️ Office WO Image loaded:",
                 existingWalkout.officeWalkoutSnip.imageId,
                 "| File:",
-                existingWalkout.officeWalkoutSnip.fileName
+                existingWalkout.officeWalkoutSnip.fileName,
+                "| Extracted Data:",
+                existingWalkout.officeWalkoutSnip.extractedData,
+                "| Regeneration Details:",
+                existingWalkout.officeWalkoutSnip.aiRegenerationDetails,
               );
+            } else {
+              // No image uploaded
+              setOfficeWalkoutData({ imageId: null });
             }
 
             // Load Check Image if exists (from checkImage object)
@@ -579,12 +632,22 @@ const WalkoutForm = () => {
                 "🖼️ Check Image loaded:",
                 existingWalkout.checkImage.imageId,
                 "| File:",
-                existingWalkout.checkImage.fileName
+                existingWalkout.checkImage.fileName,
               );
             }
 
             // Load LC3 WO Image if exists (from lc3WalkoutImage object)
             if (existingWalkout.lc3WalkoutImage?.imageId) {
+              // Store the complete lc3WalkoutImage data including extractedData
+              setLc3WalkoutData(existingWalkout.lc3WalkoutImage);
+
+              // Store AI regeneration details for rate limiting
+              if (existingWalkout.lc3WalkoutImage.aiRegenerationDetails) {
+                setLc3RegenerationDetails(
+                  existingWalkout.lc3WalkoutImage.aiRegenerationDetails,
+                );
+              }
+
               setSidebarData((prev) => ({
                 ...prev,
                 images: {
@@ -601,8 +664,15 @@ const WalkoutForm = () => {
                 "🖼️ LC3 WO Image loaded:",
                 existingWalkout.lc3WalkoutImage.imageId,
                 "| File:",
-                existingWalkout.lc3WalkoutImage.fileName
+                existingWalkout.lc3WalkoutImage.fileName,
+                "| Extracted Data:",
+                existingWalkout.lc3WalkoutImage.extractedData,
+                "| Regeneration Details:",
+                existingWalkout.lc3WalkoutImage.aiRegenerationDetails,
               );
+            } else {
+              // No image uploaded
+              setLc3WalkoutData({ imageId: null });
             }
 
             // Check if patient was present
@@ -793,6 +863,13 @@ const WalkoutForm = () => {
               lc3FormData.providerNotesFromES = lc3.providerNotes.providerNotes;
               lc3FormData.hygienistNotesFromES =
                 lc3.providerNotes.hygienistNotes;
+              // AI check status
+              lc3FormData.checkedByAi = lc3.providerNotes.checkedByAi || false;
+
+              // Set checkedByAi state
+              if (lc3.providerNotes.checkedByAi) {
+                setCheckedByAi(true);
+              }
             }
 
             // LC3 Remarks
@@ -812,6 +889,22 @@ const WalkoutForm = () => {
 
             // Merge LC3 data into formData
             setFormData((prev) => ({ ...prev, ...lc3FormData }));
+
+            // Update noteElements state if provider notes exist
+            if (lc3.providerNotes) {
+              setNoteElements({
+                noteElement1: lc3.providerNotes.noteElement1 || false,
+                noteElement2: lc3.providerNotes.noteElement2 || false,
+                noteElement3: lc3.providerNotes.noteElement3 || false,
+                noteElement4: lc3.providerNotes.noteElement4 || false,
+              });
+              console.log("✅ Note elements loaded:", {
+                noteElement1: lc3.providerNotes.noteElement1,
+                noteElement2: lc3.providerNotes.noteElement2,
+                noteElement3: lc3.providerNotes.noteElement3,
+                noteElement4: lc3.providerNotes.noteElement4,
+              });
+            }
 
             console.log("✅ LC3 section loaded successfully");
           }
@@ -841,7 +934,7 @@ const WalkoutForm = () => {
       const zeroButtons = getRadioButtons(FIELD_IDS.POST_OP_ZERO);
       const zeroYesButton = zeroButtons.find((btn) => btn.name === "Yes");
       setIsZeroProduction(
-        formData.postOpZeroProduction === zeroYesButton?.incrementalId
+        formData.postOpZeroProduction === zeroYesButton?.incrementalId,
       );
     }
 
@@ -1046,7 +1139,7 @@ const WalkoutForm = () => {
       if (value === yesButton?.incrementalId) {
         // Show confirmation dialog
         const confirmed = window.confirm(
-          "Are you sure this is a Zero Production Walkout, that does not need to be Walked Out by LC3?"
+          "Are you sure this is a Zero Production Walkout, that does not need to be Walked Out by LC3?",
         );
         if (confirmed) {
           setIsZeroProduction(true);
@@ -1082,6 +1175,20 @@ const WalkoutForm = () => {
       setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
     }
 
+    // If provider or hygienist notes are changed, reset checkedByAi
+    if (
+      fieldName === "providerNotesFromES" ||
+      fieldName === "hygienistNotesFromES"
+    ) {
+      setCheckedByAi(false);
+      setFormData((prev) => ({
+        ...prev,
+        [fieldName]: value,
+        checkedByAi: false, // Reset AI check status
+      }));
+      return;
+    }
+
     setFormData((prev) => {
       const updated = { ...prev, [fieldName]: value };
 
@@ -1094,17 +1201,17 @@ const WalkoutForm = () => {
         const primary = parseFloat(
           fieldName === "amountCollectedPrimaryMode"
             ? value
-            : updated.amountCollectedPrimaryMode || 0
+            : updated.amountCollectedPrimaryMode || 0,
         );
         const secondary = parseFloat(
           fieldName === "amountCollectedSecondaryMode"
             ? value
-            : updated.amountCollectedSecondaryMode || 0
+            : updated.amountCollectedSecondaryMode || 0,
         );
         const expected = parseFloat(
           fieldName === "expectedPatientPortionOfficeWO"
             ? value
-            : updated.expectedPatientPortionOfficeWO || 0
+            : updated.expectedPatientPortionOfficeWO || 0,
         );
 
         const collected = primary + secondary;
@@ -1123,15 +1230,15 @@ const WalkoutForm = () => {
         const expectedOffice = parseFloat(
           fieldName === "expectedPPOffice"
             ? value
-            : updated.expectedPPOffice || 0
+            : updated.expectedPPOffice || 0,
         );
         const collectedOffice = parseFloat(
           fieldName === "ppCollectedOffice"
             ? value
-            : updated.ppCollectedOffice || 0
+            : updated.ppCollectedOffice || 0,
         );
         const expectedLC3 = parseFloat(
-          fieldName === "expectedPPLC3" ? value : updated.expectedPPLC3 || 0
+          fieldName === "expectedPPLC3" ? value : updated.expectedPPLC3 || 0,
         );
 
         // Calculate ppDifferenceOffice = ppCollectedOffice - expectedPPOffice
@@ -1151,20 +1258,22 @@ const WalkoutForm = () => {
         const totalProdOffice = parseFloat(
           fieldName === "totalProductionOffice"
             ? value
-            : updated.totalProductionOffice || 0
+            : updated.totalProductionOffice || 0,
         );
         const estInsOffice = parseFloat(
           fieldName === "estInsuranceOffice"
             ? value
-            : updated.estInsuranceOffice || 0
+            : updated.estInsuranceOffice || 0,
         );
         const totalProdLC3 = parseFloat(
           fieldName === "totalProductionLC3"
             ? value
-            : updated.totalProductionLC3 || 0
+            : updated.totalProductionLC3 || 0,
         );
         const estInsLC3 = parseFloat(
-          fieldName === "estInsuranceLC3" ? value : updated.estInsuranceLC3 || 0
+          fieldName === "estInsuranceLC3"
+            ? value
+            : updated.estInsuranceLC3 || 0,
         );
 
         // Calculate Expected PP (Office) = Total Production (Office) - Est. Insurance (Office)
@@ -1264,7 +1373,7 @@ const WalkoutForm = () => {
 
     try {
       const response = await fetch(
-        `https://caplineruleengine.com/queryrulesstatus?password=&patientId=${patientId}&client=Smilepoint&claimOrTreatmentId=16344&uniqueId=${uniqueId}&office=${office}`
+        `https://caplineruleengine.com/queryrulesstatus?password=&patientId=${patientId}&client=Smilepoint&claimOrTreatmentId=16344&uniqueId=${uniqueId}&office=${office}`,
       );
       const result = await response.json();
 
@@ -1347,6 +1456,9 @@ const WalkoutForm = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
+
+  // NOTE: Image preloading removed - images will only load when user clicks Preview button
+  // This prevents automatic API calls when opening appointments
 
   // Auto-focus paste area when image modal opens
   useEffect(() => {
@@ -1445,24 +1557,422 @@ const WalkoutForm = () => {
     // If image was uploaded and we have imageId from backend, use API endpoint
     if (imageData.imageId) {
       const API = "http://localhost:5000/api";
-      return `${API}/walkouts/image/${imageData.imageId}`;
+      // Encode imageId for S3 paths (e.g., "walkout/2026/January/Dallas_Office/officeWalkoutSnip/patient_123_1706234567890_image.jpg")
+      const encodedId = encodeURIComponent(imageData.imageId);
+      return `${API}/walkouts/image/${encodedId}`;
     }
 
     return null;
   };
 
+  // Zoom handler using scroll wheel
+  const handleImageWheel = (type, event) => {
+    event.preventDefault();
+    const zoomDelta = event.deltaY > 0 ? -10 : 10; // Scroll down = zoom out, scroll up = zoom in
+    handleZoomChange(type, zoomDelta);
+  };
+
+  // Pan handlers - drag to move image
+  const handleImageMouseDown = (event) => {
+    event.preventDefault();
+    setIsDragging(true);
+    setDragStart({
+      x: event.clientX - imagePan.x,
+      y: event.clientY - imagePan.y,
+    });
+  };
+
+  const handleImageMouseMove = (event) => {
+    if (!isDragging) return;
+    event.preventDefault();
+
+    // Calculate new pan position with reduced sensitivity
+    const panSensitivity = 0.5; // Reduce sensitivity to 50%
+    const newX = (event.clientX - dragStart.x) * panSensitivity;
+    const newY = (event.clientY - dragStart.y) * panSensitivity;
+
+    // Get current zoom scale
+    const currentType = previewModal.type;
+    const zoom = sidebarData.images[currentType]?.zoom || 100;
+    const scale = zoom / 100;
+
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Calculate image dimensions (assuming image takes full viewport initially)
+    const imageWidth = viewportWidth * scale;
+    const imageHeight = viewportHeight * scale;
+
+    // Calculate max pan limits to keep image within frame
+    const maxPanX =
+      Math.max(0, (imageWidth - viewportWidth) / 2) * panSensitivity;
+    const maxPanY =
+      Math.max(0, (imageHeight - viewportHeight) / 2) * panSensitivity;
+
+    // Constrain pan within boundaries
+    const constrainedX = Math.max(-maxPanX, Math.min(maxPanX, newX));
+    const constrainedY = Math.max(-maxPanY, Math.min(maxPanY, newY));
+
+    setImagePan({
+      x: constrainedX,
+      y: constrainedY,
+    });
+  };
+
+  const handleImageMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Close preview and reset states
+  const closePreviewModal = () => {
+    setPreviewModal({ isOpen: false, type: null });
+    setImagePan({ x: 0, y: 0 });
+    setIsDragging(false);
+    setImageLoading(false);
+  };
+
+  // Check provider notes with AI
+  const handleCheckWithAI = async () => {
+    const providerText = formData.providerNotesFromES || "";
+    const hygienistText = formData.hygienistNotesFromES || "";
+
+    if (!providerText.trim() && !hygienistText.trim()) {
+      setNotification({
+        show: true,
+        type: "error",
+        message:
+          "Please enter provider notes or hygienist notes before checking.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
+    setIsCheckingWithAI(true);
+
+    try {
+      const result = await getGeminiResponse(providerText, hygienistText);
+      console.log("AI Response:", result);
+
+      // result array format:
+      // [0] provider_tooth_number, [1] provider_name, [2] provider_procedure_name, [3] provider_surgical_indicators,
+      // [4] hygienist_tooth_number, [5] hygienist_name, [6] hygienist_procedure_name, [7] hygienist_surgical_indicators
+
+      // Determine noteElement values based on AI response
+      const procedureName = result[2] !== false || result[6] !== false; // provider or hygienist procedure
+      const toothNumber = result[0] !== false || result[4] !== false; // provider or hygienist tooth#
+      const providerName = result[1] !== false; // provider name
+      const hygienistName = result[5] !== false; // hygienist name
+
+      // Update noteElements state - Always show actual AI results
+      const updatedNoteElements = {
+        noteElement1: procedureName,
+        noteElement2: toothNumber,
+        noteElement3: providerName,
+        noteElement4: hygienistName, // Always show actual AI result
+      };
+
+      setNoteElements(updatedNoteElements);
+
+      // Update formData with noteElements and set checkedByAi to true
+      setFormData((prev) => ({
+        ...prev,
+        noteElement1: updatedNoteElements.noteElement1,
+        noteElement2: updatedNoteElements.noteElement2,
+        noteElement3: updatedNoteElements.noteElement3,
+        noteElement4: updatedNoteElements.noteElement4,
+        checkedByAi: true, // Mark as checked by AI
+      }));
+
+      setCheckedByAi(true); // Set state to true
+
+      setNotification({
+        show: true,
+        type: "success",
+        message: "AI check completed successfully!",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+    } catch (error) {
+      console.error("Error checking with AI:", error);
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to check with AI. Please try again.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+    } finally {
+      setIsCheckingWithAI(false);
+    }
+  };
+
+  // Regenerate office walkout image data
+  const handleRegenerateOfficeData = async () => {
+    if (!walkoutId) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Walkout ID not found. Please save the walkout first.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
+    setIsRegeneratingOfficeData(true);
+
+    try {
+      const API = "http://localhost:5000/api";
+      const response = await fetchWithAuth(
+        `${API}/office-walkout-ai/regenerate/${walkoutId}`,
+        {
+          method: "POST",
+        },
+      );
+
+      const result = await response.json();
+      console.log("🔄 Regenerate Response:", result);
+
+      if (result.success) {
+        // Success - update with new data
+        setOfficeWalkoutData((prev) => ({
+          ...prev,
+          extractedData: result.data.extractedData,
+        }));
+
+        // Update regeneration details for rate limiting
+        if (result.data.regenerationDetails) {
+          setRegenerationDetails(result.data.regenerationDetails);
+        }
+
+        setNotification({
+          show: true,
+          type: "success",
+          message: `Data regenerated successfully! ${result.data.rowsExtracted} row(s) extracted.`,
+        });
+      } else if (result.errorCode === "RATE_LIMIT_EXCEEDED") {
+        // Rate limit exceeded - keep old data, update regeneration details
+        if (result.data?.extractedData) {
+          setOfficeWalkoutData((prev) => ({
+            ...prev,
+            extractedData: result.data.extractedData,
+          }));
+        }
+
+        if (result.details) {
+          setRegenerationDetails({
+            totalRegenerateCount: result.details.totalCount,
+            hourlyRegenerateCount: result.details.hourlyCount,
+            lastRegeneratedAt: result.details.lastRegeneratedAt,
+            retryAfter: result.details.retryAfter,
+          });
+        }
+
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message,
+        });
+      } else {
+        // Other errors
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message || "Failed to regenerate data.",
+        });
+      }
+
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Error regenerating office data:", error);
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to regenerate data. Please try again.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+    } finally {
+      setIsRegeneratingOfficeData(false);
+    }
+  };
+
+  // Check if regeneration is allowed based on rate limit
+  const isRegenerationDisabled = () => {
+    if (!regenerationDetails) return false;
+
+    const { hourlyRegenerateCount, lastRegeneratedAt, retryAfter } =
+      regenerationDetails;
+
+    // If retryAfter is set and in the future, disable button
+    if (retryAfter) {
+      const retryTime = new Date(retryAfter);
+      const now = new Date();
+      if (now < retryTime) {
+        return true;
+      }
+    }
+
+    // If hourly count >= 5 (backend limit updated to 5)
+    if (hourlyRegenerateCount >= 5) {
+      // Check if 1 hour has passed since last regeneration
+      const lastRegen = new Date(lastRegeneratedAt);
+      const now = new Date();
+      const hourPassed = (now - lastRegen) / (1000 * 60 * 60); // hours
+
+      if (hourPassed < 1) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  // Regenerate LC3 walkout image data
+  const handleRegenerateLc3Data = async () => {
+    if (!walkoutId) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Walkout ID not found. Please save the walkout first.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
+    setIsRegeneratingLc3Data(true);
+
+    try {
+      const API = "http://localhost:5000/api";
+      const response = await fetchWithAuth(
+        `${API}/lc3-walkout-ai/regenerate/${walkoutId}`,
+        {
+          method: "POST",
+        },
+      );
+
+      const result = await response.json();
+      console.log("🔄 LC3 Regenerate Response:", result);
+
+      if (result.success) {
+        // Success - update with new data
+        setLc3WalkoutData((prev) => ({
+          ...prev,
+          extractedData: result.data.extractedData,
+        }));
+
+        // Update regeneration details for rate limiting
+        if (result.data.regenerationDetails) {
+          setLc3RegenerationDetails(result.data.regenerationDetails);
+        }
+
+        setNotification({
+          show: true,
+          type: "success",
+          message: `Data regenerated successfully! ${result.data.rowsExtracted} row(s) extracted.`,
+        });
+      } else if (result.errorCode === "RATE_LIMIT_EXCEEDED") {
+        // Rate limit exceeded - keep old data, update regeneration details
+        if (result.data?.extractedData) {
+          setLc3WalkoutData((prev) => ({
+            ...prev,
+            extractedData: result.data.extractedData,
+          }));
+        }
+
+        if (result.details) {
+          setLc3RegenerationDetails({
+            totalRegenerateCount: result.details.totalCount,
+            hourlyRegenerateCount: result.details.hourlyCount,
+            lastRegeneratedAt: result.details.lastRegeneratedAt,
+            retryAfter: result.details.retryAfter,
+          });
+        }
+
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message,
+        });
+      } else {
+        // Other errors
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message || "Failed to regenerate data.",
+        });
+      }
+
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Error regenerating LC3 data:", error);
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to regenerate data. Please try again.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+    } finally {
+      setIsRegeneratingLc3Data(false);
+    }
+  };
+
+  // Check if LC3 regeneration is allowed based on rate limit
+  const isLc3RegenerationDisabled = () => {
+    if (!lc3RegenerationDetails) return false;
+
+    const { hourlyRegenerateCount, lastRegeneratedAt, retryAfter } =
+      lc3RegenerationDetails;
+
+    // If retryAfter is set and in the future, disable button
+    if (retryAfter) {
+      const retryTime = new Date(retryAfter);
+      const now = new Date();
+      if (now < retryTime) {
+        return true;
+      }
+    }
+
+    // If hourly count >= 5 (backend limit is 5)
+    if (hourlyRegenerateCount >= 5) {
+      // Check if 1 hour has passed since last regeneration
+      const lastRegen = new Date(lastRegeneratedAt);
+      const now = new Date();
+      const hourPassed = (now - lastRegen) / (1000 * 60 * 60); // hours
+
+      if (hourPassed < 1) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   const handleImageClick = (type, event) => {
     event.stopPropagation(); // Prevent closing preview
     event.preventDefault();
-    // Left click - zoom in
-    handleZoomChange(type, 10);
+    // Disabled old zoom - now using scroll wheel
   };
 
   const handleImageRightClick = (type, event) => {
     event.stopPropagation(); // Prevent closing preview
     event.preventDefault();
-    // Right click - zoom out
-    handleZoomChange(type, -10);
+    // Disabled old zoom - now using scroll wheel
   };
 
   // Handle form submission
@@ -1500,18 +2010,18 @@ const WalkoutForm = () => {
           patientId: appointmentDetails.patientId,
           dateOfService: appointmentDetails.dateOfService,
           officeName: appointmentDetails.office,
-        })
+        }),
       );
 
       // 2. Office WO Snip image (Optional - send actual file if user selected)
       if (sidebarData.images.officeWO.file) {
         formDataPayload.append(
           "officeWalkoutSnip",
-          sidebarData.images.officeWO.file
+          sidebarData.images.officeWO.file,
         );
         console.log(
           "📤 Uploading Office WO image:",
-          sidebarData.images.officeWO.file.name
+          sidebarData.images.officeWO.file.name,
         );
       }
 
@@ -1519,11 +2029,11 @@ const WalkoutForm = () => {
       if (sidebarData.images.checkImage.file) {
         formDataPayload.append(
           "checkImage",
-          sidebarData.images.checkImage.file
+          sidebarData.images.checkImage.file,
         );
         console.log(
           "📤 Uploading Check Image:",
-          sidebarData.images.checkImage.file.name
+          sidebarData.images.checkImage.file.name,
         );
       }
 
@@ -1540,7 +2050,7 @@ const WalkoutForm = () => {
         "📤 Submitting formData.patientCame:",
         formData.patientCame,
         "Type:",
-        typeof formData.patientCame
+        typeof formData.patientCame,
       );
       if (formData.patientCame !== undefined && formData.patientCame !== null) {
         formDataPayload.append("patientCame", formData.patientCame);
@@ -1554,7 +2064,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "postOpZeroProduction",
-          formData.postOpZeroProduction
+          formData.postOpZeroProduction,
         );
       }
       if (formData.patientType !== undefined && formData.patientType !== null) {
@@ -1581,7 +2091,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "googleReviewRequest",
-          formData.googleReviewRequest
+          formData.googleReviewRequest,
         );
       }
       if (
@@ -1591,7 +2101,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "expectedPatientPortionOfficeWO",
-          formData.expectedPatientPortionOfficeWO
+          formData.expectedPatientPortionOfficeWO,
         );
       }
       if (
@@ -1601,7 +2111,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "patientPortionCollected",
-          formData.patientPortionCollected
+          formData.patientPortionCollected,
         );
       }
       if (
@@ -1611,7 +2121,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "differenceInPatientPortion",
-          formData.differenceInPatientPortion
+          formData.differenceInPatientPortion,
         );
       }
       if (
@@ -1620,7 +2130,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "patientPortionPrimaryMode",
-          formData.patientPortionPrimaryMode
+          formData.patientPortionPrimaryMode,
         );
       }
       if (
@@ -1630,7 +2140,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "amountCollectedPrimaryMode",
-          formData.amountCollectedPrimaryMode
+          formData.amountCollectedPrimaryMode,
         );
       }
       if (
@@ -1639,7 +2149,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "patientPortionSecondaryMode",
-          formData.patientPortionSecondaryMode
+          formData.patientPortionSecondaryMode,
         );
       }
       if (
@@ -1649,7 +2159,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "amountCollectedSecondaryMode",
-          formData.amountCollectedSecondaryMode
+          formData.amountCollectedSecondaryMode,
         );
       }
       if (
@@ -1659,7 +2169,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "lastFourDigitsCheckForte",
-          formData.lastFourDigitsCheckForte
+          formData.lastFourDigitsCheckForte,
         );
       }
       if (
@@ -1668,7 +2178,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "reasonLessCollection",
-          formData.reasonLessCollection
+          formData.reasonLessCollection,
         );
       }
       if (
@@ -1683,7 +2193,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "ruleEngineNotRunReason",
-          formData.ruleEngineNotRunReason
+          formData.ruleEngineNotRunReason,
         );
       }
       if (
@@ -1701,6 +2211,13 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append("officeRemarks", formData.officeRemarks);
       }
+      if (
+        formData.newOfficeNote !== undefined &&
+        formData.newOfficeNote !== null &&
+        formData.newOfficeNote !== ""
+      ) {
+        formDataPayload.append("newOfficeNote", formData.newOfficeNote);
+      }
 
       // Patient Portion fields - additional
       if (
@@ -1710,7 +2227,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "lastFourDigitsCreditCardPatientCharge",
-          formData.lastFourDigitsCreditCardPatientCharge
+          formData.lastFourDigitsCreditCardPatientCharge,
         );
       }
       if (
@@ -1720,7 +2237,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "lastFourDigitsCheckPatientCharge",
-          formData.lastFourDigitsCheckPatientCharge
+          formData.lastFourDigitsCheckPatientCharge,
         );
       }
       if (
@@ -1729,7 +2246,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "patientPaidAnyAtOffice",
-          formData.patientPaidAnyAtOffice
+          formData.patientPaidAnyAtOffice,
         );
       }
       if (
@@ -1739,7 +2256,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "ifPaidHowMuchPatient",
-          formData.ifPaidHowMuchPatient
+          formData.ifPaidHowMuchPatient,
         );
       }
       if (
@@ -1749,7 +2266,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "lastFourDigitsCreditCardForte",
-          formData.lastFourDigitsCreditCardForte
+          formData.lastFourDigitsCreditCardForte,
         );
       }
 
@@ -1768,7 +2285,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "signedGeneralConsent",
-          formData.signedGeneralConsent
+          formData.signedGeneralConsent,
         );
       }
       if (
@@ -1777,7 +2294,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "signedTreatmentConsent",
-          formData.signedTreatmentConsent
+          formData.signedTreatmentConsent,
         );
       }
       if (
@@ -1819,7 +2336,7 @@ const WalkoutForm = () => {
       ) {
         formDataPayload.append(
           "prcUpdatedInRouteSheet",
-          formData.prcUpdatedInRouteSheet
+          formData.prcUpdatedInRouteSheet,
         );
       }
       if (formData.narrative !== undefined && formData.narrative !== null) {
@@ -1899,7 +2416,7 @@ const WalkoutForm = () => {
           }));
           console.log(
             "🖼️ Office WO Image uploaded successfully! ImageId:",
-            result.data.officeWalkoutSnip.imageId
+            result.data.officeWalkoutSnip.imageId,
           );
         }
 
@@ -1924,7 +2441,7 @@ const WalkoutForm = () => {
           }));
           console.log(
             "🖼️ Check Image uploaded successfully! ImageId:",
-            result.data.checkImage.imageId
+            result.data.checkImage.imageId,
           );
         }
 
@@ -2164,20 +2681,20 @@ const WalkoutForm = () => {
               ? formData.deliveredAsPerNotes
               : "", // Number (1=Yes, 2=No) or empty
           walkoutOnHold: formData.walkoutOnHold, // Number (1=Yes, 2=No)
-          // onHoldReasons - only send if walkoutOnHold === 2
+          // onHoldReasons - only send if walkoutOnHold === 1
           onHoldReasons:
-            formData.walkoutOnHold === 2 ? formData.onHoldReasons || [] : [], // Array of Numbers or empty array
-          // otherReasonNotes - only send if walkoutOnHold === 2
+            formData.walkoutOnHold === 1 ? formData.onHoldReasons || [] : [], // Array of Numbers or empty array
+          // otherReasonNotes - only send if walkoutOnHold === 1
           otherReasonNotes:
-            formData.walkoutOnHold === 2 ? formData.otherReasonNotes : "", // String or empty
-          // completingWithDeficiency - only send if walkoutOnHold === 1
+            formData.walkoutOnHold === 1 ? formData.otherReasonNotes : "", // String or empty
+          // completingWithDeficiency - only send if walkoutOnHold === 2
           completingWithDeficiency:
-            formData.walkoutOnHold === 1
+            formData.walkoutOnHold === 2
               ? formData.completingWithDeficiency
               : "", // Number (1=Yes, 2=No) or empty
         },
 
-        // 6. Provider Notes - 10 fields as per backend schema
+        // 6. Provider Notes - 11 fields as per backend schema
         providerNotes: {
           lc3ProviderNotesStatus: formData.lc3ProviderNotesStatus, // Number (incrementalId)
           // 3 main questions
@@ -2192,6 +2709,8 @@ const WalkoutForm = () => {
           // 2 text areas - map frontend field names to backend fields
           providerNotes: formData.providerNotesFromES, // String
           hygienistNotes: formData.hygienistNotesFromES, // String
+          // AI check status
+          checkedByAi: formData.checkedByAi || false, // Boolean - indicates if "Check with AI" was performed
         },
 
         // Additional LC3 Fields
@@ -2213,12 +2732,86 @@ const WalkoutForm = () => {
 
       console.log("📤 Submitting LC3 Payload:", lc3Payload);
 
+      // Create FormData for LC3 submission
+      const formDataPayload = new FormData();
+
+      // 1. Add LC3 WO Image first (optional)
+      if (sidebarData.images.lc3WO.file) {
+        formDataPayload.append(
+          "lc3WalkoutImage",
+          sidebarData.images.lc3WO.file,
+        );
+        console.log(
+          "📤 Including LC3 WO image in FormData:",
+          sidebarData.images.lc3WO.file.name,
+          "| Size:",
+          sidebarData.images.lc3WO.file.size,
+          "bytes",
+        );
+      } else {
+        console.log("ℹ️ No LC3 WO image to upload");
+      }
+
+      // 2. Rule Engine (as JSON string)
+      formDataPayload.append(
+        "ruleEngine",
+        JSON.stringify(lc3Payload.ruleEngine),
+      );
+
+      // 3. Document Check (as JSON string)
+      formDataPayload.append(
+        "documentCheck",
+        JSON.stringify(lc3Payload.documentCheck),
+      );
+
+      // 4. Attachments Check (as JSON string)
+      formDataPayload.append(
+        "attachmentsCheck",
+        JSON.stringify(lc3Payload.attachmentsCheck),
+      );
+
+      // 5. Patient Portion Check (as JSON string)
+      formDataPayload.append(
+        "patientPortionCheck",
+        JSON.stringify(lc3Payload.patientPortionCheck),
+      );
+
+      // 6. Production Details (as JSON string)
+      formDataPayload.append(
+        "productionDetails",
+        JSON.stringify(lc3Payload.productionDetails),
+      );
+
+      // 7. Provider Notes (as JSON string)
+      formDataPayload.append(
+        "providerNotes",
+        JSON.stringify(lc3Payload.providerNotes),
+      );
+
+      // 8. LC3 Remarks (plain string, optional)
+      if (lc3Payload.lc3Remarks) {
+        formDataPayload.append("lc3Remarks", lc3Payload.lc3Remarks);
+      }
+
+      // 9. LC3 Historical Notes (as JSON string array, optional)
+      if (lc3Payload.lc3HistoricalNotes) {
+        formDataPayload.append(
+          "lc3HistoricalNotes",
+          JSON.stringify(lc3Payload.lc3HistoricalNotes),
+        );
+      }
+
+      // 10. On Hold Note (plain string, optional)
+      if (lc3Payload.onHoldNote) {
+        formDataPayload.append("onHoldNote", lc3Payload.onHoldNote);
+      }
+
+      console.log("📤 Sending to:", `${API}/walkouts/${walkoutId}/lc3`);
+      console.log("📤 FormData keys:", Array.from(formDataPayload.keys()));
+
       const response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/lc3`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(lc3Payload),
+        body: formDataPayload, // Send FormData with separate fields
       });
 
       const result = await response.json();
@@ -2226,59 +2819,30 @@ const WalkoutForm = () => {
       console.log("📥 LC3 Backend Response:", result);
 
       if (response.ok && result.success) {
-        // Upload LC3 WO Image separately if present
+        // Clear LC3 WO image from sidebar if it was uploaded
         if (sidebarData.images.lc3WO.file) {
-          try {
-            const imageFormData = new FormData();
-            imageFormData.append(
-              "lc3WalkoutImage",
-              sidebarData.images.lc3WO.file
-            );
-
-            console.log(
-              "📤 Uploading LC3 WO image separately:",
-              sidebarData.images.lc3WO.file.name
-            );
-
-            const imageResponse = await fetchWithAuth(
-              `${API}/walkouts/${walkoutId}/lc3-image`,
-              {
-                method: "PUT",
-                body: imageFormData,
-              }
-            );
-
-            const imageResult = await imageResponse.json();
-
-            if (imageResponse.ok && imageResult.success) {
-              // Revoke preview URL to free memory
-              if (sidebarData.images.lc3WO.previewUrl) {
-                URL.revokeObjectURL(sidebarData.images.lc3WO.previewUrl);
-              }
-
-              setSidebarData((prev) => ({
-                ...prev,
-                images: {
-                  ...prev.images,
-                  lc3WO: {
-                    file: null,
-                    previewUrl: "",
-                    imageId: imageResult.data?.lc3WalkoutImage?.imageId || "",
-                    zoom: 100,
-                  },
-                },
-              }));
-
-              console.log(
-                "🖼️ LC3 WO Image uploaded successfully! ImageId:",
-                imageResult.data?.lc3WalkoutImage?.imageId
-              );
-            } else {
-              console.error("❌ LC3 Image upload failed:", imageResult.message);
-            }
-          } catch (imageError) {
-            console.error("❌ Error uploading LC3 image:", imageError);
+          // Revoke preview URL to free memory
+          if (sidebarData.images.lc3WO.previewUrl) {
+            URL.revokeObjectURL(sidebarData.images.lc3WO.previewUrl);
           }
+
+          setSidebarData((prev) => ({
+            ...prev,
+            images: {
+              ...prev.images,
+              lc3WO: {
+                file: null,
+                previewUrl: "",
+                imageId: result.data?.lc3WalkoutImage?.imageId || "",
+                zoom: 100,
+              },
+            },
+          }));
+
+          console.log(
+            "🖼️ LC3 WO Image uploaded successfully! ImageId:",
+            result.data?.lc3WalkoutImage?.imageId,
+          );
         }
 
         setNotification({
@@ -2350,7 +2914,11 @@ const WalkoutForm = () => {
         </button>
         <button
           className="WF-image-btn WF-preview-btn"
-          onClick={() => setPreviewModal({ isOpen: true, type })}
+          onClick={() => {
+            setImageLoading(true);
+            setImagePan({ x: 0, y: 0 });
+            setPreviewModal({ isOpen: true, type });
+          }}
           disabled={!hasImage}
         >
           <span className="WF-image-btn-icon">👁️</span>
@@ -2495,13 +3063,13 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "patientCame",
-                                    btn.incrementalId
+                                    btn.incrementalId,
                                   )
                                 }
                               >
                                 {btn.name}
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -2538,13 +3106,13 @@ const WalkoutForm = () => {
                                     onClick={() =>
                                       handleRadioChange(
                                         "postOpZeroProduction",
-                                        btn.incrementalId
+                                        btn.incrementalId,
                                       )
                                     }
                                   >
                                     {btn.name}
                                   </button>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -2561,7 +3129,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "patientType",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             >
@@ -2574,7 +3142,7 @@ const WalkoutForm = () => {
                                   >
                                     {opt.name}
                                   </option>
-                                )
+                                ),
                               )}
                             </select>
                           </div>
@@ -2607,13 +3175,13 @@ const WalkoutForm = () => {
                                     onClick={() =>
                                       handleRadioChange(
                                         "hasInsurance",
-                                        btn.incrementalId
+                                        btn.incrementalId,
                                       )
                                     }
                                   >
                                     {btn.name}
                                   </button>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -2633,13 +3201,13 @@ const WalkoutForm = () => {
                                   const value = e.target.value;
                                   handleDropdownChange(
                                     "insuranceType",
-                                    value === "" ? null : parseInt(value)
+                                    value === "" ? null : parseInt(value),
                                   );
                                 }}
                               >
                                 <option value="">Select</option>
                                 {getDropdownOptions(
-                                  FIELD_IDS.INSURANCE_TYPE
+                                  FIELD_IDS.INSURANCE_TYPE,
                                 ).map((opt) => (
                                   <option
                                     key={opt._id}
@@ -2667,7 +3235,7 @@ const WalkoutForm = () => {
                                   const value = e.target.value;
                                   handleDropdownChange(
                                     "insurance",
-                                    value === "" ? null : parseInt(value)
+                                    value === "" ? null : parseInt(value),
                                   );
                                 }}
                               >
@@ -2680,7 +3248,7 @@ const WalkoutForm = () => {
                                     >
                                       {opt.name}
                                     </option>
-                                  )
+                                  ),
                                 )}
                               </select>
                             </div>
@@ -2696,7 +3264,7 @@ const WalkoutForm = () => {
                               data-field-id={FIELD_IDS.GOOGLE_REVIEW_REQUEST}
                             >
                               {getRadioButtons(
-                                FIELD_IDS.GOOGLE_REVIEW_REQUEST
+                                FIELD_IDS.GOOGLE_REVIEW_REQUEST,
                               ).map((btn) => (
                                 <button
                                   key={btn._id}
@@ -2714,7 +3282,7 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "googleReviewRequest",
-                                      btn.incrementalId
+                                      btn.incrementalId,
                                     )
                                   }
                                 >
@@ -2756,7 +3324,7 @@ const WalkoutForm = () => {
                                 const val = e.target.value;
                                 handleDropdownChange(
                                   "expectedPatientPortionOfficeWO",
-                                  val === "" ? 0 : parseFloat(val)
+                                  val === "" ? 0 : parseFloat(val),
                                 );
                               }}
                             />
@@ -2807,13 +3375,13 @@ const WalkoutForm = () => {
                                 const value = e.target.value;
                                 handleDropdownChange(
                                   "patientPortionPrimaryMode",
-                                  value === "" ? null : parseInt(value)
+                                  value === "" ? null : parseInt(value),
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE
+                                FIELD_IDS.PATIENT_PORTION_PRIMARY_MODE,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -2843,7 +3411,7 @@ const WalkoutForm = () => {
                                   const val = e.target.value;
                                   handleDropdownChange(
                                     "amountCollectedPrimaryMode",
-                                    val === "" ? 0 : parseFloat(val)
+                                    val === "" ? 0 : parseFloat(val),
                                   );
                                 }}
                               />
@@ -2874,13 +3442,13 @@ const WalkoutForm = () => {
                                 const value = e.target.value;
                                 handleDropdownChange(
                                   "patientPortionSecondaryMode",
-                                  value === "" ? null : parseInt(value)
+                                  value === "" ? null : parseInt(value),
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE
+                                FIELD_IDS.PATIENT_PORTION_SECONDARY_MODE,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -2910,7 +3478,7 @@ const WalkoutForm = () => {
                                   const val = e.target.value;
                                   handleDropdownChange(
                                     "amountCollectedSecondaryMode",
-                                    val === "" ? 0 : parseFloat(val)
+                                    val === "" ? 0 : parseFloat(val),
                                   );
                                 }}
                               />
@@ -2945,7 +3513,7 @@ const WalkoutForm = () => {
                                 if (value === "" || /^\d+$/.test(value)) {
                                   handleDropdownChange(
                                     "lastFourDigitsCheckForte",
-                                    value
+                                    value,
                                   );
                                 }
                               }}
@@ -2980,13 +3548,13 @@ const WalkoutForm = () => {
                                 const value = e.target.value;
                                 handleDropdownChange(
                                   "reasonLessCollection",
-                                  value === "" ? null : parseInt(value)
+                                  value === "" ? null : parseInt(value),
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.REASON_LESS_COLLECTION
+                                FIELD_IDS.REASON_LESS_COLLECTION,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -3037,13 +3605,13 @@ const WalkoutForm = () => {
                                     onClick={() =>
                                       handleRadioChange(
                                         "ruleEngineRun",
-                                        btn.incrementalId
+                                        btn.incrementalId,
                                       )
                                     }
                                   >
                                     {btn.name}
                                   </button>
-                                )
+                                ),
                               )}
                             </div>
                           </div>
@@ -3064,13 +3632,13 @@ const WalkoutForm = () => {
                                   const value = e.target.value;
                                   handleDropdownChange(
                                     "ruleEngineNotRunReason",
-                                    value === "" ? null : parseInt(value)
+                                    value === "" ? null : parseInt(value),
                                   );
                                 }}
                               >
                                 <option value="">Select</option>
                                 {getDropdownOptions(
-                                  FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                                  FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON,
                                 ).map((opt) => (
                                   <option
                                     key={opt._id}
@@ -3098,7 +3666,7 @@ const WalkoutForm = () => {
                                 }
                               >
                                 {getRadioButtons(
-                                  FIELD_IDS.RULE_ENGINE_ERROR_FOUND
+                                  FIELD_IDS.RULE_ENGINE_ERROR_FOUND,
                                 ).map((btn) => (
                                   <button
                                     key={btn._id}
@@ -3117,7 +3685,7 @@ const WalkoutForm = () => {
                                     onClick={() =>
                                       handleRadioChange(
                                         "ruleEngineError",
-                                        btn.incrementalId
+                                        btn.incrementalId,
                                       )
                                     }
                                   >
@@ -3141,7 +3709,7 @@ const WalkoutForm = () => {
                                   onChange={(e) =>
                                     handleDropdownChange(
                                       "errorFixRemarks",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                 />
@@ -3180,13 +3748,13 @@ const WalkoutForm = () => {
                                       onClick={() =>
                                         handleRadioChange(
                                           "issuesFixed",
-                                          btn.incrementalId
+                                          btn.incrementalId,
                                         )
                                       }
                                     >
                                       {btn.name}
                                     </button>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -3215,7 +3783,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "signedGeneralConsent",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3230,7 +3798,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "signedTreatmentConsent",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3243,7 +3811,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "preAuthAvailable",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3260,7 +3828,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "signedTxPlan",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3273,7 +3841,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "perioChart",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3300,7 +3868,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "xRayPanoAttached",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3313,7 +3881,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "majorServiceForm",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3326,7 +3894,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "routeSheet",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3345,7 +3913,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "prcUpdatedInRouteSheet",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3358,7 +3926,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleDropdownChange(
                                     "narrative",
-                                    e.target.checked
+                                    e.target.checked,
                                   )
                                 }
                               />
@@ -3392,7 +3960,7 @@ const WalkoutForm = () => {
                                     fetchUserName={fetchUserName}
                                     formatNoteDate={formatNoteDate}
                                   />
-                                )
+                                ),
                               )
                             ) : (
                               <p className="WF-no-notes-message">
@@ -3435,7 +4003,7 @@ const WalkoutForm = () => {
                             onChange={(e) =>
                               handleDropdownChange(
                                 "newOfficeNote",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                           />
@@ -3498,7 +4066,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleLc3Change(
                                     "fieldsetStatus",
-                                    parseInt(e.target.value)
+                                    parseInt(e.target.value),
                                   )
                                 }
                               />
@@ -3512,7 +4080,7 @@ const WalkoutForm = () => {
                                 {button.name}
                               </span>
                             </label>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -3535,7 +4103,7 @@ const WalkoutForm = () => {
                         >
                           {(() => {
                             const buttons = getRadioButtons(
-                              FIELD_IDS.LC3_RUN_RULES
+                              FIELD_IDS.LC3_RUN_RULES,
                             );
                             return buttons.map((button) => (
                               <button
@@ -3555,7 +4123,7 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleLc3Change(
                                     "didLc3RunRules",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
@@ -3570,10 +4138,10 @@ const WalkoutForm = () => {
                       <div className="WF-lc3-question-right">
                         {(() => {
                           const buttons = getRadioButtons(
-                            FIELD_IDS.LC3_RUN_RULES
+                            FIELD_IDS.LC3_RUN_RULES,
                           );
                           const yesButton = buttons.find(
-                            (btn) => btn.name === "Yes"
+                            (btn) => btn.name === "Yes",
                           );
                           return (
                             lc3Data.didLc3RunRules ===
@@ -3595,7 +4163,7 @@ const WalkoutForm = () => {
                                     onChange={(e) =>
                                       handleLc3Change(
                                         "ruleEngineUniqueId",
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     placeholder="Enter Unique ID"
@@ -3617,10 +4185,10 @@ const WalkoutForm = () => {
 
                         {(() => {
                           const buttons = getRadioButtons(
-                            FIELD_IDS.LC3_RUN_RULES
+                            FIELD_IDS.LC3_RUN_RULES,
                           );
                           const noButton = buttons.find(
-                            (btn) => btn.name === "No"
+                            (btn) => btn.name === "No",
                           );
                           return (
                             lc3Data.didLc3RunRules ===
@@ -3639,7 +4207,7 @@ const WalkoutForm = () => {
                                   onChange={(e) =>
                                     handleLc3Change(
                                       "reasonForNotRun",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   data-field-id={
@@ -3648,7 +4216,7 @@ const WalkoutForm = () => {
                                 >
                                   <option value="">Select reason</option>
                                   {getDropdownOptions(
-                                    FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
+                                    FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON,
                                   ).map((option) => (
                                     <option
                                       key={option._id}
@@ -3669,7 +4237,7 @@ const WalkoutForm = () => {
                     {(() => {
                       const buttons = getRadioButtons(FIELD_IDS.LC3_RUN_RULES);
                       const yesButton = buttons.find(
-                        (btn) => btn.name === "Yes"
+                        (btn) => btn.name === "Yes",
                       );
                       return (
                         lc3Data.didLc3RunRules === yesButton?.incrementalId &&
@@ -3704,7 +4272,7 @@ const WalkoutForm = () => {
                                         }
                                       >
                                         {getRadioButtons(
-                                          FIELD_IDS.LC3_FAILED_RULES_RESOLVED
+                                          FIELD_IDS.LC3_FAILED_RULES_RESOLVED,
                                         ).map((button) => (
                                           <button
                                             key={button._id}
@@ -3723,7 +4291,7 @@ const WalkoutForm = () => {
                                             onClick={() =>
                                               handleRadioChange(
                                                 `failedRule${index}`,
-                                                button.incrementalId
+                                                button.incrementalId,
                                               )
                                             }
                                           >
@@ -3773,7 +4341,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleRadioChange(
                                     "lc3DocumentCheckStatus",
-                                    parseInt(e.target.value)
+                                    parseInt(e.target.value),
                                   )
                                 }
                               />
@@ -3787,7 +4355,7 @@ const WalkoutForm = () => {
                                 {button.name}
                               </span>
                             </label>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -3811,13 +4379,13 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "signedTreatmentPlanAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_SIGNED_TREATMENT_PLAN
+                            FIELD_IDS.LC3_SIGNED_TREATMENT_PLAN,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -3843,7 +4411,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "prcAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -3853,7 +4421,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -3875,13 +4443,13 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "signedConsentGeneralAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_SIGNED_CONSENT_GENERAL
+                            FIELD_IDS.LC3_SIGNED_CONSENT_GENERAL,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -3907,7 +4475,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "nvdAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -3917,7 +4485,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -3940,13 +4508,13 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "narrativeAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_NARRATIVE_AVAILABLE
+                            FIELD_IDS.LC3_NARRATIVE_AVAILABLE,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -3972,13 +4540,13 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "signedConsentTxAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_SIGNED_CONSENT_TX
+                            FIELD_IDS.LC3_SIGNED_CONSENT_TX,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -4004,7 +4572,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "preAuthAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4014,7 +4582,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -4036,7 +4604,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "routeSheetAvailable",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4046,7 +4614,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -4066,7 +4634,7 @@ const WalkoutForm = () => {
                           data-field-id={FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE
+                            FIELD_IDS.LC3_ORTHO_QUESTIONNAIRE,
                           ).map((button) => (
                             <button
                               key={button._id}
@@ -4085,7 +4653,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "orthoQuestionnaireAvailable",
-                                  button.incrementalId
+                                  button.incrementalId,
                                 )
                               }
                             >
@@ -4128,7 +4696,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleRadioChange(
                                     "lc3AttachmentsCheckStatus",
-                                    parseInt(e.target.value)
+                                    parseInt(e.target.value),
                                   )
                                 }
                               />
@@ -4142,7 +4710,7 @@ const WalkoutForm = () => {
                                 {button.name}
                               </span>
                             </label>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -4164,7 +4732,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "pano",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4191,7 +4759,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "fmx",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4220,7 +4788,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "bitewing",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4230,7 +4798,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -4249,7 +4817,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "pa",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4278,7 +4846,7 @@ const WalkoutForm = () => {
                             const value = e.target.value;
                             handleDropdownChange(
                               "perioChart",
-                              value === "" ? null : parseInt(value)
+                              value === "" ? null : parseInt(value),
                             );
                           }}
                         >
@@ -4288,7 +4856,7 @@ const WalkoutForm = () => {
                               <option key={opt._id} value={opt.incrementalId}>
                                 {opt.name}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -4323,7 +4891,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleRadioChange(
                                     "lc3PatientPortionStatus",
-                                    parseInt(e.target.value)
+                                    parseInt(e.target.value),
                                   )
                                 }
                               />
@@ -4337,7 +4905,7 @@ const WalkoutForm = () => {
                                 {button.name}
                               </span>
                             </label>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -4360,11 +4928,16 @@ const WalkoutForm = () => {
                               ? "WF-validation-error"
                               : ""
                           }`}
-                          value={formData.expectedPPOffice || ""}
+                          value={
+                            formData.expectedPPOffice !== null &&
+                            formData.expectedPPOffice !== undefined
+                              ? formData.expectedPPOffice
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "expectedPPOffice",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4382,11 +4955,16 @@ const WalkoutForm = () => {
                               ? "WF-validation-error"
                               : ""
                           }`}
-                          value={formData.ppCollectedOffice || ""}
+                          value={
+                            formData.ppCollectedOffice !== null &&
+                            formData.ppCollectedOffice !== undefined
+                              ? formData.ppCollectedOffice
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "ppCollectedOffice",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4443,13 +5021,13 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "signedNVDForDifference",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
                                 {button.name}
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -4473,11 +5051,16 @@ const WalkoutForm = () => {
                               ? "WF-validation-error"
                               : ""
                           }`}
-                          value={formData.expectedPPLC3 || ""}
+                          value={
+                            formData.expectedPPLC3 !== null &&
+                            formData.expectedPPLC3 !== undefined
+                              ? formData.expectedPPLC3
+                              : ""
+                          }
                           onChange={(e) =>
                             handleDropdownChange(
                               "expectedPPLC3",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4532,7 +5115,7 @@ const WalkoutForm = () => {
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_PP_PRIMARY_MODE
+                            FIELD_IDS.LC3_PP_PRIMARY_MODE,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -4560,7 +5143,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "amountPrimaryMode",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -4587,13 +5170,13 @@ const WalkoutForm = () => {
                                   : null;
                                 handleDropdownChange(
                                   "paymentVerifiedFromPrimary",
-                                  value
+                                  value,
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_PRIMARY,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -4632,7 +5215,7 @@ const WalkoutForm = () => {
                         >
                           <option value="">Select</option>
                           {getDropdownOptions(
-                            FIELD_IDS.LC3_PP_SECONDARY_MODE
+                            FIELD_IDS.LC3_PP_SECONDARY_MODE,
                           ).map((opt) => (
                             <option key={opt._id} value={opt.incrementalId}>
                               {opt.name}
@@ -4660,7 +5243,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "amountSecondaryMode",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -4689,13 +5272,13 @@ const WalkoutForm = () => {
                                   : null;
                                 handleDropdownChange(
                                   "paymentVerifiedFromSecondary",
-                                  value
+                                  value,
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY
+                                FIELD_IDS.LC3_PAYMENT_VERIFIED_SECONDARY,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -4744,13 +5327,13 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "verifyCheckMatchesES",
-                                      button.incrementalId
+                                      button.incrementalId,
                                     )
                                   }
                                 >
                                   {button.name}
                                 </button>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
@@ -4788,13 +5371,13 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "forteCheckAvailable",
-                                      button.incrementalId
+                                      button.incrementalId,
                                     )
                                   }
                                 >
                                   {button.name}
                                 </button>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
@@ -4830,7 +5413,7 @@ const WalkoutForm = () => {
                                 onChange={(e) =>
                                   handleRadioChange(
                                     "lc3ProductionStatus",
-                                    parseInt(e.target.value)
+                                    parseInt(e.target.value),
                                   )
                                 }
                               />
@@ -4844,7 +5427,7 @@ const WalkoutForm = () => {
                                 {button.name}
                               </span>
                             </label>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
@@ -4876,7 +5459,7 @@ const WalkoutForm = () => {
                           onChange={(e) =>
                             handleDropdownChange(
                               "totalProductionOffice",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4903,7 +5486,7 @@ const WalkoutForm = () => {
                           onChange={(e) =>
                             handleDropdownChange(
                               "estInsuranceOffice",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4953,7 +5536,7 @@ const WalkoutForm = () => {
                           onChange={(e) =>
                             handleDropdownChange(
                               "totalProductionLC3",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -4980,7 +5563,7 @@ const WalkoutForm = () => {
                           onChange={(e) =>
                             handleDropdownChange(
                               "estInsuranceLC3",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -5051,13 +5634,13 @@ const WalkoutForm = () => {
                                   : null;
                                 handleDropdownChange(
                                   "reasonTotalProductionDiff",
-                                  value
+                                  value,
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.LC3_REASON_PROD_DIFF
+                                FIELD_IDS.LC3_REASON_PROD_DIFF,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -5086,7 +5669,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "explanationTotalProductionDiff",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -5135,13 +5718,13 @@ const WalkoutForm = () => {
                                   : null;
                                 handleDropdownChange(
                                   "reasonEstInsuranceDiff",
-                                  value
+                                  value,
                                 );
                               }}
                             >
                               <option value="">Select</option>
                               {getDropdownOptions(
-                                FIELD_IDS.LC3_REASON_INS_DIFF
+                                FIELD_IDS.LC3_REASON_INS_DIFF,
                               ).map((opt) => (
                                 <option key={opt._id} value={opt.incrementalId}>
                                   {opt.name}
@@ -5168,7 +5751,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "explanationEstInsuranceDiff",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -5234,13 +5817,13 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "informedOfficeManager",
-                                      button.incrementalId
+                                      button.incrementalId,
                                     )
                                   }
                                 >
                                   {button.name}
                                 </button>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
@@ -5262,7 +5845,7 @@ const WalkoutForm = () => {
                             data-field-id={FIELD_IDS.LC3_GOOGLE_REVIEW_SENT}
                           >
                             {getRadioButtons(
-                              FIELD_IDS.LC3_GOOGLE_REVIEW_SENT
+                              FIELD_IDS.LC3_GOOGLE_REVIEW_SENT,
                             ).map((button) => (
                               <button
                                 key={button._id}
@@ -5281,7 +5864,7 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "googleReviewSent",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
@@ -5324,13 +5907,13 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "containsCrownDentureImplant",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
                                 {button.name}
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -5369,13 +5952,13 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "crownPaidOn",
-                                      button.incrementalId
+                                      button.incrementalId,
                                     )
                                   }
                                 >
                                   {button.name}
                                 </button>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
@@ -5399,7 +5982,7 @@ const WalkoutForm = () => {
                               data-field-id={FIELD_IDS.LC3_DELIVERED_PER_NOTES}
                             >
                               {getRadioButtons(
-                                FIELD_IDS.LC3_DELIVERED_PER_NOTES
+                                FIELD_IDS.LC3_DELIVERED_PER_NOTES,
                               ).map((button) => (
                                 <button
                                   key={button._id}
@@ -5418,7 +6001,7 @@ const WalkoutForm = () => {
                                   onClick={() =>
                                     handleRadioChange(
                                       "deliveredAsPerNotes",
-                                      button.incrementalId
+                                      button.incrementalId,
                                     )
                                   }
                                 >
@@ -5461,19 +6044,19 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "walkoutOnHold",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
                                 {button.name}
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
 
-                      {/* Conditional: Show only if walkoutOnHold === 2 (No/Hold) */}
-                      {formData.walkoutOnHold === 2 && (
+                      {/* Conditional: Show only if walkoutOnHold === 1 (Yes/Completing) */}
+                      {formData.walkoutOnHold === 1 && (
                         <>
                           <div className="WF-form-group-compact WF-full-width">
                             <label className="WF-form-label-compact">
@@ -5482,13 +6065,13 @@ const WalkoutForm = () => {
                             </label>
                             <MultiSelectDropdown
                               options={getDropdownOptions(
-                                FIELD_IDS.LC3_ONHOLD_REASONS
+                                FIELD_IDS.LC3_ONHOLD_REASONS,
                               )}
                               selectedValues={formData.onHoldReasons || []}
                               onChange={(newValues) =>
                                 handleMultiSelectChange(
                                   "onHoldReasons",
-                                  newValues
+                                  newValues,
                                 )
                               }
                               placeholder="Type here for search or select from list."
@@ -5513,7 +6096,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleDropdownChange(
                                   "otherReasonNotes",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -5522,8 +6105,8 @@ const WalkoutForm = () => {
                       )}
                     </div>
 
-                    {/* Conditional: Show only if walkoutOnHold === 1 (Yes/Completing) */}
-                    {formData.walkoutOnHold === 1 && (
+                    {/* Conditional: Show only if walkoutOnHold === 2 (No/Hold) */}
+                    {formData.walkoutOnHold === 2 && (
                       <div className="WF-final-question-row">
                         <label className="WF-form-label-compact">
                           Is walkout completing with deficiency?
@@ -5538,7 +6121,7 @@ const WalkoutForm = () => {
                           data-field-id={FIELD_IDS.LC3_COMPLETING_DEFICIENCY}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.LC3_COMPLETING_DEFICIENCY
+                            FIELD_IDS.LC3_COMPLETING_DEFICIENCY,
                           ).map((button) => (
                             <button
                               key={button._id}
@@ -5557,7 +6140,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "completingWithDeficiency",
-                                  button.incrementalId
+                                  button.incrementalId,
                                 )
                               }
                             >
@@ -5584,7 +6167,7 @@ const WalkoutForm = () => {
                         data-field-id={FIELD_IDS.LC3_PROVIDER_NOTES_STATUS}
                       >
                         {getRadioButtons(
-                          FIELD_IDS.LC3_PROVIDER_NOTES_STATUS
+                          FIELD_IDS.LC3_PROVIDER_NOTES_STATUS,
                         ).map((button) => (
                           <label key={button._id} className="WF-status-label">
                             <input
@@ -5598,7 +6181,7 @@ const WalkoutForm = () => {
                               onChange={(e) =>
                                 handleRadioChange(
                                   "lc3ProviderNotesStatus",
-                                  parseInt(e.target.value)
+                                  parseInt(e.target.value),
                                 )
                               }
                             />
@@ -5623,11 +6206,15 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.doctorNoteCompleted
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_DOCTOR_NOTE_COMPLETED}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.LC3_DOCTOR_NOTE_COMPLETED
+                            FIELD_IDS.LC3_DOCTOR_NOTE_COMPLETED,
                           ).map((button) => (
                             <button
                               key={button._id}
@@ -5646,7 +6233,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "doctorNoteCompleted",
-                                  button.incrementalId
+                                  button.incrementalId,
                                 )
                               }
                             >
@@ -5662,7 +6249,11 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.notesUpdatedOnDOS
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_NOTES_UPDATED_DOS}
                         >
                           {getRadioButtons(FIELD_IDS.LC3_NOTES_UPDATED_DOS).map(
@@ -5684,13 +6275,13 @@ const WalkoutForm = () => {
                                 onClick={() =>
                                   handleRadioChange(
                                     "notesUpdatedOnDOS",
-                                    button.incrementalId
+                                    button.incrementalId,
                                   )
                                 }
                               >
                                 {button.name}
                               </button>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -5701,11 +6292,15 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            lc3ValidationErrors.noteIncludesFourElements
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.LC3_NOTE_INCLUDES_FOUR}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.LC3_NOTE_INCLUDES_FOUR
+                            FIELD_IDS.LC3_NOTE_INCLUDES_FOUR,
                           ).map((button) => (
                             <button
                               key={button._id}
@@ -5724,7 +6319,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "noteIncludesFourElements",
-                                  button.incrementalId
+                                  button.incrementalId,
                                 )
                               }
                             >
@@ -5739,25 +6334,33 @@ const WalkoutForm = () => {
                           <span className="WF-checklist-label">
                             a. Procedure Name
                           </span>
-                          <span className="WF-checklist-icon">❌</span>
+                          <span className="WF-checklist-icon">
+                            {noteElements.noteElement1 ? "✓" : "❌"}
+                          </span>
                         </div>
                         <div className="WF-checklist-item">
                           <span className="WF-checklist-label">
                             b. Tooth#/Quads/Arch and Surface (if applicable)
                           </span>
-                          <span className="WF-checklist-icon">❌</span>
+                          <span className="WF-checklist-icon">
+                            {noteElements.noteElement2 ? "✓" : "❌"}
+                          </span>
                         </div>
                         <div className="WF-checklist-item">
                           <span className="WF-checklist-label">
                             c. Provider Name
                           </span>
-                          <span className="WF-checklist-icon">❌</span>
+                          <span className="WF-checklist-icon">
+                            {noteElements.noteElement3 ? "✓" : "❌"}
+                          </span>
                         </div>
                         <div className="WF-checklist-item">
                           <span className="WF-checklist-label">
                             d. Hygienist Name
                           </span>
-                          <span className="WF-checklist-icon">❌</span>
+                          <span className="WF-checklist-icon">
+                            {noteElements.noteElement4 ? "✓" : "❌"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -5769,14 +6372,18 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <textarea
-                          className="WF-notes-textarea"
+                          className={`WF-notes-textarea ${
+                            lc3ValidationErrors.providerNotesFromES
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           placeholder="Paste the provider's notes here."
                           rows="6"
                           value={formData.providerNotesFromES || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "providerNotesFromES",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -5789,13 +6396,13 @@ const WalkoutForm = () => {
                         </label>
                         <textarea
                           className="WF-notes-textarea"
-                          placeholder="Paste the provider's notes here."
+                          placeholder="Paste the hygienist's notes here."
                           rows="6"
                           value={formData.hygienistNotesFromES || ""}
                           onChange={(e) =>
                             handleDropdownChange(
                               "hygienistNotesFromES",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -5805,13 +6412,15 @@ const WalkoutForm = () => {
                     <div className="WF-check-ai-button-container">
                       <button
                         type="button"
-                        className="WF-check-ai-button"
-                        onClick={() => {
-                          // AI check functionality will be added
-                          console.log("Check with AI clicked");
-                        }}
+                        className={`WF-check-ai-button ${
+                          lc3ValidationErrors.checkedByAi
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
+                        onClick={handleCheckWithAI}
+                        disabled={isCheckingWithAI}
                       >
-                        Check with AI*
+                        {isCheckingWithAI ? "Checking..." : "Check with AI*"}
                       </button>
                     </div>
                   </fieldset>
@@ -5843,9 +6452,17 @@ const WalkoutForm = () => {
 
                     {/* Add New Note */}
                     <div className="WF-add-note-section">
+                      <label className="WF-form-label-compact">
+                        LC3 Note
+                        <span style={{ color: "#dc2626" }}>*</span>
+                      </label>
                       <textarea
-                        className="WF-add-note-textarea"
-                        placeholder="Add new note here."
+                        className={`WF-add-note-textarea ${
+                          lc3ValidationErrors.newOnHoldNote
+                            ? "WF-validation-error"
+                            : ""
+                        }`}
+                        placeholder="Add new note here.*"
                         rows="4"
                         value={formData.newOnHoldNote || ""}
                         onChange={(e) =>
@@ -5884,9 +6501,70 @@ const WalkoutForm = () => {
                 <div className="WF-section-content">
                   {/* Office Walkout Image Data Table */}
                   <div className="WF-audit-table-container">
-                    <h4 className="WF-audit-table-title">
-                      Office Walkout Image Data Extracted by AI
-                    </h4>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <h4
+                        className="WF-audit-table-title"
+                        style={{ margin: 0 }}
+                      >
+                        Office Walkout Image Data Extracted by AI
+                      </h4>
+                      {officeWalkoutData?.imageId && (
+                        <button
+                          type="button"
+                          onClick={handleRegenerateOfficeData}
+                          disabled={
+                            isRegeneratingOfficeData || isRegenerationDisabled()
+                          }
+                          title={
+                            isRegenerationDisabled()
+                              ? "Hourly limit reached. Please try again later."
+                              : "Regenerate data from image"
+                          }
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor:
+                              isRegeneratingOfficeData ||
+                              isRegenerationDisabled()
+                                ? "not-allowed"
+                                : "pointer",
+                            padding: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            opacity:
+                              isRegeneratingOfficeData ||
+                              isRegenerationDisabled()
+                                ? 0.4
+                                : 1,
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{
+                              animation: isRegeneratingOfficeData
+                                ? "spin 1s linear infinite"
+                                : "none",
+                            }}
+                          >
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     <table className="WF-audit-table">
                       <thead>
                         <tr>
@@ -5899,23 +6577,217 @@ const WalkoutForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td>JAMES TRAPANI</td>
-                          <td>IMP</td>
-                          <td>Dr. James S...</td>
-                          <td>DENTURE/PARTIAL IMPRESSION</td>
-                          <td></td>
-                          <td></td>
-                        </tr>
+                        {isRegeneratingOfficeData ? (
+                          // Show spinner during regeneration
+                          <tr>
+                            <td
+                              colSpan="6"
+                              style={{ textAlign: "center", padding: "40px" }}
+                            >
+                              <div
+                                style={{
+                                  display: "inline-block",
+                                  width: "40px",
+                                  height: "40px",
+                                  border: "4px solid #f3f4f6",
+                                  borderTop: "4px solid #3b82f6",
+                                  borderRadius: "50%",
+                                  animation: "spin 1s linear infinite",
+                                }}
+                              />
+                              <p
+                                style={{ marginTop: "12px", color: "#6b7280" }}
+                              >
+                                Regenerating data...
+                              </p>
+                            </td>
+                          </tr>
+                        ) : !officeWalkoutData ? (
+                          // No data loaded yet
+                          <tr>
+                            <td
+                              colSpan="6"
+                              style={{ textAlign: "center", color: "#6b7280" }}
+                            >
+                              Loading...
+                            </td>
+                          </tr>
+                        ) : !officeWalkoutData.imageId ? (
+                          // No image uploaded
+                          <tr>
+                            <td
+                              colSpan="6"
+                              style={{ textAlign: "center", color: "#dc2626" }}
+                            >
+                              Office walkout image not available
+                            </td>
+                          </tr>
+                        ) : !officeWalkoutData.extractedData ? (
+                          // Image exists but no extracted data
+                          <tr>
+                            <td
+                              colSpan="6"
+                              style={{ textAlign: "center", color: "#dc2626" }}
+                            >
+                              No data extracted from office image
+                            </td>
+                          </tr>
+                        ) : (
+                          (() => {
+                            // Parse and render JSON data
+                            try {
+                              // Handle both string (from DB) and object (from API) formats
+                              let parsedData;
+                              if (
+                                typeof officeWalkoutData.extractedData ===
+                                "string"
+                              ) {
+                                // If empty string, show no data message
+                                if (
+                                  officeWalkoutData.extractedData.trim() === ""
+                                ) {
+                                  return (
+                                    <tr>
+                                      <td
+                                        colSpan="6"
+                                        style={{
+                                          textAlign: "center",
+                                          color: "#dc2626",
+                                        }}
+                                      >
+                                        No data extracted from office image
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+                                parsedData = JSON.parse(
+                                  officeWalkoutData.extractedData,
+                                );
+                              } else {
+                                // Already an object
+                                parsedData = officeWalkoutData.extractedData;
+                              }
+
+                              // Check if data array exists and has items
+                              if (
+                                parsedData.data &&
+                                Array.isArray(parsedData.data) &&
+                                parsedData.data.length > 0
+                              ) {
+                                return parsedData.data.map((row, index) => (
+                                  <tr key={index}>
+                                    <td>{row.Patient || ""}</td>
+                                    <td>{row.Service || ""}</td>
+                                    <td>{row.Provider || ""}</td>
+                                    <td>{row.Description || ""}</td>
+                                    <td>{row.Tooth || ""}</td>
+                                    <td>{row.Surface || ""}</td>
+                                  </tr>
+                                ));
+                              } else {
+                                // Valid JSON but no data array
+                                return (
+                                  <tr>
+                                    <td
+                                      colSpan="6"
+                                      style={{
+                                        textAlign: "center",
+                                        color: "#dc2626",
+                                      }}
+                                    >
+                                      No data extracted from office image
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                            } catch (error) {
+                              // Invalid JSON - show error message
+                              return (
+                                <tr>
+                                  <td
+                                    colSpan="6"
+                                    style={{
+                                      textAlign: "center",
+                                      color: "#dc2626",
+                                    }}
+                                  >
+                                    No data extracted from office image
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })()
+                        )}
                       </tbody>
                     </table>
                   </div>
 
                   {/* LC3 Walkout Image Data Table */}
                   <div className="WF-audit-table-container">
-                    <h4 className="WF-audit-table-title">
-                      LC3 Walkout Image Data Extracted by AI
-                    </h4>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <h4
+                        className="WF-audit-table-title"
+                        style={{ margin: 0 }}
+                      >
+                        LC3 Walkout Image Data Extracted by AI
+                      </h4>
+                      {lc3WalkoutData?.imageId && (
+                        <button
+                          type="button"
+                          onClick={handleRegenerateLc3Data}
+                          disabled={
+                            isRegeneratingLc3Data || isLc3RegenerationDisabled()
+                          }
+                          title={
+                            isLc3RegenerationDisabled()
+                              ? "Hourly limit reached. Please try again later."
+                              : "Regenerate data from image"
+                          }
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor:
+                              isRegeneratingLc3Data ||
+                              isLc3RegenerationDisabled()
+                                ? "not-allowed"
+                                : "pointer",
+                            padding: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            opacity:
+                              isRegeneratingLc3Data ||
+                              isLc3RegenerationDisabled()
+                                ? 0.4
+                                : 1,
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{
+                              animation: isRegeneratingLc3Data
+                                ? "spin 1s linear infinite"
+                                : "none",
+                            }}
+                          >
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     <table className="WF-audit-table">
                       <thead>
                         <tr>
@@ -5929,18 +6801,168 @@ const WalkoutForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td>12/22/2025</td>
-                          <td>JAMES</td>
-                          <td>Dr. James Song</td>
-                          <td>Service</td>
-                          <td>
-                            Service Code: IMP | Procedure: DENTURE/PARTIAL
-                            IMPRESSION
-                          </td>
-                          <td>LA</td>
-                          <td></td>
-                        </tr>
+                        {isRegeneratingLc3Data ? (
+                          // Show spinner during regeneration
+                          <tr>
+                            <td
+                              colSpan="7"
+                              style={{ textAlign: "center", padding: "40px" }}
+                            >
+                              <div
+                                style={{
+                                  display: "inline-block",
+                                  width: "40px",
+                                  height: "40px",
+                                  border: "4px solid #f3f4f6",
+                                  borderTop: "4px solid #3b82f6",
+                                  borderRadius: "50%",
+                                  animation: "spin 1s linear infinite",
+                                }}
+                              />
+                              <p
+                                style={{ marginTop: "12px", color: "#6b7280" }}
+                              >
+                                Regenerating data...
+                              </p>
+                            </td>
+                          </tr>
+                        ) : !lc3WalkoutData ? (
+                          // No data loaded yet
+                          <tr>
+                            <td
+                              colSpan="7"
+                              style={{ textAlign: "center", color: "#6b7280" }}
+                            >
+                              Loading...
+                            </td>
+                          </tr>
+                        ) : !lc3WalkoutData.imageId ? (
+                          // No image uploaded
+                          <tr>
+                            <td
+                              colSpan="7"
+                              style={{ textAlign: "center", color: "#dc2626" }}
+                            >
+                              LC3 walkout image not available
+                            </td>
+                          </tr>
+                        ) : !lc3WalkoutData.extractedData ? (
+                          // Image exists but no extracted data
+                          <tr>
+                            <td
+                              colSpan="7"
+                              style={{ textAlign: "center", color: "#dc2626" }}
+                            >
+                              No data extracted from LC3 image
+                            </td>
+                          </tr>
+                        ) : (
+                          (() => {
+                            // Parse and render JSON data
+                            try {
+                              // Handle both string (from DB) and object (from API) formats
+                              let parsedData;
+                              if (
+                                typeof lc3WalkoutData.extractedData === "string"
+                              ) {
+                                // If empty string, show no data message
+                                if (
+                                  lc3WalkoutData.extractedData.trim() === ""
+                                ) {
+                                  return (
+                                    <tr>
+                                      <td
+                                        colSpan="7"
+                                        style={{
+                                          textAlign: "center",
+                                          color: "#dc2626",
+                                        }}
+                                      >
+                                        No data extracted from LC3 image
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+                                parsedData = JSON.parse(
+                                  lc3WalkoutData.extractedData,
+                                );
+                              } else {
+                                // Already an object
+                                parsedData = lc3WalkoutData.extractedData;
+                              }
+
+                              // Check if data array exists and has items
+                              if (
+                                parsedData.data &&
+                                Array.isArray(parsedData.data) &&
+                                parsedData.data.length > 0
+                              ) {
+                                return parsedData.data.map((row, index) => {
+                                  // Handle Description field - can be string or object
+                                  let descriptionText = "";
+                                  if (row.Description) {
+                                    if (typeof row.Description === "object") {
+                                      // If object, format as "Service Code: X | Procedure: Y"
+                                      const code =
+                                        row.Description.service_code || "";
+                                      const procedure =
+                                        row.Description.procedure_name || "";
+                                      descriptionText =
+                                        code && procedure
+                                          ? `Service Code: ${code} | Procedure: ${procedure}`
+                                          : code || procedure;
+                                    } else {
+                                      // If string, use directly
+                                      descriptionText = row.Description;
+                                    }
+                                  }
+
+                                  return (
+                                    <tr key={index}>
+                                      <td>{row.Date || ""}</td>
+                                      <td>{row.Patient || ""}</td>
+                                      <td>{row.Provider || ""}</td>
+                                      <td>{row.Type || ""}</td>
+                                      <td>{descriptionText}</td>
+                                      <td>{row.Tooth || ""}</td>
+                                      <td>{row.Surface || ""}</td>
+                                    </tr>
+                                  );
+                                });
+                              } else {
+                                // Valid JSON but no data array
+                                return (
+                                  <tr>
+                                    <td
+                                      colSpan="7"
+                                      style={{
+                                        textAlign: "center",
+                                        color: "#dc2626",
+                                      }}
+                                    >
+                                      No data extracted from LC3 image
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                            } catch (error) {
+                              // Invalid JSON - show error message
+                              return (
+                                <tr>
+                                  <td
+                                    colSpan="7"
+                                    style={{
+                                      textAlign: "center",
+                                      color: "#dc2626",
+                                    }}
+                                  >
+                                    No data extracted from LC3 image
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })()
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -5983,7 +7005,7 @@ const WalkoutForm = () => {
                           data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FOUND}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.AUDIT_DISCREPANCY_FOUND
+                            FIELD_IDS.AUDIT_DISCREPANCY_FOUND,
                           ).map((btn) => (
                             <button
                               key={btn._id}
@@ -6000,7 +7022,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "discrepancyFound",
-                                  btn.incrementalId
+                                  btn.incrementalId,
                                 )
                               }
                             >
@@ -6016,7 +7038,7 @@ const WalkoutForm = () => {
                           onChange={(e) =>
                             handleDropdownChange(
                               "discrepancyRemarks",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -6032,7 +7054,7 @@ const WalkoutForm = () => {
                           data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FIXED}
                         >
                           {getRadioButtons(
-                            FIELD_IDS.AUDIT_DISCREPANCY_FIXED
+                            FIELD_IDS.AUDIT_DISCREPANCY_FIXED,
                           ).map((btn) => (
                             <button
                               key={btn._id}
@@ -6049,7 +7071,7 @@ const WalkoutForm = () => {
                               onClick={() =>
                                 handleRadioChange(
                                   "discrepancyFixed",
-                                  btn.incrementalId
+                                  btn.incrementalId,
                                 )
                               }
                             >
@@ -6059,7 +7081,11 @@ const WalkoutForm = () => {
                         </div>
                         <input
                           type="text"
-                          className="WF-walkout-form-input"
+                          className={`WF-walkout-form-input ${
+                            lc3ValidationErrors.lc3Remarks
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           placeholder="LC3 Remarks*"
                           value={formData.lc3Remarks || ""}
                           onChange={(e) =>
@@ -6099,7 +7125,7 @@ const WalkoutForm = () => {
                   <div className="WF-timer-label">Current Session:</div>
                   <div className="WF-timer-value">
                     {formatTime(
-                      sidebarData.timer.currentSession.elapsedSeconds
+                      sidebarData.timer.currentSession.elapsedSeconds,
                     )}
                   </div>
                 </div>
@@ -6140,8 +7166,8 @@ const WalkoutForm = () => {
                 {sidebarData.walkoutStatus === "completed"
                   ? "Completed"
                   : sidebarData.walkoutStatus === "office-pending"
-                  ? "Office Pending"
-                  : "LC3 Pending"}
+                    ? "Office Pending"
+                    : "LC3 Pending"}
               </div>
             </div>
 
@@ -6286,42 +7312,50 @@ const WalkoutForm = () => {
       {previewModal.isOpen &&
         (sidebarData.images[previewModal.type]?.imageId ||
           sidebarData.images[previewModal.type]?.previewUrl) && (
-          <div
-            className="WF-fullscreen-preview"
-            onClick={() => setPreviewModal({ isOpen: false, type: null })}
-          >
-            <button
-              className="WF-fullscreen-close"
-              onClick={() => setPreviewModal({ isOpen: false, type: null })}
-            >
+          <div className="WF-fullscreen-preview" onClick={closePreviewModal}>
+            <button className="WF-fullscreen-close" onClick={closePreviewModal}>
               ×
             </button>
+            {imageLoading && (
+              <div className="WF-image-loader">
+                <div className="WF-loader-spinner"></div>
+                <p>Loading...</p>
+              </div>
+            )}
             <img
               src={getImageUrl(previewModal.type)}
               alt="Preview"
               style={{
                 transform: `scale(${
                   sidebarData.images[previewModal.type].zoom / 100
-                })`,
+                }) translate(${imagePan.x}px, ${imagePan.y}px)`,
+                cursor: isDragging ? "grabbing" : "grab",
               }}
               className="WF-fullscreen-image"
               onClick={(e) => handleImageClick(previewModal.type, e)}
               onContextMenu={(e) => handleImageRightClick(previewModal.type, e)}
+              onWheel={(e) => handleImageWheel(previewModal.type, e)}
+              onMouseDown={handleImageMouseDown}
+              onMouseMove={handleImageMouseMove}
+              onMouseUp={handleImageMouseUp}
+              onMouseLeave={handleImageMouseUp}
               onError={(e) => {
                 console.error("❌ Image failed to load!");
                 console.error("Image URL:", getImageUrl(previewModal.type));
                 console.error(
                   "ImageId:",
-                  sidebarData.images[previewModal.type].imageId
+                  sidebarData.images[previewModal.type].imageId,
                 );
                 console.error(
                   "PreviewUrl:",
-                  sidebarData.images[previewModal.type].previewUrl
+                  sidebarData.images[previewModal.type].previewUrl,
                 );
+                setImageLoading(false);
               }}
               onLoad={() => {
                 console.log("✅ Image loaded successfully!");
                 console.log("Image URL:", getImageUrl(previewModal.type));
+                setImageLoading(false);
               }}
             />
             <div className="WF-zoom-indicator">

@@ -295,16 +295,16 @@ export const validateLC3Section = (lc3Data, formData) => {
   }
 
   // Conditional mandatory: onHoldReasons
-  // Only mandatory if walkoutOnHold === 2 (No/Hold)
-  if (formData.walkoutOnHold === 2) {
+  // Only mandatory if walkoutOnHold === 1 (Yes/Completing)
+  if (formData.walkoutOnHold === 1) {
     if (!formData.onHoldReasons || formData.onHoldReasons.length === 0) {
       errors.onHoldReasons = true;
     }
   }
 
   // Conditional mandatory: otherReasonNotes
-  // Only mandatory if walkoutOnHold === 2 (No/Hold)
-  if (formData.walkoutOnHold === 2) {
+  // Only mandatory if walkoutOnHold === 1 (Yes/Completing)
+  if (formData.walkoutOnHold === 1) {
     if (
       formData.otherReasonNotes === null ||
       formData.otherReasonNotes === undefined ||
@@ -315,14 +315,49 @@ export const validateLC3Section = (lc3Data, formData) => {
   }
 
   // Conditional mandatory: completingWithDeficiency
-  // Only mandatory if walkoutOnHold === 1 (Yes/Completing)
-  if (formData.walkoutOnHold === 1) {
+  // Only mandatory if walkoutOnHold === 2 (No/Hold)
+  if (formData.walkoutOnHold === 2) {
     if (
       formData.completingWithDeficiency === null ||
       formData.completingWithDeficiency === undefined
     ) {
       errors.completingWithDeficiency = true;
     }
+  }
+
+  // 7. Provider Notes - Mandatory validations
+
+  // Provider's note from ES - mandatory
+  if (!formData.providerNotesFromES || !formData.providerNotesFromES.trim()) {
+    errors.providerNotesFromES = true;
+  }
+
+  // Doctor note completed - mandatory
+  if (!formData.doctorNoteCompleted) {
+    errors.doctorNoteCompleted = true;
+  }
+
+  // Notes updated on DOS - mandatory
+  if (!formData.notesUpdatedOnDOS) {
+    errors.notesUpdatedOnDOS = true;
+  }
+
+  // Note includes 4 elements - mandatory
+  if (!formData.noteIncludesFourElements) {
+    errors.noteIncludesFourElements = true;
+  }
+
+  // Check with AI button - mandatory
+  // If provider notes exist, AI check must be performed
+  if (formData.providerNotesFromES && formData.providerNotesFromES.trim()) {
+    if (!formData.checkedByAi) {
+      errors.checkedByAi = true;
+    }
+  }
+
+  // 8. On Hold Note (newOnHoldNote) - mandatory for LC3 submission
+  if (!formData.newOnHoldNote || !formData.newOnHoldNote.trim()) {
+    errors.newOnHoldNote = true;
   }
 
   return errors;
@@ -338,7 +373,7 @@ export const validateLC3Section = (lc3Data, formData) => {
 export const validateOfficeSection = (
   formData,
   isPatientPresent,
-  isZeroProduction
+  isZeroProduction,
 ) => {
   const errors = {};
 

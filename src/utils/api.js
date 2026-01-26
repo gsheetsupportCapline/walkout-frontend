@@ -5,6 +5,7 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // Enable sending cookies with requests
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,13 +22,42 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Handle response errors - GLOBAL for ALL axios calls
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Check if response is HTML instead of JSON (common CORS/proxy issue)
+    const contentType = response.headers["content-type"];
+    if (contentType && contentType.includes("text/html")) {
+      console.error(
+        "Received HTML instead of JSON. Check your API URL and backend server.",
+      );
+      return Promise.reject(
+        new Error(
+          "Invalid response from server. Please check backend connection.",
+        ),
+      );
+    }
+    return response;
+  },
   (error) => {
+    // Check if error response is HTML
+    if (error.response) {
+      const contentType = error.response.headers["content-type"];
+      if (contentType && contentType.includes("text/html")) {
+        console.error(
+          "Received HTML error response. API endpoint may be incorrect.",
+        );
+        return Promise.reject(
+          new Error(
+            "Cannot connect to API server. Please check if backend is running.",
+          ),
+        );
+      }
+    }
+
     if (error.response?.status === 401) {
       // Check for TOKEN_EXPIRED in response body
       const errorData = error.response?.data;
@@ -43,7 +73,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Fetch wrapper with automatic token expiry handling - GLOBAL for ALL fetch calls
@@ -62,6 +92,7 @@ export const fetchWithAuth = async (url, options = {}) => {
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: "include", // Enable sending cookies with fetch requests
       headers,
     });
 

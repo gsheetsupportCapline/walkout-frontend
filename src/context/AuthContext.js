@@ -46,9 +46,21 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
     } catch (error) {
+      console.error("Login error:", error);
+
+      // Check if it's a network/connection error
+      if (!error.response) {
+        return {
+          success: false,
+          message:
+            "Cannot connect to server. Please check if backend is running on http://localhost:5000",
+        };
+      }
+
       return {
         success: false,
-        message: error.response?.data?.message || "Login failed",
+        message:
+          error.response?.data?.message || error.message || "Login failed",
       };
     }
   };
