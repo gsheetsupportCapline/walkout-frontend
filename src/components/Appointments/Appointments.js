@@ -49,7 +49,7 @@ const Appointments = () => {
   const [allAppointmentsData, setAllAppointmentsData] = useState([]); // All data for client-side filtering
   const [pageBeforeFilter, setPageBeforeFilter] = useState(1); // Track page before applying filter
 
-  // Pagination states - load from localStorage
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(() =>
     getStoredData("appointments_page", 1),
   );
@@ -59,7 +59,6 @@ const Appointments = () => {
   ); // "dateRange" or "patientId"
 
   const lastFetchParams = useRef(null);
-  const isManualSearch = useRef(false);
 
   // Check if user is admin or superAdmin
   const isAdminOrSuper = user?.role === "admin" || user?.role === "superAdmin";
@@ -96,7 +95,7 @@ const Appointments = () => {
         const skip = (currentPage - 1) * limit;
         let queryParams = `officeName=${encodeURIComponent(
           filters.officeName,
-        )}&limit=${limit}&skip=${skip}`;
+        )}&skip=${skip}&limit=${limit}`;
 
         if (filters.startDate) {
           queryParams += `&startDate=${filters.startDate}`;
@@ -111,7 +110,7 @@ const Appointments = () => {
         }
 
         // Store current fetch params
-        const currentParams = { queryParams, currentPage };
+        const currentParams = { queryParams };
         lastFetchParams.current = currentParams;
 
         console.log("Fetching appointments with params:", queryParams);
@@ -175,7 +174,7 @@ const Appointments = () => {
         }
       }
     },
-    [filters, currentPage, limit, isAdminOrSuper, showError],
+    [filters, isAdminOrSuper, showError, currentPage, limit],
   );
 
   // Fetch appointments by patient ID (separate API)
@@ -195,12 +194,10 @@ const Appointments = () => {
         const skip = (currentPage - 1) * limit;
         const queryParams = `officeName=${encodeURIComponent(
           filters.officeName,
-        )}&patientId=${encodeURIComponent(
-          filters.patientId,
-        )}&limit=${limit}&skip=${skip}`;
+        )}&patientId=${encodeURIComponent(filters.patientId)}&skip=${skip}&limit=${limit}`;
 
         // Store current fetch params
-        const currentParams = { queryParams, currentPage };
+        const currentParams = { queryParams };
         lastFetchParams.current = currentParams;
 
         console.log("Fetching appointments by patient:", queryParams);
@@ -254,7 +251,7 @@ const Appointments = () => {
         }
       }
     },
-    [filters.officeName, filters.patientId, currentPage, limit, showError],
+    [filters.officeName, filters.patientId, showError, currentPage, limit],
   );
 
   // Load offices on mount
@@ -286,6 +283,20 @@ const Appointments = () => {
     fetchAppointmentsByPatient,
   ]);
 
+  // Fetch data when currentPage changes (server-side pagination)
+  // Only triggers on page change, NOT on filter changes
+  useEffect(() => {
+    // Only fetch if we already have data (means search has been done)
+    if (appointments.length > 0 || totalCount > 0) {
+      if (searchType === "dateRange") {
+        fetchAppointments();
+      } else if (searchType === "patientId") {
+        fetchAppointmentsByPatient();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]); // Only currentPage - NOT filters!
+
   // Polling for real-time updates (every 30 seconds) - ONLY for date range searches
   useEffect(() => {
     if (!filters.officeName || searchType !== "dateRange") return;
@@ -316,24 +327,6 @@ const Appointments = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
-  // Fetch when currentPage changes (proper pagination)
-  useEffect(() => {
-    // Skip if this is a manual search (handleSearch/handlePatientSearch already fetched)
-    if (isManualSearch.current) {
-      isManualSearch.current = false;
-      return;
-    }
-
-    if (filters.officeName && (filters.startDate || filters.patientId)) {
-      if (searchType === "dateRange" && filters.startDate) {
-        fetchAppointments();
-      } else if (searchType === "patientId" && filters.patientId) {
-        fetchAppointmentsByPatient();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     const newFilters = {
@@ -356,14 +349,30 @@ const Appointments = () => {
       return;
     }
 
-    isManualSearch.current = true;
+    // Clear previous fetch params to force fresh API call
+    lastFetchParams.current = null;
+
+    // Clear old data before fetching new data
+    setAppointments([]);
+    setTotalCount(0);
+
+    // Reset pagination and filters before search
     setCurrentPage(1);
     setSearchType("dateRange");
+    setColumnFilters({});
+    setTempColumnFilters({});
+    setAllAppointmentsData([]);
+    setShowFilterDropdown(null);
+
+    // Save fresh parameters to localStorage
     localStorage.setItem("appointments_page", JSON.stringify(1));
     localStorage.setItem(
       "appointments_searchType",
       JSON.stringify("dateRange"),
     );
+    localStorage.setItem("appointments_filters", JSON.stringify(filters));
+
+    // Trigger fresh API call
     fetchAppointments();
   };
 
@@ -382,14 +391,30 @@ const Appointments = () => {
         return;
       }
 
-      isManualSearch.current = true;
+      // Clear previous fetch params to force fresh API call
+      lastFetchParams.current = null;
+
+      // Clear old data before fetching new data
+      setAppointments([]);
+      setTotalCount(0);
+
+      // Reset pagination and filters before search
       setCurrentPage(1);
       setSearchType("patientId");
+      setColumnFilters({});
+      setTempColumnFilters({});
+      setAllAppointmentsData([]);
+      setShowFilterDropdown(null);
+
+      // Save fresh parameters to localStorage
       localStorage.setItem("appointments_page", JSON.stringify(1));
       localStorage.setItem(
         "appointments_searchType",
         JSON.stringify("patientId"),
       );
+      localStorage.setItem("appointments_filters", JSON.stringify(filters));
+
+      // Trigger fresh API call
       fetchAppointmentsByPatient();
       e.preventDefault(); // Prevent tab navigation
     }
@@ -446,7 +471,44 @@ const Appointments = () => {
     // Extract unique values from filtered data
     const values = new Set();
     filteredData.forEach((appt) => {
-      const value = appt[columnKey];
+      let value;
+
+      // Handle nested walkout object properties
+      if (columnKey === "walkout-status") {
+        value = appt.walkout?.walkoutStatus;
+      } else if (columnKey === "on-hold-reasons") {
+        // For array values, add each item separately
+        if (
+          appt.walkout?.onHoldReasons &&
+          Array.isArray(appt.walkout.onHoldReasons)
+        ) {
+          appt.walkout.onHoldReasons.forEach((reason) => {
+            if (reason && reason !== "-") {
+              values.add(reason);
+            }
+          });
+          return; // Skip the regular add below
+        }
+      } else if (columnKey === "pending-checks") {
+        // For pending checks, we can show overall status or count
+        if (appt.walkout?.pendingChecks) {
+          const checks = appt.walkout.pendingChecks;
+          const pendingCount = Object.values(checks).filter(
+            (v) => v === 2,
+          ).length;
+          const completeCount = Object.values(checks).filter(
+            (v) => v === 1,
+          ).length;
+          if (pendingCount > 0) {
+            value = `${pendingCount} Pending`;
+          } else if (completeCount > 0) {
+            value = "Complete";
+          }
+        }
+      } else {
+        value = appt[columnKey];
+      }
+
       if (value && value !== "-") {
         values.add(value);
       }
@@ -472,74 +534,10 @@ const Appointments = () => {
     }
   };
 
-  // Apply column filters to appointments
-  const getFilteredAppointments = () => {
-    // Use all data if filters are active, otherwise use paginated data
-    const hasActiveFilters = Object.keys(columnFilters).length > 0;
-    const dataToFilter =
-      hasActiveFilters && allAppointmentsData.length > 0
-        ? allAppointmentsData
-        : appointments;
-
-    let filtered = [...dataToFilter];
-
-    // Sort by Date of Service first, then Patient ID (ascending)
-    filtered.sort((a, b) => {
-      const dosA = a.dos || a["dos"] || "";
-      const dosB = b.dos || b["dos"] || "";
-
-      // Compare Date of Service first (as dates)
-      if (dosA !== dosB) {
-        // Convert to Date objects for proper date comparison
-        const dateA = dosA ? new Date(dosA) : new Date(0);
-        const dateB = dosB ? new Date(dosB) : new Date(0);
-        return dateA - dateB;
-      }
-
-      // If dates are same, compare Patient ID (as numbers)
-      const patientIdA = a["patient-id"] || "";
-      const patientIdB = b["patient-id"] || "";
-
-      // Convert to numbers for proper numeric comparison
-      const numA = parseInt(patientIdA) || 0;
-      const numB = parseInt(patientIdB) || 0;
-      return numA - numB;
-    });
-
-    // Apply column filters only if active
-    if (hasActiveFilters) {
-      Object.keys(columnFilters).forEach((columnKey) => {
-        const selectedValues = columnFilters[columnKey];
-        if (selectedValues && selectedValues.length > 0) {
-          filtered = filtered.filter((appt) => {
-            const value = appt[columnKey];
-            return selectedValues.includes(value);
-          });
-        }
-      });
-    }
-
-    return filtered;
-  };
-
   const hasActiveFilters = Object.keys(columnFilters).length > 0;
-  const allFilteredAppointments = getFilteredAppointments();
 
-  // Client-side pagination ONLY for filtered data, otherwise use server pagination
-  let filteredAppointments;
-  let startIndex, endIndex;
-
-  if (hasActiveFilters) {
-    // Client-side pagination for filtered data
-    startIndex = (currentPage - 1) * limit;
-    endIndex = startIndex + limit;
-    filteredAppointments = allFilteredAppointments.slice(startIndex, endIndex);
-  } else {
-    // Server-side pagination (use appointments as-is)
-    filteredAppointments = allFilteredAppointments;
-    startIndex = (currentPage - 1) * limit;
-    endIndex = Math.min(currentPage * limit, totalCount);
-  }
+  // Use data directly from server (already paginated)
+  const filteredAppointments = appointments;
 
   // Toggle column filter (temporary until OK is clicked)
   const toggleColumnFilter = (columnKey, value) => {
@@ -634,10 +632,8 @@ const Appointments = () => {
     }
   }, [showFilterDropdown]);
 
-  // Calculate total pages based on filtered data if filters are active
-  const effectiveTotal = hasActiveFilters
-    ? allFilteredAppointments.length
-    : totalCount;
+  // Calculate total pages based on server response
+  const effectiveTotal = totalCount;
   const totalPages = Math.ceil(effectiveTotal / limit);
 
   const handlePageChange = (newPage) => {
@@ -1421,7 +1417,12 @@ const Appointments = () => {
                       }
                       style={{ cursor: "pointer" }}
                     >
-                      <td>{appt["pending-with"] || "-"}</td>
+                      <td>
+                        {appt.walkout?.walkoutStatus ===
+                        "Walkout not Submitted to LC3"
+                          ? "Pending with office"
+                          : appt["pending-with"] || "-"}
+                      </td>
                       {isAdminOrSuper && (
                         <td>
                           <span className="code-badge">
@@ -1433,12 +1434,117 @@ const Appointments = () => {
                         <span className="code-badge">{appt["patient-id"]}</span>
                       </td>
                       <td>{appt["patient-name"]}</td>
+                      <td>{appt["wo-submit-lc3"] || "-"}</td>
+                      <td>{appt.walkout?.walkoutStatus || "-"}</td>
+                      <td>
+                        <div className="pending-checks-boxes">
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks?.ruleEngine === 1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks?.ruleEngine === 2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Rule Engine"
+                          >
+                            A
+                          </span>
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks?.documentCheck === 1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks?.documentCheck ===
+                                    2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Document Check"
+                          >
+                            B
+                          </span>
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks?.attachmentsCheck ===
+                              1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks
+                                      ?.attachmentsCheck === 2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Attachments Check"
+                          >
+                            C
+                          </span>
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks
+                                ?.patientPortionCheck === 1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks
+                                      ?.patientPortionCheck === 2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Patient Portion Check"
+                          >
+                            D
+                          </span>
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks?.productionDetails ===
+                              1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks
+                                      ?.productionDetails === 2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Production Details"
+                          >
+                            E
+                          </span>
+                          <span
+                            className={`check-box ${
+                              appt.walkout?.pendingChecks?.providerNotes === 1
+                                ? "check-complete"
+                                : appt.walkout?.pendingChecks?.providerNotes ===
+                                    2
+                                  ? "check-pending"
+                                  : "check-gray"
+                            }`}
+                            title="Provider Notes"
+                          >
+                            F
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        {appt.walkout?.onHoldReasons &&
+                        appt.walkout.onHoldReasons.length > 0
+                          ? appt.walkout.onHoldReasons.join(", ")
+                          : "-"}
+                      </td>
                       <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
+                      <td>
+                        {appt.walkout?.walkoutStatus ===
+                          "Walkout not Submitted to LC3" && (
+                          <button
+                            className="btn-action-no-show"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // API integration will be added later
+                              console.log(
+                                "No Show/Cancel clicked for:",
+                                appt._id,
+                              );
+                            }}
+                          >
+                            No Show/Cancel
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -1450,9 +1556,10 @@ const Appointments = () => {
           {!loading && filteredAppointments.length > 0 && (
             <div className="pagination-container">
               <div className="pagination-info">
-                Showing {startIndex + 1} to {endIndex} of {effectiveTotal}{" "}
-                {hasActiveFilters ? "filtered " : ""}appointments
-                {hasActiveFilters && ` (${totalCount} total)`}
+                Showing {(currentPage - 1) * limit + 1} to{" "}
+                {Math.min(currentPage * limit, effectiveTotal)} of{" "}
+                {effectiveTotal} {hasActiveFilters ? "filtered " : ""}
+                appointments
                 {Object.keys(columnFilters).length > 0 && (
                   <button
                     className="btn-clear-filters"

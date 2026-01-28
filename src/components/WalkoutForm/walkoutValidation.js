@@ -68,8 +68,8 @@ export const validateLC3Section = (lc3Data, formData) => {
   if (!formData.signedConsentTxAvailable) {
     errors.signedConsentTxAvailable = true;
   }
-  if (!formData.preAuthAvailable) {
-    errors.preAuthAvailable = true;
+  if (!formData.lc3PreAuthAvailable) {
+    errors.lc3PreAuthAvailable = true;
   }
   if (!formData.routeSheetAvailable) {
     errors.routeSheetAvailable = true;
@@ -91,8 +91,8 @@ export const validateLC3Section = (lc3Data, formData) => {
   if (!formData.pa) {
     errors.pa = true;
   }
-  if (!formData.perioChart) {
-    errors.perioChart = true;
+  if (!formData.lc3PerioChart) {
+    errors.lc3PerioChart = true;
   }
 
   // 5. Patient Portion Check - Conditional mandatory fields
@@ -370,6 +370,13 @@ export const validateLC3Section = (lc3Data, formData) => {
  * @param {boolean} isZeroProduction - Whether it's a zero production walkout
  * @returns {Object} - Object with field names as keys and true as values for fields with errors
  */
+/**
+ * Validate Office Section
+ * @param {Object} formData - Form data object
+ * @param {boolean} isPatientPresent - Whether patient came to appointment
+ * @param {boolean} isZeroProduction - Whether it's a zero production walkout
+ * @returns {Object} - Object with field names as keys and true as values for fields with errors
+ */
 export const validateOfficeSection = (
   formData,
   isPatientPresent,
@@ -377,8 +384,252 @@ export const validateOfficeSection = (
 ) => {
   const errors = {};
 
-  // Add office section validation logic here if needed in future
-  // For now, return empty errors object
+  // LEVEL 1: Patient Came (ALWAYS MANDATORY)
+  if (
+    formData.patientCame === undefined ||
+    formData.patientCame === null ||
+    formData.patientCame === ""
+  ) {
+    errors.patientCame = true;
+  }
+
+  // If patient didn't come, no other validations needed
+  if (formData.patientCame === 2 || !isPatientPresent) {
+    return errors;
+  }
+
+  // LEVEL 2: Post-Op Zero Production (Mandatory if patient came)
+  if (
+    formData.postOpZeroProduction === undefined ||
+    formData.postOpZeroProduction === null ||
+    formData.postOpZeroProduction === ""
+  ) {
+    errors.postOpZeroProduction = true;
+  }
+
+  // LEVEL 3: Patient Type (Mandatory if patient came)
+  if (
+    formData.patientType === undefined ||
+    formData.patientType === null ||
+    formData.patientType === ""
+  ) {
+    errors.patientType = true;
+  }
+
+  // LEVEL 4: Has Insurance (Mandatory if patient came)
+  if (
+    formData.hasInsurance === undefined ||
+    formData.hasInsurance === null ||
+    formData.hasInsurance === ""
+  ) {
+    errors.hasInsurance = true;
+  }
+
+  // LEVEL 5: Insurance Type (Mandatory if hasInsurance = Yes)
+  if (formData.hasInsurance === 1) {
+    if (
+      formData.insuranceType === undefined ||
+      formData.insuranceType === null ||
+      formData.insuranceType === ""
+    ) {
+      errors.insuranceType = true;
+    }
+
+    // LEVEL 5b: Specific Insurance (Mandatory if insuranceType = 2 or 6)
+    if (formData.insuranceType === 2 || formData.insuranceType === 6) {
+      if (
+        formData.insurance === undefined ||
+        formData.insurance === null ||
+        formData.insurance === ""
+      ) {
+        errors.insurance = true;
+      }
+    }
+  }
+
+  // LEVEL 6: Google Review Request (Mandatory if patient came)
+  if (
+    formData.googleReviewRequest === undefined ||
+    formData.googleReviewRequest === null ||
+    formData.googleReviewRequest === ""
+  ) {
+    errors.googleReviewRequest = true;
+  }
+
+  // If zero production, no payment/document validations needed
+  if (formData.postOpZeroProduction === 1 || isZeroProduction) {
+    return errors;
+  }
+
+  // === PAYMENT SECTION VALIDATIONS (Only if NOT zero production) ===
+
+  // LEVEL 7: Expected Patient Portion (Mandatory, can be 0)
+  if (
+    formData.expectedPatientPortionOfficeWO === undefined ||
+    formData.expectedPatientPortionOfficeWO === null ||
+    formData.expectedPatientPortionOfficeWO === ""
+  ) {
+    errors.expectedPatientPortionOfficeWO = true;
+  }
+
+  // LEVEL 10: Primary Payment Mode & Amount
+  if (
+    formData.patientPortionPrimaryMode !== undefined &&
+    formData.patientPortionPrimaryMode !== null &&
+    formData.patientPortionPrimaryMode !== ""
+  ) {
+    // If primary mode selected, amount is mandatory
+    if (
+      formData.amountCollectedPrimaryMode === undefined ||
+      formData.amountCollectedPrimaryMode === null ||
+      formData.amountCollectedPrimaryMode === ""
+    ) {
+      errors.amountCollectedPrimaryMode = true;
+    }
+  }
+
+  // LEVEL 11: Secondary Payment Mode & Amount
+  if (
+    formData.patientPortionSecondaryMode !== undefined &&
+    formData.patientPortionSecondaryMode !== null &&
+    formData.patientPortionSecondaryMode !== ""
+  ) {
+    // If secondary mode selected, amount is mandatory
+    if (
+      formData.amountCollectedSecondaryMode === undefined ||
+      formData.amountCollectedSecondaryMode === null ||
+      formData.amountCollectedSecondaryMode === ""
+    ) {
+      errors.amountCollectedSecondaryMode = true;
+    }
+  }
+
+  // LEVEL 12: Check/Forte Last Four Digits
+  const isPrimaryMode4 = formData.patientPortionPrimaryMode === 4;
+  const isSecondaryMode4 = formData.patientPortionSecondaryMode === 4;
+
+  if (isPrimaryMode4 || isSecondaryMode4) {
+    if (
+      formData.lastFourDigitsCheckForte === undefined ||
+      formData.lastFourDigitsCheckForte === null ||
+      formData.lastFourDigitsCheckForte === ""
+    ) {
+      errors.lastFourDigitsCheckForte = true;
+    } else {
+      // Validate exactly 4 digits
+      const digits = formData.lastFourDigitsCheckForte.toString();
+      if (digits.length !== 4) {
+        errors.lastFourDigitsCheckForte = true;
+      }
+    }
+  }
+
+  // LEVEL 13: Reason for Less Collection (if difference is negative)
+  const difference = formData.differenceInPatientPortion || 0;
+  if (difference < 0) {
+    if (
+      formData.reasonLessCollection === undefined ||
+      formData.reasonLessCollection === null ||
+      formData.reasonLessCollection === ""
+    ) {
+      errors.reasonLessCollection = true;
+    }
+  }
+
+  // === RULE ENGINE SECTION ===
+
+  // LEVEL 14: Rule Engine Run Status (Mandatory)
+  if (
+    formData.ruleEngineRun === undefined ||
+    formData.ruleEngineRun === null ||
+    formData.ruleEngineRun === ""
+  ) {
+    errors.ruleEngineRun = true;
+  }
+
+  // LEVEL 15a: If rule engine ran
+  if (formData.ruleEngineRun === 1) {
+    // Rule Engine Error is mandatory
+    if (
+      formData.ruleEngineError === undefined ||
+      formData.ruleEngineError === null ||
+      formData.ruleEngineError === ""
+    ) {
+      errors.ruleEngineError = true;
+    }
+
+    // LEVEL 15b: If error occurred
+    if (formData.ruleEngineError === 1) {
+      // Error Fix Remarks is mandatory
+      if (!formData.errorFixRemarks || formData.errorFixRemarks.trim() === "") {
+        errors.errorFixRemarks = true;
+      }
+
+      // Issues Fixed is mandatory
+      if (
+        formData.issuesFixed === undefined ||
+        formData.issuesFixed === null ||
+        formData.issuesFixed === ""
+      ) {
+        errors.issuesFixed = true;
+      }
+    }
+  }
+
+  // LEVEL 15c: If rule engine did NOT run
+  if (formData.ruleEngineRun === 2) {
+    // Rule Engine Not Run Reason is mandatory
+    if (
+      formData.ruleEngineNotRunReason === undefined ||
+      formData.ruleEngineNotRunReason === null ||
+      formData.ruleEngineNotRunReason === ""
+    ) {
+      errors.ruleEngineNotRunReason = true;
+    }
+  }
+
+  // === DOCUMENT SECTION (Boolean fields) ===
+
+  // LEVEL 16: Document Boolean Fields (All mandatory - must be checked/true)
+  if (
+    formData.signedGeneralConsent === undefined ||
+    formData.signedGeneralConsent === null ||
+    formData.signedGeneralConsent === false
+  ) {
+    errors.signedGeneralConsent = true;
+  }
+
+  if (
+    formData.signedTxPlan === undefined ||
+    formData.signedTxPlan === null ||
+    formData.signedTxPlan === false
+  ) {
+    errors.signedTxPlan = true;
+  }
+
+  if (
+    formData.xRayPanoAttached === undefined ||
+    formData.xRayPanoAttached === null ||
+    formData.xRayPanoAttached === false
+  ) {
+    errors.xRayPanoAttached = true;
+  }
+
+  if (
+    formData.prcUpdatedInRouteSheet === undefined ||
+    formData.prcUpdatedInRouteSheet === null ||
+    formData.prcUpdatedInRouteSheet === false
+  ) {
+    errors.prcUpdatedInRouteSheet = true;
+  }
+
+  if (
+    formData.routeSheet === undefined ||
+    formData.routeSheet === null ||
+    formData.routeSheet === false
+  ) {
+    errors.routeSheet = true;
+  }
 
   return errors;
 };

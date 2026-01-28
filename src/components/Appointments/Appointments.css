@@ -1,15 +1,15 @@
 .appointments-wrapper {
   min-height: calc(100vh - 64px);
   background: var(--bg-primary);
-  padding: 2rem;
+  padding: 10px;
 }
 
 .appointments-container {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 128px);
+  height: calc(100vh - 84px);
   overflow: hidden;
 }
 
@@ -416,6 +416,72 @@
 /* Table container positioning */
 .table-container {
   position: relative;
+}
+
+/* Pending Checks Boxes */
+.pending-checks-boxes {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.check-box:hover {
+  transform: scale(1.1);
+}
+
+.check-complete {
+  background-color: #10b981;
+  /* Green for complete (value = 1) */
+}
+
+.check-pending {
+  background-color: #f59e0b;
+  /* Orange for pending (value = 2) */
+}
+
+.check-gray {
+  background-color: #9ca3af;
+  /* Gray for no data or other values */
+}
+
+/* Action Button - No Show/Cancel */
+.btn-action-no-show {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #000;
+  background-color: #fbbf24;
+  /* Yellow color */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-action-no-show:hover {
+  background-color: #f59e0b;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+.btn-action-no-show:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 1024px) {

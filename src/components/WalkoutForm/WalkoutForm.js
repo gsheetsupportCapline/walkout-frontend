@@ -6,6 +6,7 @@ import { fetchWithAuth } from "../../utils/api";
 import { getGeminiResponse } from "../../utils/providerNotesChecker";
 import {
   validateLC3Section,
+  validateOfficeSection,
   clearValidationError,
   hasValidationErrors,
 } from "./walkoutValidation";
@@ -16,9 +17,9 @@ const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
 
   useEffect(() => {
     const loadUserName = async () => {
-      console.log("🔍 Loading user name for note:", note);
-      console.log("🔍 addedBy field:", note.addedBy);
-      console.log("🔍 addedBy type:", typeof note.addedBy);
+      // console.log("🔍 Loading user name for note:", note);
+      // console.log("🔍 addedBy field:", note.addedBy);
+      // console.log("🔍 addedBy type:", typeof note.addedBy);
 
       if (note.addedBy) {
         // Extract the ID string if addedBy is an object
@@ -27,14 +28,14 @@ const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
         // If addedBy is an object, get the _id field
         if (typeof note.addedBy === "object" && note.addedBy !== null) {
           userId = note.addedBy._id || note.addedBy.id;
-          console.log("🔍 Extracted userId from object:", userId);
+          // console.log("🔍 Extracted userId from object:", userId);
         }
 
         const name = await fetchUserName(userId);
-        console.log("✅ Fetched user name:", name);
+        // console.log("✅ Fetched user name:", name);
         setUserName(name);
       } else {
-        console.log("⚠️ No addedBy field found in note");
+        // console.log("⚠️ No addedBy field found in note");
         setUserName("Unknown");
       }
     };
@@ -262,13 +263,13 @@ const WalkoutForm = () => {
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [onHoldReasons] = useState([
-    "Missing Documentation",
-    "Pending Provider Approval",
-    "Insurance Verification Required",
-  ]); // Sample on-hold reasons - replace with actual data
   const [userNamesCache, setUserNamesCache] = useState({}); // Cache for user names
   const [lc3ValidationErrors, setLc3ValidationErrors] = useState({}); // LC3 validation errors
+  const [officeValidationErrors, setOfficeValidationErrors] = useState({}); // Office validation errors
+  const [imageValidationErrors, setImageValidationErrors] = useState({
+    officeWO: false,
+    checkImage: false,
+  }); // Image upload validation errors
   const [noteElements, setNoteElements] = useState({
     noteElement1: false, // Procedure Name
     noteElement2: false, // Tooth#/Quads/Arch
@@ -276,7 +277,6 @@ const WalkoutForm = () => {
     noteElement4: false, // Hygienist Name
   });
   const [isCheckingWithAI, setIsCheckingWithAI] = useState(false);
-  const [checkedByAi, setCheckedByAi] = useState(false); // Track if AI check was performed
   const [officeWalkoutData, setOfficeWalkoutData] = useState(null); // Store officeWalkoutSnip data from backend
   const [isRegeneratingOfficeData, setIsRegeneratingOfficeData] =
     useState(false); // Regeneration loading state
@@ -325,8 +325,8 @@ const WalkoutForm = () => {
             }
           });
 
-          console.log("🔵 Radio Button Sets Loaded:", result.data.length);
-          console.log("🔵 Radio Field Mappings Created:", mapping);
+          // console.log("🔵 Radio Button Sets Loaded:", result.data.length);
+          // console.log("🔵 Radio Field Mappings Created:", mapping);
 
           // Update the mapping state
           setFieldToSetMapping((prev) => ({ ...prev, ...mapping }));
@@ -369,8 +369,8 @@ const WalkoutForm = () => {
             }
           });
 
-          console.log("🟢 Dropdown Sets Loaded:", result.data.length);
-          console.log("🟢 Dropdown Field Mappings Created:", mapping);
+          // console.log("🟢 Dropdown Sets Loaded:", result.data.length);
+          // console.log("🟢 Dropdown Field Mappings Created:", mapping);
 
           // Update the mapping state
           setFieldToSetMapping((prev) => ({ ...prev, ...mapping }));
@@ -410,11 +410,11 @@ const WalkoutForm = () => {
 
         const dosFormatted = convertDateFormat(appointment.dos);
 
-        console.log("📅 Fetching provider schedule for:", {
-          office: officeName,
-          dos: dosFormatted,
-          originalDOS: appointment.dos,
-        });
+        // console.log("📅 Fetching provider schedule for:", {
+        // office: officeName,
+        // dos: dosFormatted,
+        // originalDOS: appointment.dos,
+        // });
 
         const response = await fetchWithAuth(
           `${API}/provider-schedule/get-by-office-dos`,
@@ -432,14 +432,14 @@ const WalkoutForm = () => {
 
         const result = await response.json();
 
-        console.log("📅 Provider schedule API response:", {
-          status: response.status,
-          ok: response.ok,
-          result: result,
-        });
+        // console.log("📅 Provider schedule API response:", {
+        //   status: response.status,
+        //   ok: response.ok,
+        //   result: result,
+        // });
 
         if (response.ok && result.success && result.data) {
-          console.log("📅 Provider schedule fetched:", result.data);
+          // console.log("📅 Provider schedule fetched:", result.data);
 
           // Map provider-hygienist values to appointment fields
           const scheduleData = {
@@ -453,9 +453,9 @@ const WalkoutForm = () => {
             const providerType = provider["provider-hygienist"];
             const providerCode = provider["provider-code-with-type"];
 
-            console.log(
-              `📋 Mapping provider: ${providerType} → ${providerCode}`,
-            );
+            // console.log(
+            //   `📋 Mapping provider: ${providerType} → ${providerCode}`,
+            // );
 
             if (providerType === "Doc - 1") {
               scheduleData.doctor1 = providerCode;
@@ -469,13 +469,13 @@ const WalkoutForm = () => {
           });
 
           setProviderSchedule(scheduleData);
-          console.log("✅ Provider schedule updated:", scheduleData);
+          // console.log("✅ Provider schedule updated:", scheduleData);
         } else {
-          console.log("⚠️ No provider schedule found:", {
-            status: response.status,
-            success: result.success,
-            message: result.message,
-          });
+          // console.log("⚠️ No provider schedule found:", {
+          //   status: response.status,
+          //   success: result.success,
+          //   message: result.message,
+          // });
         }
       } catch (error) {
         console.error("❌ Error fetching provider schedule:", error);
@@ -521,16 +521,16 @@ const WalkoutForm = () => {
 
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
-            console.log(
-              "📋 Loading existing office section:",
-              existingWalkout.officeSection,
-            );
-            console.log(
-              "🔍 patientCame value:",
-              existingWalkout.officeSection.patientCame,
-              "Type:",
-              typeof existingWalkout.officeSection.patientCame,
-            );
+            // console.log(
+            //   "📋 Loading existing office section:",
+            //   existingWalkout.officeSection,
+            // );
+            // console.log(
+            //   "🔍 patientCame value:",
+            //   existingWalkout.officeSection.patientCame,
+            //   "Type:",
+            //   typeof existingWalkout.officeSection.patientCame,
+            // );
 
             // Extract only valid form fields (exclude backend-only fields like timestamps, historical notes, etc.)
             const {
@@ -546,18 +546,79 @@ const WalkoutForm = () => {
               ...validFormFields
             } = existingWalkout.officeSection;
 
-            console.log("✅ Loading only valid form fields:", validFormFields);
+            // console.log("✅ Loading only valid form fields:", validFormFields);
+
+            // Debug: Check rule engine fields specifically
+            // console.log("🔍 Rule Engine Fields from Backend:");
+            // console.log("  ruleEngineRun:", validFormFields.ruleEngineRun);
+            // console.log(
+            //   "  ruleEngineNotRunReason:",
+            //   validFormFields.ruleEngineNotRunReason,
+            // );
+            // console.log("  ruleEngineError:", validFormFields.ruleEngineError);
+            // console.log("  errorFixRemarks:", validFormFields.errorFixRemarks);
+            // console.log("  issuesFixed:", validFormFields.issuesFixed);
+            // console.log(
+            //   "  lastFourDigitsCheckForte:",
+            //   validFormFields.lastFourDigitsCheckForte,
+            // );
+
+            // Debug: Check checkbox fields from backend
+            // console.log("☑️ Checkbox Fields from Backend:");
+            // console.log(
+            //   "  signedGeneralConsent:",
+            //   validFormFields.signedGeneralConsent,
+            // );
+            // console.log("  signedTxPlan:", validFormFields.signedTxPlan);
+            // console.log(
+            //   "  xRayPanoAttached:",
+            //   validFormFields.xRayPanoAttached,
+            // );
+            // console.log(
+            //   "  prcUpdatedInRouteSheet:",
+            //   validFormFields.prcUpdatedInRouteSheet,
+            // );
+            // console.log("  routeSheet:", validFormFields.routeSheet);
+            // console.log("  narrative:", validFormFields.narrative);
+            // console.log(
+            //   "  signedTreatmentConsent:",
+            //   validFormFields.signedTreatmentConsent,
+            // );
+            // console.log(
+            //   "  preAuthAvailable:",
+            //   validFormFields.preAuthAvailable,
+            // );
+            // console.log("  perioChart:", validFormFields.perioChart);
+            // console.log("  nvd:", validFormFields.nvd);
+            // console.log(
+            //   "  majorServiceForm:",
+            //   validFormFields.majorServiceForm,
+            // );
+            // Convert lastFourDigitsCheckForte to string if it's a number (from backend)
+            if (
+              validFormFields.lastFourDigitsCheckForte !== undefined &&
+              validFormFields.lastFourDigitsCheckForte !== null &&
+              typeof validFormFields.lastFourDigitsCheckForte === "number"
+            ) {
+              validFormFields.lastFourDigitsCheckForte =
+                validFormFields.lastFourDigitsCheckForte.toString();
+              // console.log(
+              //   "✅ Converted lastFourDigitsCheckForte to string:",
+              //   validFormFields.lastFourDigitsCheckForte,
+              // );
+            }
+
             setFormData(validFormFields);
 
             // Debug: Check if historical notes are present
-            console.log(
-              "📝 Office Historical Notes:",
-              existingWalkout.officeSection.officeHistoricalNotes,
-            );
-            console.log(
-              "📝 LC3 Historical Notes:",
-              existingWalkout.officeSection.lc3HistoricalNotes,
-            );
+            // console.log(
+            //   "📝 Office Historical Notes:",
+            //   existingWalkout.officeSection.officeHistoricalNotes,
+            // );
+            // console.log(
+            //   "📝 LC3 Historical Notes:",
+            //   existingWalkout.officeSection.lc3HistoricalNotes,
+            // );
 
             // Load Office Historical Notes (for display)
             if (officeHistoricalNotes && officeHistoricalNotes.length > 0) {
@@ -599,16 +660,16 @@ const WalkoutForm = () => {
                   },
                 },
               }));
-              console.log(
-                "🖼️ Office WO Image loaded:",
-                existingWalkout.officeWalkoutSnip.imageId,
-                "| File:",
-                existingWalkout.officeWalkoutSnip.fileName,
-                "| Extracted Data:",
-                existingWalkout.officeWalkoutSnip.extractedData,
-                "| Regeneration Details:",
-                existingWalkout.officeWalkoutSnip.aiRegenerationDetails,
-              );
+              // console.log(
+              //   "🖼️ Office WO Image loaded:",
+              //   existingWalkout.officeWalkoutSnip.imageId,
+              //   "| File:",
+              //   existingWalkout.officeWalkoutSnip.fileName,
+              //   "| Extracted Data:",
+              //   existingWalkout.officeWalkoutSnip.extractedData,
+              //   "| Regeneration Details:",
+              //   existingWalkout.officeWalkoutSnip.aiRegenerationDetails,
+              // );
             } else {
               // No image uploaded
               setOfficeWalkoutData({ imageId: null });
@@ -628,12 +689,12 @@ const WalkoutForm = () => {
                   },
                 },
               }));
-              console.log(
-                "🖼️ Check Image loaded:",
-                existingWalkout.checkImage.imageId,
-                "| File:",
-                existingWalkout.checkImage.fileName,
-              );
+              // console.log(
+              //   "🖼️ Check Image loaded:",
+              //   existingWalkout.checkImage.imageId,
+              //   "| File:",
+              //   existingWalkout.checkImage.fileName,
+              // );
             }
 
             // Load LC3 WO Image if exists (from lc3WalkoutImage object)
@@ -660,16 +721,16 @@ const WalkoutForm = () => {
                   },
                 },
               }));
-              console.log(
-                "🖼️ LC3 WO Image loaded:",
-                existingWalkout.lc3WalkoutImage.imageId,
-                "| File:",
-                existingWalkout.lc3WalkoutImage.fileName,
-                "| Extracted Data:",
-                existingWalkout.lc3WalkoutImage.extractedData,
-                "| Regeneration Details:",
-                existingWalkout.lc3WalkoutImage.aiRegenerationDetails,
-              );
+              // console.log(
+              //   "🖼️ LC3 WO Image loaded:",
+              //   existingWalkout.lc3WalkoutImage.imageId,
+              //   "| File:",
+              //   existingWalkout.lc3WalkoutImage.fileName,
+              //   "| Extracted Data:",
+              //   existingWalkout.lc3WalkoutImage.extractedData,
+              //   "| Regeneration Details:",
+              //   existingWalkout.lc3WalkoutImage.aiRegenerationDetails,
+              // );
             } else {
               // No image uploaded
               setLc3WalkoutData({ imageId: null });
@@ -699,7 +760,7 @@ const WalkoutForm = () => {
           // Load LC3 section data if exists
           if (existingWalkout.lc3Section) {
             const lc3 = existingWalkout.lc3Section;
-            console.log("📋 Loading LC3 section data:", lc3);
+            // console.log("📋 Loading LC3 section data:", lc3);
 
             // Load Rule Engine data into lc3Data state
             if (lc3.ruleEngine) {
@@ -717,7 +778,7 @@ const WalkoutForm = () => {
             // Load all other LC3 fields into formData
             const lc3FormData = {};
 
-            // Document Check fieldset - Backend field names match frontend exactly
+            //Document Check fieldset - Backend field names match frontend exactly
             if (lc3.documentCheck) {
               lc3FormData.lc3DocumentCheckStatus =
                 lc3.documentCheck.lc3DocumentCheckStatus;
@@ -732,7 +793,10 @@ const WalkoutForm = () => {
                 lc3.documentCheck.narrativeAvailable;
               lc3FormData.signedConsentTxAvailable =
                 lc3.documentCheck.signedConsentTxAvailable;
-              lc3FormData.preAuthAvailable = lc3.documentCheck.preAuthAvailable;
+              // NOTE: preAuthAvailable exists in both Office (checkbox) and LC3 (dropdown)
+              // Use separate field name for LC3 to avoid conflict
+              lc3FormData.lc3PreAuthAvailable =
+                lc3.documentCheck.preAuthAvailable;
               lc3FormData.routeSheetAvailable =
                 lc3.documentCheck.routeSheetAvailable;
               lc3FormData.orthoQuestionnaireAvailable =
@@ -748,7 +812,9 @@ const WalkoutForm = () => {
               lc3FormData.fmx = lc3.attachmentsCheck.fmx;
               lc3FormData.bitewing = lc3.attachmentsCheck.bitewing;
               lc3FormData.pa = lc3.attachmentsCheck.pa;
-              lc3FormData.perioChart = lc3.attachmentsCheck.perioChart;
+              // NOTE: perioChart exists in both Office (checkbox) and LC3 (dropdown)
+              // Use separate field name for LC3 to avoid conflict
+              lc3FormData.lc3PerioChart = lc3.attachmentsCheck.perioChart;
             }
 
             // Patient Portion Check fieldset - Backend field names match frontend exactly (15 fields)
@@ -865,11 +931,6 @@ const WalkoutForm = () => {
                 lc3.providerNotes.hygienistNotes;
               // AI check status
               lc3FormData.checkedByAi = lc3.providerNotes.checkedByAi || false;
-
-              // Set checkedByAi state
-              if (lc3.providerNotes.checkedByAi) {
-                setCheckedByAi(true);
-              }
             }
 
             // LC3 Remarks
@@ -888,7 +949,19 @@ const WalkoutForm = () => {
             }
 
             // Merge LC3 data into formData
-            setFormData((prev) => ({ ...prev, ...lc3FormData }));
+            setFormData((prev) => {
+              // console.log(
+              //   "🔄 Before LC3 merge - narrative value:",
+              //   prev.narrative,
+              // );
+              // console.log("🔄 LC3 data being merged:", lc3FormData);
+              const merged = { ...prev, ...lc3FormData };
+              // console.log(
+              //   "🔄 After LC3 merge - narrative value:",
+              //   merged.narrative,
+              // );
+              return merged;
+            });
 
             // Update noteElements state if provider notes exist
             if (lc3.providerNotes) {
@@ -898,20 +971,20 @@ const WalkoutForm = () => {
                 noteElement3: lc3.providerNotes.noteElement3 || false,
                 noteElement4: lc3.providerNotes.noteElement4 || false,
               });
-              console.log("✅ Note elements loaded:", {
-                noteElement1: lc3.providerNotes.noteElement1,
-                noteElement2: lc3.providerNotes.noteElement2,
-                noteElement3: lc3.providerNotes.noteElement3,
-                noteElement4: lc3.providerNotes.noteElement4,
-              });
+              // console.log("✅ Note elements loaded:", {
+              //   noteElement1: lc3.providerNotes.noteElement1,
+              //   noteElement2: lc3.providerNotes.noteElement2,
+              //   noteElement3: lc3.providerNotes.noteElement3,
+              //   noteElement4: lc3.providerNotes.noteElement4,
+              // });
             }
 
-            console.log("✅ LC3 section loaded successfully");
+            // console.log("✅ LC3 section loaded successfully");
           }
 
-          console.log("✅ Existing walkout loaded:", existingWalkout._id);
+          // console.log("✅ Existing walkout loaded:", existingWalkout._id);
         } else {
-          console.log("📝 No existing walkout found, opening blank form");
+          // console.log("📝 No existing walkout found, opening blank form");
         }
       } catch (error) {
         console.error("Error checking existing walkout:", error);
@@ -1062,36 +1135,36 @@ const WalkoutForm = () => {
 
   // Function to fetch user name by ID
   const fetchUserName = async (userId) => {
-    console.log("🔎 fetchUserName called with userId:", userId);
+    // console.log("🔎 fetchUserName called with userId:", userId);
 
     if (!userId) {
-      console.log("⚠️ No userId provided");
+      // console.log("⚠️ No userId provided");
       return "Unknown";
     }
 
     // Check cache first
     if (userNamesCache[userId]) {
-      console.log("✅ Found in cache:", userNamesCache[userId]);
+      // console.log("✅ Found in cache:", userNamesCache[userId]);
       return userNamesCache[userId];
     }
 
     try {
       const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-      console.log("📡 Fetching user from API:", `${API}/users/${userId}`);
+      // console.log("📡 Fetching user from API:", `${API}/users/${userId}`);
 
       const response = await fetchWithAuth(`${API}/users/${userId}`);
       const result = await response.json();
 
-      console.log("📥 API Response:", result);
+      // console.log("📥 API Response:", result);
 
       if (result.success && result.data) {
         const userName = result.data.name || result.data.userName || "Unknown";
-        console.log("✅ User name extracted:", userName);
+        // console.log("✅ User name extracted:", userName);
         // Update cache
         setUserNamesCache((prev) => ({ ...prev, [userId]: userName }));
         return userName;
       } else {
-        console.log("⚠️ API returned unsuccessful or no data");
+        // console.log("⚠️ API returned unsuccessful or no data");
       }
     } catch (error) {
       console.error("❌ Error fetching user name:", error);
@@ -1119,9 +1192,14 @@ const WalkoutForm = () => {
 
   // Handle radio button selection
   const handleRadioChange = (fieldName, value) => {
-    // Clear validation error for this field
+    // Clear validation error for this field (both LC3 and Office sections)
     if (lc3ValidationErrors[fieldName]) {
       setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+    if (officeValidationErrors[fieldName]) {
+      setOfficeValidationErrors((prev) =>
+        clearValidationError(prev, fieldName),
+      );
     }
 
     // Special handling for "Did Patient come to the appointment?"
@@ -1170,9 +1248,19 @@ const WalkoutForm = () => {
   };
 
   const handleDropdownChange = (fieldName, value) => {
-    // Clear validation error for this field
+    // Debug: Log all changes including checkboxes
+    // console.log(
+    //   `🔄 handleDropdownChange called: ${fieldName} = ${value} (type: ${typeof value})`,
+    // );
+
+    // Clear validation error for this field (both LC3 and Office sections)
     if (lc3ValidationErrors[fieldName]) {
       setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+    if (officeValidationErrors[fieldName]) {
+      setOfficeValidationErrors((prev) =>
+        clearValidationError(prev, fieldName),
+      );
     }
 
     // If provider or hygienist notes are changed, reset checkedByAi
@@ -1180,7 +1268,6 @@ const WalkoutForm = () => {
       fieldName === "providerNotesFromES" ||
       fieldName === "hygienistNotesFromES"
     ) {
-      setCheckedByAi(false);
       setFormData((prev) => ({
         ...prev,
         [fieldName]: value,
@@ -1215,7 +1302,7 @@ const WalkoutForm = () => {
         );
 
         const collected = primary + secondary;
-        const difference = expected - collected;
+        const difference = collected - expected;
 
         updated.patientPortionCollected = collected;
         updated.differenceInPatientPortion = difference;
@@ -1335,6 +1422,41 @@ const WalkoutForm = () => {
         }
       }
 
+      // Clear check image and last four digits when payment mode changes away from Personal Check (4)
+      if (
+        fieldName === "patientPortionPrimaryMode" ||
+        fieldName === "patientPortionSecondaryMode"
+      ) {
+        const isPrimaryMode4 =
+          fieldName === "patientPortionPrimaryMode"
+            ? value === 4
+            : updated.patientPortionPrimaryMode === 4;
+        const isSecondaryMode4 =
+          fieldName === "patientPortionSecondaryMode"
+            ? value === 4
+            : updated.patientPortionSecondaryMode === 4;
+
+        // If neither mode is Personal Check (4), clear check-related data
+        if (!isPrimaryMode4 && !isSecondaryMode4) {
+          updated.lastFourDigitsCheckForte = "";
+          // Clear check image data from sidebar
+          setSidebarData((prev) => ({
+            ...prev,
+            images: {
+              ...prev.images,
+              checkImage: {
+                file: null,
+                previewUrl: "",
+                imageId: "",
+                zoom: 100,
+              },
+            },
+          }));
+          // Clear check image validation error
+          setImageValidationErrors((prev) => ({ ...prev, checkImage: false }));
+        }
+      }
+
       return updated;
     });
   };
@@ -1369,7 +1491,7 @@ const WalkoutForm = () => {
       return;
     }
 
-    console.log("Fetching rules with:", { patientId, uniqueId, office });
+    // console.log("Fetching rules with:", { patientId, uniqueId, office });
 
     try {
       const response = await fetch(
@@ -1377,7 +1499,7 @@ const WalkoutForm = () => {
       );
       const result = await response.json();
 
-      console.log("API Response:", result);
+      // console.log("API Response:", result);
 
       // Parse the response structure: { message, data: [{message, createdDate, messageType}], status }
       if (
@@ -1394,7 +1516,7 @@ const WalkoutForm = () => {
         }));
         if (result.data.length === 0) {
           // Don't show alert, just update state
-          console.log("No failed rules found");
+          // console.log("No failed rules found");
         }
       } else {
         setLc3Data((prev) => ({
@@ -1498,7 +1620,12 @@ const WalkoutForm = () => {
         },
       }));
 
-      console.log(`📁 Image stored locally for ${type}:`, file.name);
+      // Clear validation error for this image when uploaded
+      if (type === "officeWO" || type === "checkImage") {
+        setImageValidationErrors((prev) => ({ ...prev, [type]: false }));
+      }
+
+      // console.log(`📁 Image stored locally for ${type}:`, file.name);
     }
   };
 
@@ -1542,7 +1669,7 @@ const WalkoutForm = () => {
       },
     }));
 
-    console.log(`🗑️ Image removed for ${type}`);
+    // console.log(`🗑️ Image removed for ${type}`);
   };
 
   // Generate image URL - use previewUrl if available (before submit), otherwise use imageId (after submit)
@@ -1654,7 +1781,7 @@ const WalkoutForm = () => {
 
     try {
       const result = await getGeminiResponse(providerText, hygienistText);
-      console.log("AI Response:", result);
+      // console.log("AI Response:", result);
 
       // result array format:
       // [0] provider_tooth_number, [1] provider_name, [2] provider_procedure_name, [3] provider_surgical_indicators,
@@ -1685,8 +1812,6 @@ const WalkoutForm = () => {
         noteElement4: updatedNoteElements.noteElement4,
         checkedByAi: true, // Mark as checked by AI
       }));
-
-      setCheckedByAi(true); // Set state to true
 
       setNotification({
         show: true,
@@ -1737,7 +1862,7 @@ const WalkoutForm = () => {
       );
 
       const result = await response.json();
-      console.log("🔄 Regenerate Response:", result);
+      // console.log("🔄 Regenerate Response:", result);
 
       if (result.success) {
         // Success - update with new data
@@ -1863,7 +1988,7 @@ const WalkoutForm = () => {
       );
 
       const result = await response.json();
-      console.log("🔄 LC3 Regenerate Response:", result);
+      // console.log("🔄 LC3 Regenerate Response:", result);
 
       if (result.success) {
         // Success - update with new data
@@ -1978,26 +2103,102 @@ const WalkoutForm = () => {
   // Handle form submission
   const handleOfficeSubmit = async () => {
     try {
+      // Validate office section before submission
+      const errors = validateOfficeSection(
+        formData,
+        isPatientPresent,
+        isZeroProduction,
+      );
+
+      if (hasValidationErrors(errors)) {
+        setOfficeValidationErrors(errors);
+        setNotification({
+          show: true,
+          message: "Please update all the mandatory fields.",
+          type: "error",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "error" });
+        }, 4000);
+
+        // Scroll to office section
+        const officeSection = document.querySelector('[data-section="office"]');
+        if (officeSection) {
+          officeSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        return;
+      }
+
+      // Clear validation errors if all validations pass
+      setOfficeValidationErrors({});
+
       const API = "http://localhost:5000/api";
 
-      // Validation: Check if lastFourDigitsCheckForte is required and valid
+      // Additional Image Validations
+      const isPrimaryMode4 = formData.patientPortionPrimaryMode === 4;
+      const isSecondaryMode4 = formData.patientPortionSecondaryMode === 4;
+      const isPersonalCheckSelected = isPrimaryMode4 || isSecondaryMode4;
+
+      // Reset image validation errors
+      setImageValidationErrors({ officeWO: false, checkImage: false });
+
+      // Validation 1: Check if lastFourDigitsCheckForte is required and valid
       if (
-        (formData.patientPortionPrimaryMode === 4 ||
-          formData.patientPortionSecondaryMode === 4) &&
+        isPersonalCheckSelected &&
         (!formData.lastFourDigitsCheckForte ||
           formData.lastFourDigitsCheckForte.length !== 4 ||
           !/^\d{4}$/.test(formData.lastFourDigitsCheckForte))
       ) {
         setNotification({
           show: true,
-          message:
-            "Please enter exactly 4 digits for check number when Personal Check is selected.",
+          message: "Please update all the mandatory fields.",
           type: "error",
         });
         setTimeout(() => {
           setNotification({ show: false, message: "", type: "error" });
         }, 3000);
         return;
+      }
+
+      // Validation 2: Check image is mandatory when Personal Check is selected
+      if (isPersonalCheckSelected) {
+        const hasCheckImage =
+          sidebarData.images.checkImage.file ||
+          sidebarData.images.checkImage.imageId;
+
+        if (!hasCheckImage) {
+          setImageValidationErrors((prev) => ({ ...prev, checkImage: true }));
+          setNotification({
+            show: true,
+            message: "Please update all the mandatory fields.",
+            type: "error",
+          });
+          setTimeout(() => {
+            setNotification({ show: false, message: "", type: "error" });
+          }, 3000);
+          return;
+        }
+      }
+
+      // Validation 3: Office WO image is mandatory when patient came to appointment
+      if (isPatientPresent) {
+        const hasOfficeWO =
+          sidebarData.images.officeWO.file ||
+          sidebarData.images.officeWO.imageId;
+
+        if (!hasOfficeWO) {
+          setImageValidationErrors((prev) => ({ ...prev, officeWO: true }));
+          setNotification({
+            show: true,
+            message: "Please update all the mandatory fields.",
+            type: "error",
+          });
+          setTimeout(() => {
+            setNotification({ show: false, message: "", type: "error" });
+          }, 3000);
+          return;
+        }
       }
 
       // Create FormData for multipart/form-data submission
@@ -2019,22 +2220,28 @@ const WalkoutForm = () => {
           "officeWalkoutSnip",
           sidebarData.images.officeWO.file,
         );
-        console.log(
-          "📤 Uploading Office WO image:",
-          sidebarData.images.officeWO.file.name,
-        );
+        // console.log(
+        //   "📤 Uploading Office WO image:",
+        //   sidebarData.images.officeWO.file.name,
+        // );
       }
 
-      // 2b. Check Image (Optional - send actual file if user selected)
-      if (sidebarData.images.checkImage.file) {
+      // 2b. Check Image (Optional - send only if Personal Check is selected and file exists)
+      // Reuse variables from validation section above
+
+      if (isPersonalCheckSelected && sidebarData.images.checkImage.file) {
         formDataPayload.append(
           "checkImage",
           sidebarData.images.checkImage.file,
         );
-        console.log(
-          "📤 Uploading Check Image:",
-          sidebarData.images.checkImage.file.name,
-        );
+        // console.log(
+        //   "📤 Uploading Check Image:",
+        //   sidebarData.images.checkImage.file.name,
+        // );
+      } else if (!isPersonalCheckSelected) {
+        // If Personal Check is NOT selected, explicitly send blank/null to clear any existing image
+        formDataPayload.append("checkImage", "");
+        // console.log("🗑️ Clearing Check Image (Personal Check not selected)");
       }
 
       // 3. Add all office section fields directly to FormData
@@ -2046,17 +2253,17 @@ const WalkoutForm = () => {
       }
 
       // Add all form fields as-is (backend handles type conversion)
-      console.log(
-        "📤 Submitting formData.patientCame:",
-        formData.patientCame,
-        "Type:",
-        typeof formData.patientCame,
-      );
+      // console.log(
+      //   "📤 Submitting formData.patientCame:",
+      //   formData.patientCame,
+      //   "Type:",
+      //   typeof formData.patientCame,
+      // );
       if (formData.patientCame !== undefined && formData.patientCame !== null) {
         formDataPayload.append("patientCame", formData.patientCame);
-        console.log("✅ patientCame appended to FormData");
+        // console.log("✅ patientCame appended to FormData");
       } else {
-        console.log("❌ patientCame is undefined or null - NOT appended!");
+        // console.log("❌ patientCame is undefined or null - NOT appended!");
       }
       if (
         formData.postOpZeroProduction !== undefined &&
@@ -2343,32 +2550,33 @@ const WalkoutForm = () => {
         formDataPayload.append("narrative", formData.narrative);
       }
 
-      console.log("📤 Sending FormData Payload for Office Section");
+      // console.log("📤 Sending FormData Payload for Office Section");
 
       // Debug: Log all FormData entries
-      console.log("🔍 FormData Contents:");
-      for (let [key, value] of formDataPayload.entries()) {
+      // console.log("🔍 FormData Contents:");
+      // eslint-disable-next-line no-unused-vars
+      for (let [_key, value] of formDataPayload.entries()) {
         if (value instanceof File) {
-          console.log(`  ${key}: [File] ${value.name}`);
+          // console.log(`  ${_key}: [File] ${value.name}`);
         } else {
-          console.log(`  ${key}: ${value} (type: ${typeof value})`);
+          // console.log(`  ${_key}: ${value} (type: ${typeof value})`);
         }
       }
 
-      console.log("🔍 Submit State Check:", {
-        isExistingWalkout,
-        walkoutId,
-        willUsePUT: isExistingWalkout && walkoutId,
-        endpoint:
-          isExistingWalkout && walkoutId
-            ? `PUT /walkouts/${walkoutId}/office`
-            : "POST /walkouts/submit-office",
-      });
+      // console.log("🔍 Submit State Check:", {
+      //   isExistingWalkout,
+      //   walkoutId,
+      //   willUsePUT: isExistingWalkout && walkoutId,
+      //   endpoint:
+      //     isExistingWalkout && walkoutId
+      //       ? `PUT /walkouts/${walkoutId}/office`
+      //       : "POST /walkouts/submit-office",
+      // });
 
       let response;
       if (isExistingWalkout && walkoutId) {
         // Update existing walkout
-        console.log(`🔄 Updating existing walkout: ${walkoutId}`);
+        // console.log(`🔄 Updating existing walkout: ${walkoutId}`);
         response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/office`, {
           method: "PUT",
           // Don't set Content-Type - browser will set it automatically with boundary
@@ -2376,7 +2584,7 @@ const WalkoutForm = () => {
         });
       } else {
         // Create new walkout
-        console.log("✨ Creating new walkout");
+        // console.log("✨ Creating new walkout");
         response = await fetchWithAuth(`${API}/walkouts/submit-office`, {
           method: "POST",
           // Don't set Content-Type - browser will set it automatically with boundary
@@ -2386,13 +2594,13 @@ const WalkoutForm = () => {
 
       const result = await response.json();
 
-      console.log("📥 Backend Response:", {
-        status: response.status,
-        ok: response.ok,
-        isUpdate: isExistingWalkout,
-        walkoutId: walkoutId,
-        result: result,
-      });
+      // console.log("📥 Backend Response:", {
+      //   status: response.status,
+      //   ok: response.ok,
+      //   isUpdate: isExistingWalkout,
+      //   walkoutId: walkoutId,
+      //   result: result,
+      // });
 
       if (response.ok) {
         // Update imageId from response if image was uploaded
@@ -2414,10 +2622,10 @@ const WalkoutForm = () => {
               },
             },
           }));
-          console.log(
-            "🖼️ Office WO Image uploaded successfully! ImageId:",
-            result.data.officeWalkoutSnip.imageId,
-          );
+          // console.log(
+          //   "🖼️ Office WO Image uploaded successfully! ImageId:",
+          //   result.data.officeWalkoutSnip.imageId,
+          // );
         }
 
         // Update Check Image imageId from response if image was uploaded
@@ -2439,10 +2647,10 @@ const WalkoutForm = () => {
               },
             },
           }));
-          console.log(
-            "🖼️ Check Image uploaded successfully! ImageId:",
-            result.data.checkImage.imageId,
-          );
+          // console.log(
+          //   "🖼️ Check Image uploaded successfully! ImageId:",
+          //   result.data.checkImage.imageId,
+          // );
         }
 
         // Show success notification
@@ -2585,7 +2793,7 @@ const WalkoutForm = () => {
           nvdAvailable: formData.nvdAvailable, // Number
           narrativeAvailable: formData.narrativeAvailable, // Number
           signedConsentTxAvailable: formData.signedConsentTxAvailable, // Number
-          preAuthAvailable: formData.preAuthAvailable, // Number
+          preAuthAvailable: formData.lc3PreAuthAvailable, // Number
           routeSheetAvailable: formData.routeSheetAvailable, // Number
           orthoQuestionnaireAvailable: formData.orthoQuestionnaireAvailable, // Number
         },
@@ -2597,7 +2805,7 @@ const WalkoutForm = () => {
           fmx: formData.fmx, // Number
           bitewing: formData.bitewing, // Number
           pa: formData.pa, // Number
-          perioChart: formData.perioChart, // Number
+          perioChart: formData.lc3PerioChart, // Number
         },
 
         // 4. Patient Portion Check - 15 fields as per backend schema
@@ -2730,7 +2938,7 @@ const WalkoutForm = () => {
         lc3Payload.onHoldNote = formData.newOnHoldNote.trim();
       }
 
-      console.log("📤 Submitting LC3 Payload:", lc3Payload);
+      // console.log("📤 Submitting LC3 Payload:", lc3Payload);
 
       // Create FormData for LC3 submission
       const formDataPayload = new FormData();
@@ -2741,15 +2949,15 @@ const WalkoutForm = () => {
           "lc3WalkoutImage",
           sidebarData.images.lc3WO.file,
         );
-        console.log(
-          "📤 Including LC3 WO image in FormData:",
-          sidebarData.images.lc3WO.file.name,
-          "| Size:",
-          sidebarData.images.lc3WO.file.size,
-          "bytes",
-        );
+        // console.log(
+        //   "📤 Including LC3 WO image in FormData:",
+        //   sidebarData.images.lc3WO.file.name,
+        //   "| Size:",
+        //   sidebarData.images.lc3WO.file.size,
+        //   "bytes",
+        // );
       } else {
-        console.log("ℹ️ No LC3 WO image to upload");
+        // console.log("ℹ️ No LC3 WO image to upload");
       }
 
       // 2. Rule Engine (as JSON string)
@@ -2806,8 +3014,8 @@ const WalkoutForm = () => {
         formDataPayload.append("onHoldNote", lc3Payload.onHoldNote);
       }
 
-      console.log("📤 Sending to:", `${API}/walkouts/${walkoutId}/lc3`);
-      console.log("📤 FormData keys:", Array.from(formDataPayload.keys()));
+      // console.log("📤 Sending to:", `${API}/walkouts/${walkoutId}/lc3`);
+      // console.log("📤 FormData keys:", Array.from(formDataPayload.keys()));
 
       const response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/lc3`, {
         method: "PUT",
@@ -2816,7 +3024,7 @@ const WalkoutForm = () => {
 
       const result = await response.json();
 
-      console.log("📥 LC3 Backend Response:", result);
+      // console.log("📥 LC3 Backend Response:", result);
 
       if (response.ok && result.success) {
         // Clear LC3 WO image from sidebar if it was uploaded
@@ -2839,10 +3047,10 @@ const WalkoutForm = () => {
             },
           }));
 
-          console.log(
-            "🖼️ LC3 WO Image uploaded successfully! ImageId:",
-            result.data?.lc3WalkoutImage?.imageId,
-          );
+          // console.log(
+          //   "🖼️ LC3 WO Image uploaded successfully! ImageId:",
+          //   result.data?.lc3WalkoutImage?.imageId,
+          // );
         }
 
         setNotification({
@@ -2892,7 +3100,7 @@ const WalkoutForm = () => {
   };
 
   const handleAuditSubmit = () => {
-    console.log("Audit Section Data:", formData);
+    // console.log("Audit Section Data:", formData);
     alert("Audit section submitted successfully!");
     // TODO: API call to save audit section data
   };
@@ -2901,11 +3109,14 @@ const WalkoutForm = () => {
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
     const hasImage = imageData.file !== null || imageData.imageId !== "";
+    const hasValidationError = imageValidationErrors[type] || false;
 
     return (
       <div className="WF-image-button-group">
         <button
-          className="WF-image-btn"
+          className={`WF-image-btn ${
+            hasValidationError ? "WF-validation-error" : ""
+          }`}
           onClick={() => setImageModal({ isOpen: true, type })}
         >
           <span className="WF-image-btn-icon">📁</span>
@@ -3016,7 +3227,7 @@ const WalkoutForm = () => {
           {/* Collapsible sections */}
           <div className="WF-collapsible-sections">
             {/* Office Section */}
-            <div className="WF-section">
+            <div className="WF-section" data-section="office">
               <div
                 className="WF-section-header"
                 onClick={() => toggleSection("office")}
@@ -3043,7 +3254,11 @@ const WalkoutForm = () => {
                           <span style={{ color: "#dc2626" }}>*</span>
                         </label>
                         <div
-                          className="WF-button-group"
+                          className={`WF-button-group ${
+                            officeValidationErrors.patientCame
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
                           data-field-id={FIELD_IDS.PATIENT_CAME}
                         >
                           {getRadioButtons(FIELD_IDS.PATIENT_CAME).map(
@@ -3084,7 +3299,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <div
-                              className="WF-button-group"
+                              className={`WF-button-group ${
+                                officeValidationErrors.postOpZeroProduction
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.POST_OP_ZERO}
                             >
                               {getRadioButtons(FIELD_IDS.POST_OP_ZERO).map(
@@ -3123,7 +3342,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <select
-                              className="WF-walkout-form-select"
+                              className={`WF-walkout-form-select ${
+                                officeValidationErrors.patientType
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.PATIENT_TYPE}
                               value={formData.patientType || ""}
                               onChange={(e) =>
@@ -3153,7 +3376,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <div
-                              className="WF-button-group"
+                              className={`WF-button-group ${
+                                officeValidationErrors.hasInsurance
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.HAS_INSURANCE}
                             >
                               {getRadioButtons(FIELD_IDS.HAS_INSURANCE).map(
@@ -3194,7 +3421,11 @@ const WalkoutForm = () => {
                                 <span style={{ color: "#dc2626" }}>*</span>
                               </label>
                               <select
-                                className="WF-walkout-form-select"
+                                className={`WF-walkout-form-select ${
+                                  officeValidationErrors.insuranceType
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 data-field-id={FIELD_IDS.INSURANCE_TYPE}
                                 value={formData.insuranceType || ""}
                                 onChange={(e) => {
@@ -3228,7 +3459,11 @@ const WalkoutForm = () => {
                                 <span style={{ color: "#dc2626" }}>*</span>
                               </label>
                               <select
-                                className="WF-walkout-form-select"
+                                className={`WF-walkout-form-select ${
+                                  officeValidationErrors.insurance
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 data-field-id={FIELD_IDS.INSURANCE}
                                 value={formData.insurance || ""}
                                 onChange={(e) => {
@@ -3260,7 +3495,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <div
-                              className="WF-button-group"
+                              className={`WF-button-group ${
+                                officeValidationErrors.googleReviewRequest
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.GOOGLE_REVIEW_REQUEST}
                             >
                               {getRadioButtons(
@@ -3313,7 +3552,11 @@ const WalkoutForm = () => {
                               type="number"
                               step="1"
                               min="0"
-                              className="WF-form-input"
+                              className={`WF-form-input ${
+                                officeValidationErrors.expectedPatientPortionOfficeWO
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               value={
                                 formData.expectedPatientPortionOfficeWO !==
                                 undefined
@@ -3400,7 +3643,11 @@ const WalkoutForm = () => {
                                 type="number"
                                 step="1"
                                 min="0"
-                                className="WF-form-input"
+                                className={`WF-form-input ${
+                                  officeValidationErrors.amountCollectedPrimaryMode
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 value={
                                   formData.amountCollectedPrimaryMode !==
                                   undefined
@@ -3467,7 +3714,11 @@ const WalkoutForm = () => {
                                 type="number"
                                 step="1"
                                 min="0"
-                                className="WF-form-input"
+                                className={`WF-form-input ${
+                                  officeValidationErrors.amountCollectedSecondaryMode
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 value={
                                   formData.amountCollectedSecondaryMode !==
                                   undefined
@@ -3504,7 +3755,11 @@ const WalkoutForm = () => {
                               type="text"
                               maxLength="4"
                               pattern="\d{4}"
-                              className="WF-form-input"
+                              className={`WF-form-input ${
+                                officeValidationErrors.lastFourDigitsCheckForte
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               placeholder="Enter exactly last 4 digits"
                               value={formData.lastFourDigitsCheckForte || ""}
                               onChange={(e) => {
@@ -3541,7 +3796,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <select
-                              className="WF-form-select"
+                              className={`WF-form-select ${
+                                officeValidationErrors.reasonLessCollection
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.REASON_LESS_COLLECTION}
                               value={formData.reasonLessCollection || ""}
                               onChange={(e) => {
@@ -3583,7 +3842,11 @@ const WalkoutForm = () => {
                               <span style={{ color: "#dc2626" }}>*</span>
                             </label>
                             <div
-                              className="WF-button-group"
+                              className={`WF-button-group ${
+                                officeValidationErrors.ruleEngineRun
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
                               data-field-id={FIELD_IDS.RULE_ENGINE_RUN}
                             >
                               {getRadioButtons(FIELD_IDS.RULE_ENGINE_RUN).map(
@@ -3623,7 +3886,11 @@ const WalkoutForm = () => {
                                 <span style={{ color: "#dc2626" }}>*</span>
                               </label>
                               <select
-                                className="WF-walkout-form-select"
+                                className={`WF-walkout-form-select ${
+                                  officeValidationErrors.ruleEngineNotRunReason
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 data-field-id={
                                   FIELD_IDS.RULE_ENGINE_NOT_RUN_REASON
                                 }
@@ -3660,7 +3927,11 @@ const WalkoutForm = () => {
                                 <span style={{ color: "#dc2626" }}>*</span>
                               </label>
                               <div
-                                className="WF-button-group"
+                                className={`WF-button-group ${
+                                  officeValidationErrors.ruleEngineError
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 data-field-id={
                                   FIELD_IDS.RULE_ENGINE_ERROR_FOUND
                                 }
@@ -3704,7 +3975,11 @@ const WalkoutForm = () => {
                                 </label>
                                 <input
                                   type="text"
-                                  className="WF-walkout-form-input"
+                                  className={`WF-walkout-form-input ${
+                                    officeValidationErrors.errorFixRemarks
+                                      ? "WF-validation-error"
+                                      : ""
+                                  }`}
                                   value={formData.errorFixRemarks || ""}
                                   onChange={(e) =>
                                     handleDropdownChange(
@@ -3726,7 +4001,11 @@ const WalkoutForm = () => {
                                 <span style={{ color: "#dc2626" }}>*</span>
                               </label>
                               <div
-                                className="WF-button-group"
+                                className={`WF-button-group ${
+                                  officeValidationErrors.issuesFixed
+                                    ? "WF-validation-error"
+                                    : ""
+                                }`}
                                 data-field-id={FIELD_IDS.ISSUES_FIXED}
                               >
                                 {getRadioButtons(FIELD_IDS.ISSUES_FIXED).map(
@@ -3776,7 +4055,13 @@ const WalkoutForm = () => {
                         <div className="WF-checkbox-grid">
                           {/* Column 1 */}
                           <div className="WF-checkbox-column">
-                            <label className="WF-checkbox-label">
+                            <label
+                              className={`WF-checkbox-label ${
+                                officeValidationErrors.signedGeneralConsent
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={formData.signedGeneralConsent || false}
@@ -3787,7 +4072,10 @@ const WalkoutForm = () => {
                                   )
                                 }
                               />
-                              <span>Signed General Consent*</span>
+                              <span>
+                                Signed General Consent
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </span>
                             </label>
                             <label className="WF-checkbox-label">
                               <input
@@ -3821,7 +4109,13 @@ const WalkoutForm = () => {
 
                           {/* Column 2 */}
                           <div className="WF-checkbox-column">
-                            <label className="WF-checkbox-label">
+                            <label
+                              className={`WF-checkbox-label ${
+                                officeValidationErrors.signedTxPlan
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={formData.signedTxPlan || false}
@@ -3832,7 +4126,10 @@ const WalkoutForm = () => {
                                   )
                                 }
                               />
-                              <span>Signed TX Plan*</span>
+                              <span>
+                                Signed TX Plan
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </span>
                             </label>
                             <label className="WF-checkbox-label">
                               <input
@@ -3861,7 +4158,13 @@ const WalkoutForm = () => {
 
                           {/* Column 3 */}
                           <div className="WF-checkbox-column">
-                            <label className="WF-checkbox-label">
+                            <label
+                              className={`WF-checkbox-label ${
+                                officeValidationErrors.xRayPanoAttached
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={formData.xRayPanoAttached || false}
@@ -3872,7 +4175,10 @@ const WalkoutForm = () => {
                                   )
                                 }
                               />
-                              <span>X-Ray/Pano Attached*</span>
+                              <span>
+                                X-Ray/Pano Attached
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </span>
                             </label>
                             <label className="WF-checkbox-label">
                               <input
@@ -3887,7 +4193,13 @@ const WalkoutForm = () => {
                               />
                               <span>Major Service Form</span>
                             </label>
-                            <label className="WF-checkbox-label">
+                            <label
+                              className={`WF-checkbox-label ${
+                                officeValidationErrors.routeSheet
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={formData.routeSheet || false}
@@ -3898,13 +4210,22 @@ const WalkoutForm = () => {
                                   )
                                 }
                               />
-                              <span>Route Sheet*</span>
+                              <span>
+                                Route Sheet
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </span>
                             </label>
                           </div>
 
                           {/* Column 4 */}
                           <div className="WF-checkbox-column">
-                            <label className="WF-checkbox-label">
+                            <label
+                              className={`WF-checkbox-label ${
+                                officeValidationErrors.prcUpdatedInRouteSheet
+                                  ? "WF-validation-error"
+                                  : ""
+                              }`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={
@@ -3917,7 +4238,10 @@ const WalkoutForm = () => {
                                   )
                                 }
                               />
-                              <span>PRC updated in route sheet*</span>
+                              <span>
+                                PRC updated in route sheet
+                                <span style={{ color: "#dc2626" }}>*</span>
+                              </span>
                             </label>
                             <label className="WF-checkbox-label">
                               <input
@@ -4562,16 +4886,16 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className={`WF-walkout-form-select ${
-                            lc3ValidationErrors.preAuthAvailable
+                            lc3ValidationErrors.lc3PreAuthAvailable
                               ? "WF-validation-error"
                               : ""
                           }`}
                           data-field-id={FIELD_IDS.LC3_PRE_AUTH}
-                          value={formData.preAuthAvailable || ""}
+                          value={formData.lc3PreAuthAvailable || ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             handleDropdownChange(
-                              "preAuthAvailable",
+                              "lc3PreAuthAvailable",
                               value === "" ? null : parseInt(value),
                             );
                           }}
@@ -4836,16 +5160,16 @@ const WalkoutForm = () => {
                         </label>
                         <select
                           className={`WF-walkout-form-select ${
-                            lc3ValidationErrors.perioChart
+                            lc3ValidationErrors.lc3PerioChart
                               ? "WF-validation-error"
                               : ""
                           }`}
                           data-field-id={FIELD_IDS.LC3_PERIO_CHART}
-                          value={formData.perioChart || ""}
+                          value={formData.lc3PerioChart || ""}
                           onChange={(e) => {
                             const value = e.target.value;
                             handleDropdownChange(
-                              "perioChart",
+                              "lc3PerioChart",
                               value === "" ? null : parseInt(value),
                             );
                           }}
@@ -7171,21 +7495,31 @@ const WalkoutForm = () => {
               </div>
             </div>
 
-            {/* On-Hold Reasons */}
-            <div className="WF-sidebar-item">
-              <label className="WF-sidebar-label">On-Hold Reasons</label>
-              <div className="WF-onhold-reasons">
-                {onHoldReasons.length > 0 ? (
-                  onHoldReasons.map((reason, index) => (
-                    <div key={index} className="WF-reason-item">
-                      • {reason}
-                    </div>
-                  ))
-                ) : (
-                  <div className="WF-no-reasons">No reasons listed</div>
-                )}
+            {/* On-Hold Reasons - Show only if reasons are selected in LC3 section */}
+            {formData.onHoldReasons && formData.onHoldReasons.length > 0 && (
+              <div className="WF-sidebar-item">
+                <label className="WF-sidebar-label">On-Hold Reasons</label>
+                <div className="WF-onhold-reasons">
+                  {formData.onHoldReasons.map((reasonId, index) => {
+                    // Get dropdown options for LC3 On-Hold Reasons
+                    const options = getDropdownOptions(
+                      FIELD_IDS.LC3_ONHOLD_REASONS,
+                    );
+                    // Find the option name by incrementalId
+                    const option = options.find(
+                      (opt) => opt.incrementalId === reasonId,
+                    );
+                    const reasonName =
+                      option?.name || `Unknown (ID: ${reasonId})`;
+                    return (
+                      <div key={index} className="WF-reason-item">
+                        • {reasonName}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Image Upload Sections */}
             <div className="WF-sidebar-item">
@@ -7193,10 +7527,13 @@ const WalkoutForm = () => {
               {renderImageButtons("officeWO", "Office WO")}
             </div>
 
-            <div className="WF-sidebar-item">
-              <label className="WF-sidebar-label">Check Image</label>
-              {renderImageButtons("checkImage", "Check")}
-            </div>
+            {/* Check Image - Show only when Personal Check is selected */}
+            {showLastFourDigits && (
+              <div className="WF-sidebar-item">
+                <label className="WF-sidebar-label">Check Image</label>
+                {renderImageButtons("checkImage", "Check")}
+              </div>
+            )}
 
             <div className="WF-sidebar-item">
               <label className="WF-sidebar-label">LC3 WO Snip</label>
@@ -7353,8 +7690,8 @@ const WalkoutForm = () => {
                 setImageLoading(false);
               }}
               onLoad={() => {
-                console.log("✅ Image loaded successfully!");
-                console.log("Image URL:", getImageUrl(previewModal.type));
+                // console.log("✅ Image loaded successfully!");
+                // console.log("Image URL:", getImageUrl(previewModal.type));
                 setImageLoading(false);
               }}
             />
