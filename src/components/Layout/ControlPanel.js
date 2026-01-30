@@ -21,7 +21,7 @@ const ControlPanel = () => {
       console.log("Is Office:", user.role === "office");
       console.log(
         "canAccessUsers():",
-        user?.role === "admin" || user?.role === "superAdmin"
+        user?.role === "admin" || user?.role === "superAdmin",
       );
       console.log("========================");
     }
@@ -36,15 +36,15 @@ const ControlPanel = () => {
   };
 
   const canAccessRegions = () => {
-    return user?.role === "admin" || user?.role === "superAdmin";
+    return user?.role === "superAdmin";
   };
 
   const canAccessOffices = () => {
-    return user?.role === "admin" || user?.role === "superAdmin";
+    return user?.role === "superAdmin";
   };
 
   const canAccessTeams = () => {
-    return user?.role === "admin" || user?.role === "superAdmin";
+    return user?.role === "superAdmin";
   };
 
   const canAccessFormManagement = () => {
@@ -93,7 +93,7 @@ const ControlPanel = () => {
                   <Link
                     to="/control-panel/regions"
                     className={`sidebar-item ${isActive(
-                      "/control-panel/regions"
+                      "/control-panel/regions",
                     )}`}
                   >
                     <span className="sidebar-icon">🌍</span>
@@ -105,7 +105,7 @@ const ControlPanel = () => {
                   <Link
                     to="/control-panel/offices"
                     className={`sidebar-item ${isActive(
-                      "/control-panel/offices"
+                      "/control-panel/offices",
                     )}`}
                   >
                     <span className="sidebar-icon">🏢</span>
@@ -117,7 +117,7 @@ const ControlPanel = () => {
                   <Link
                     to="/control-panel/teams"
                     className={`sidebar-item ${isActive(
-                      "/control-panel/teams"
+                      "/control-panel/teams",
                     )}`}
                   >
                     <span className="sidebar-icon">🤝</span>
@@ -135,7 +135,7 @@ const ControlPanel = () => {
                 <Link
                   to="/control-panel/dropdown-sets"
                   className={`sidebar-item ${isActive(
-                    "/control-panel/dropdown-sets"
+                    "/control-panel/dropdown-sets",
                   )}`}
                 >
                   <span className="sidebar-icon">📋</span>
@@ -145,7 +145,7 @@ const ControlPanel = () => {
                 <Link
                   to="/control-panel/radio-button-sets"
                   className={`sidebar-item ${isActive(
-                    "/control-panel/radio-button-sets"
+                    "/control-panel/radio-button-sets",
                   )}`}
                 >
                   <span className="sidebar-icon">🔘</span>
@@ -162,7 +162,7 @@ const ControlPanel = () => {
                 <Link
                   to="/control-panel/archives/dropdown-sets"
                   className={`sidebar-item ${isActive(
-                    "/control-panel/archives/dropdown-sets"
+                    "/control-panel/archives/dropdown-sets",
                   )}`}
                 >
                   <span className="sidebar-icon">📦</span>
@@ -172,7 +172,7 @@ const ControlPanel = () => {
                 <Link
                   to="/control-panel/archives/radio-button-sets"
                   className={`sidebar-item ${isActive(
-                    "/control-panel/archives/radio-button-sets"
+                    "/control-panel/archives/radio-button-sets",
                   )}`}
                 >
                   <span className="sidebar-icon">🗄️</span>

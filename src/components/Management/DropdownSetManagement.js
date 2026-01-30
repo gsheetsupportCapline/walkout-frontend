@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import "./Management.css";
 import "./DropdownSetManagement.css";
@@ -75,6 +76,7 @@ const FIELD_LABELS = {
 
 const DropdownSetManagement = () => {
   const { showSuccess, showError } = useToast();
+  const { user } = useAuth();
 
   const [dropdownSets, setDropdownSets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -164,7 +166,7 @@ const DropdownSetManagement = () => {
       const setId = selectedSet._id;
       const response = await api.put(
         `/dropdowns/dropdown-sets/${setId}`,
-        setFormData
+        setFormData,
       );
       if (response.data.success) {
         showSuccess("Dropdown set updated successfully");
@@ -193,7 +195,7 @@ const DropdownSetManagement = () => {
     try {
       const response = await api.post(
         `/dropdowns/dropdown-sets/${selectedSet._id}/options`,
-        optionFormData
+        optionFormData,
       );
       if (response.data.success) {
         showSuccess("Option added successfully");
@@ -211,7 +213,7 @@ const DropdownSetManagement = () => {
     try {
       const response = await api.put(
         `/dropdowns/dropdown-sets/${selectedSet._id}/options/${editingOption._id}`,
-        optionFormData
+        optionFormData,
       );
       if (response.data.success) {
         showSuccess("Option updated successfully");
@@ -275,7 +277,7 @@ const DropdownSetManagement = () => {
           `/dropdowns/dropdown-sets/${deleteTarget.id}`,
           {
             data: { deletionReason },
-          }
+          },
         );
         if (response.data.success) {
           showSuccess("Dropdown set archived successfully");
@@ -291,7 +293,7 @@ const DropdownSetManagement = () => {
       } else if (deleteTarget.type === "option") {
         const response = await api.delete(
           `/dropdowns/dropdown-sets/${selectedSet._id}/options/${deleteTarget.id}`,
-          { data: { deletionReason } }
+          { data: { deletionReason } },
         );
         if (response.data.success) {
           showSuccess("Option archived successfully");
@@ -340,7 +342,7 @@ const DropdownSetManagement = () => {
     try {
       const response = await api.post(
         `/dropdowns/dropdown-sets/${selectedSet._id}/options/bulk`,
-        { options: validOptions }
+        { options: validOptions },
       );
       if (response.data.success) {
         showSuccess(`${validOptions.length} option(s) added successfully`);
@@ -356,7 +358,7 @@ const DropdownSetManagement = () => {
   const copyToClipboard = (text, label = "ID") => {
     navigator.clipboard.writeText(text).then(
       () => showSuccess(`${label} copied to clipboard!`),
-      () => showError(`Failed to copy ${label}`)
+      () => showError(`Failed to copy ${label}`),
     );
   };
 
@@ -382,7 +384,7 @@ const DropdownSetManagement = () => {
           if (otherSet.usedIn && otherSet.usedIn.includes(fieldId)) {
             // Remove the field ID from this set
             const updatedReferences = otherSet.usedIn.filter(
-              (id) => id !== fieldId
+              (id) => id !== fieldId,
             );
             await api.put(`/dropdowns/dropdown-sets/${otherSet._id}/used-in`, {
               references: updatedReferences,
@@ -400,7 +402,7 @@ const DropdownSetManagement = () => {
       fetchDropdownSets(); // Refresh the list
     } catch (err) {
       showError(
-        err.response?.data?.message || "Failed to update field mapping"
+        err.response?.data?.message || "Failed to update field mapping",
       );
     }
   };
@@ -412,16 +414,18 @@ const DropdownSetManagement = () => {
           <h1>Dropdown Set Management</h1>
           <p>Manage dropdown sets and their options</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setSelectedSet(null);
-            setSetFormData({ name: "", description: "", isActive: true });
-            setShowSetModal(true);
-          }}
-        >
-          + Create New Set
-        </button>
+        {user?.role === "superAdmin" && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setSelectedSet(null);
+              setSetFormData({ name: "", description: "", isActive: true });
+              setShowSetModal(true);
+            }}
+          >
+            + Create New Set
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -432,9 +436,9 @@ const DropdownSetManagement = () => {
             <thead>
               <tr>
                 <th>Set Name</th>
-                <th>Set ID</th>
+                {user?.role === "superAdmin" && <th>Set ID</th>}
                 <th>Options Count</th>
-                <th>Used In Field</th>
+                {user?.role === "superAdmin" && <th>Used In Field</th>}
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -452,35 +456,39 @@ const DropdownSetManagement = () => {
                     <td>
                       <strong>{set.name}</strong>
                     </td>
-                    <td>
-                      <span
-                        className="id-cell"
-                        onClick={() => copyToClipboard(set._id, "Set ID")}
-                        title={`Click to copy: ${set._id}`}
-                      >
-                        {truncateId(set._id)}
-                      </span>
-                    </td>
+                    {user?.role === "superAdmin" && (
+                      <td>
+                        <span
+                          className="id-cell"
+                          onClick={() => copyToClipboard(set._id, "Set ID")}
+                          title={`Click to copy: ${set._id}`}
+                        >
+                          {truncateId(set._id)}
+                        </span>
+                      </td>
+                    )}
                     <td>{set.options?.length || 0}</td>
-                    <td>
-                      <select
-                        className="field-id-select"
-                        value={set.usedIn?.[0] || ""}
-                        onChange={(e) =>
-                          handleFieldIdMapping(set._id, e.target.value)
-                        }
-                        title="Map this set to a form field"
-                      >
-                        <option value="">-- Select Field --</option>
-                        {Object.entries(FIELD_LABELS)
-                          .filter(([key]) => key.startsWith("WFDRP_")) // Only dropdown fields
-                          .map(([key, label]) => (
-                            <option key={key} value={key}>
-                              {label}
-                            </option>
-                          ))}
-                      </select>
-                    </td>
+                    {user?.role === "superAdmin" && (
+                      <td>
+                        <select
+                          className="field-id-select"
+                          value={set.usedIn?.[0] || ""}
+                          onChange={(e) =>
+                            handleFieldIdMapping(set._id, e.target.value)
+                          }
+                          title="Map this set to a form field"
+                        >
+                          <option value="">-- Select Field --</option>
+                          {Object.entries(FIELD_LABELS)
+                            .filter(([key]) => key.startsWith("WFDRP_")) // Only dropdown fields
+                            .map(([key, label]) => (
+                              <option key={key} value={key}>
+                                {label}
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                    )}
                     <td>
                       <span
                         className={`badge ${
@@ -506,13 +514,15 @@ const DropdownSetManagement = () => {
                         >
                           Edit
                         </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => openDeleteSetModal(set._id)}
-                          title="Delete Set"
-                        >
-                          Delete
-                        </button>
+                        {user?.role === "superAdmin" && (
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => openDeleteSetModal(set._id)}
+                            title="Delete Set"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -799,7 +809,7 @@ const DropdownSetManagement = () => {
                               handleBulkOptionChange(
                                 index,
                                 "name",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             placeholder="Enter option name"
@@ -813,7 +823,7 @@ const DropdownSetManagement = () => {
                               handleBulkOptionChange(
                                 index,
                                 "visibility",
-                                e.target.value === "true"
+                                e.target.value === "true",
                               )
                             }
                             className="bulk-select"
@@ -829,7 +839,7 @@ const DropdownSetManagement = () => {
                               handleBulkOptionChange(
                                 index,
                                 "isActive",
-                                e.target.value === "true"
+                                e.target.value === "true",
                               )
                             }
                             className="bulk-select"

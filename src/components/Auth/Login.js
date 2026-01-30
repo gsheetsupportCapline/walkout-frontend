@@ -29,7 +29,7 @@ const Login = () => {
     const result = await login(formData.emailOrUsername, formData.password);
 
     if (result.success) {
-      navigate("/dashboard");
+      navigate("/appointments");
     } else {
       setError(result.message);
     }

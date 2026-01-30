@@ -33,29 +33,30 @@ const Navbar = () => {
   return (
     <nav className="main-navbar">
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
-          Walkout
-        </Link>
+        <div className="navbar-left">
+          <Link to="/">
+            <img
+              src="/smilepoint-dental.png"
+              alt="Smilepoint Dental"
+              className="navbar-logo-img"
+            />
+          </Link>
+          <Link to="/" className="navbar-logo">
+            Walkout <span className="version-text">2.0</span>
+          </Link>
+        </div>
 
         <div className="navbar-right">
           {user ? (
             <>
-              <Link to="/dashboard" className="navbar-link">
-                <span className="nav-icon">📊</span>
-                Dashboard
-              </Link>
-
               <Link to="/appointments" className="navbar-link">
                 <span className="nav-icon">📅</span>
                 Appointments
               </Link>
-
-              {(user.role === "admin" || user.role === "superAdmin") && (
-                <Link to="/control-panel" className="navbar-link">
-                  <span className="nav-icon">⚙️</span>
-                  Control Panel
-                </Link>
-              )}
+              <Link to="/dashboard" className="navbar-link">
+                <span className="nav-icon">📊</span>
+                Dashboards
+              </Link>
 
               <div className="user-dropdown" ref={dropdownRef}>
                 <button
@@ -83,6 +84,16 @@ const Navbar = () => {
                       <span className="dropdown-icon">👤</span>
                       Profile
                     </Link>
+                    {(user.role === "admin" || user.role === "superAdmin") && (
+                      <Link
+                        to="/control-panel"
+                        className="dropdown-item"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <span className="dropdown-icon">⚙️</span>
+                        Control Panel
+                      </Link>
+                    )}
                     <button className="dropdown-item" onClick={handleLogout}>
                       <span className="dropdown-icon">🚪</span>
                       Logout

@@ -11,7 +11,7 @@ const Profile = () => {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
-    email: user?.email || "",
+    username: user?.username || "",
   });
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
@@ -41,7 +41,7 @@ const Profile = () => {
     try {
       const updateData = {
         name: formData.name,
-        email: formData.email,
+        username: formData.username,
       };
 
       const response = await api.put("/users/profile", updateData);
@@ -113,7 +113,7 @@ const Profile = () => {
           <div className="stat-content">
             <h3>Status</h3>
             <p className="stat-value">
-              {user?.isActive ? "Active" : "Inactive"}
+              {(user?.isActive ?? user?.active ?? true) ? "Active" : "Inactive"}
             </p>
           </div>
         </div>
@@ -156,10 +156,10 @@ const Profile = () => {
                 user?.role === "superAdmin"
                   ? "purple"
                   : user?.role === "admin"
-                  ? "blue"
-                  : user?.role === "office"
-                  ? "orange"
-                  : "green"
+                    ? "blue"
+                    : user?.role === "office"
+                      ? "orange"
+                      : "green"
               }`}
             >
               {user?.role}
@@ -169,10 +169,12 @@ const Profile = () => {
             <span className="info-label">Status:</span>
             <span
               className={`badge ${
-                user?.isActive ? "badge-success" : "badge-danger"
+                (user?.isActive ?? user?.active ?? true)
+                  ? "badge-success"
+                  : "badge-danger"
               }`}
             >
-              {user?.isActive ? "Active" : "Inactive"}
+              {(user?.isActive ?? user?.active ?? true) ? "Active" : "Inactive"}
             </span>
           </div>
         </div>
@@ -206,15 +208,15 @@ const Profile = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="username">Username</label>
                 <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
                   onChange={handleChange}
                   required
-                  placeholder="Enter your email"
+                  placeholder="Enter your username"
                 />
               </div>
 
@@ -232,7 +234,7 @@ const Profile = () => {
                     setIsEditing(false);
                     setFormData({
                       name: user?.name || "",
-                      email: user?.email || "",
+                      username: user?.username || "",
                     });
                   }}
                   className="btn btn-secondary"

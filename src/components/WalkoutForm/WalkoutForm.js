@@ -284,6 +284,7 @@ const WalkoutForm = () => {
   const [lc3WalkoutData, setLc3WalkoutData] = useState(null); // Store lc3WalkoutImage data from backend
   const [isRegeneratingLc3Data, setIsRegeneratingLc3Data] = useState(false); // LC3 regeneration loading state
   const [lc3RegenerationDetails, setLc3RegenerationDetails] = useState(null); // LC3 AI regeneration details
+  const [sessionStartTime, setSessionStartTime] = useState(null); // Track when form opens
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -293,6 +294,29 @@ const WalkoutForm = () => {
     completedByLC3: "Saransh Sharma",
     completedOnLC3: "2025-12-22 17:49:45",
   });
+
+  // Track session start time when component mounts
+  useEffect(() => {
+    // Get current time in IST timezone and format as ISO string
+    const getISTTime = () => {
+      const now = new Date();
+      // Format date in IST timezone
+      const istString = now
+        .toLocaleString("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        })
+        .replace(", ", "T");
+      return istString + ".000Z"; // ISO format
+    };
+    setSessionStartTime(getISTTime());
+  }, []); // Only run once on mount
 
   // Fetch radio button sets
   useEffect(() => {
@@ -2201,8 +2225,47 @@ const WalkoutForm = () => {
         }
       }
 
+      // Determine walkoutStatus and pendingWith based on conditions
+      let walkoutStatus = "";
+      let pendingWith = "";
+
+      // Get the field values (using incrementalId from radio buttons)
+      const patientCameToAppointment = formData.patientCame; // 1 = Yes, 2 = No
+      const isPostOpZeroProduction = formData.postOpZeroProduction; // 1 = Yes, 2 = No
+
+      console.log("🔍 Checking conditions:", {
+        patientCame: patientCameToAppointment,
+        postOpZeroProduction: isPostOpZeroProduction,
+      });
+
+      // Condition 1: Patient came (1) AND NOT zero production (2)
+      if (patientCameToAppointment === 1 && isPostOpZeroProduction === 2) {
+        walkoutStatus = "Not Started";
+        pendingWith = "Pending with LC3";
+      }
+      // Condition 2: Patient did NOT come (2)
+      else if (patientCameToAppointment === 2) {
+        walkoutStatus = "No Show/Cancel";
+        pendingWith = "No Show/Cancel";
+      }
+      // Condition 3: Patient came (1) AND zero production (1)
+      else if (patientCameToAppointment === 1 && isPostOpZeroProduction === 1) {
+        walkoutStatus = "Completed by Office";
+        pendingWith = "Completed";
+      }
+
+      console.log("✅ Determined values:", { walkoutStatus, pendingWith });
+
       // Create FormData for multipart/form-data submission
       const formDataPayload = new FormData();
+
+      // Add walkoutStatus and pendingWith
+      if (walkoutStatus) {
+        formDataPayload.append("walkoutStatus", walkoutStatus);
+      }
+      if (pendingWith) {
+        formDataPayload.append("pendingWith", pendingWith);
+      }
 
       // 1. appointmentInfo (Required JSON string for image upload)
       formDataPayload.append(
@@ -2772,6 +2835,95 @@ const WalkoutForm = () => {
     try {
       const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
+      // Determine walkoutStatus, isOnHoldAddressed, and pendingWith based on LC3 conditions
+      let walkoutStatus = "";
+      let isOnHoldAddressed = "no";
+      let pendingWith = "";
+
+      // Get the field values
+      const walkoutOnHold = formData.walkoutOnHold; // 1 = Yes, 2 = No
+      const completingWithDeficiency = formData.completingWithDeficiency; // 1 = Yes, 2 = No
+      const onHoldReasons = formData.onHoldReasons || []; // Array of numbers
+
+      console.log("🔍 LC3 Submit - Checking conditions:", {
+        walkoutOnHold,
+        completingWithDeficiency,
+        onHoldReasons,
+        dateOfService: appointmentDetails.dateOfService,
+      });
+
+      // Check if On Hold (walkoutOnHold = 1)
+      if (walkoutOnHold === 1) {
+        // Check which teams are responsible for on-hold
+        const hasIVTeamReasons = onHoldReasons.some(
+          (reason) => reason === 13 || reason === 142,
+        );
+        const hasOfficeReasons = onHoldReasons.some(
+          (reason) => reason !== 13 && reason !== 142,
+        );
+
+        console.log("🔍 On Hold Reasons Analysis:", {
+          hasIVTeamReasons,
+          hasOfficeReasons,
+        });
+
+        // Determine walkoutStatus based on which teams have reasons
+        if (hasIVTeamReasons && hasOfficeReasons) {
+          walkoutStatus = "On Hold – IV Team & Office";
+          pendingWith = "IV Team & Office";
+        } else if (hasIVTeamReasons) {
+          walkoutStatus = "On Hold – IV Team";
+          pendingWith = "IV Team";
+        } else if (hasOfficeReasons) {
+          walkoutStatus = "On Hold – Office";
+          pendingWith = "Office";
+        }
+
+        isOnHoldAddressed = "no";
+      }
+      // Check if completed (walkoutOnHold = 2)
+      else if (walkoutOnHold === 2) {
+        // Compare DOS with today's date to determine Same Day or With Delay
+        const dosDate = new Date(appointmentDetails.dateOfService);
+        const today = new Date();
+
+        // Reset time to compare only dates
+        dosDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const isSameDay = dosDate.getTime() === today.getTime();
+
+        console.log("📅 Date comparison:", {
+          dosDate: dosDate.toISOString(),
+          today: today.toISOString(),
+          isSameDay,
+        });
+
+        // Determine walkoutStatus based on date and deficiency
+        if (isSameDay) {
+          if (completingWithDeficiency === 2) {
+            walkoutStatus = "Completed – Same Day";
+          } else if (completingWithDeficiency === 1) {
+            walkoutStatus = "Completed – Same Day with Deficiency";
+          }
+        } else {
+          if (completingWithDeficiency === 2) {
+            walkoutStatus = "Completed – With Delay";
+          } else if (completingWithDeficiency === 1) {
+            walkoutStatus = "Completed – With Delay & Deficiency";
+          }
+        }
+
+        pendingWith = "Completed";
+        isOnHoldAddressed = "yes";
+      }
+
+      console.log("✅ LC3 Determined values:", {
+        walkoutStatus,
+        pendingWith,
+        isOnHoldAddressed,
+      });
+
       // Build LC3 payload according to EXACT backend schema from LC3_IMPLEMENTATION_SUMMARY.md
       const lc3Payload = {
         // 1. Rule Engine
@@ -2940,8 +3092,46 @@ const WalkoutForm = () => {
 
       // console.log("📤 Submitting LC3 Payload:", lc3Payload);
 
+      // Get current time in IST timezone and format as ISO string
+      const getISTTime = () => {
+        const now = new Date();
+        // Format date in IST timezone
+        const istString = now
+          .toLocaleString("en-CA", {
+            timeZone: "Asia/Kolkata",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          })
+          .replace(", ", "T");
+        return istString + ".000Z"; // ISO format
+      };
+      const sessionEndTime = getISTTime();
+
       // Create FormData for LC3 submission
       const formDataPayload = new FormData();
+
+      // Add walkoutStatus, isOnHoldAddressed, and pendingWith
+      if (walkoutStatus) {
+        formDataPayload.append("walkoutStatus", walkoutStatus);
+      }
+      if (isOnHoldAddressed) {
+        formDataPayload.append("isOnHoldAddressed", isOnHoldAddressed);
+      }
+      if (pendingWith) {
+        formDataPayload.append("pendingWith", pendingWith);
+      }
+
+      // Add session start and end times (both in IST)
+      formDataPayload.append(
+        "sessionStartDateTime",
+        sessionStartTime || sessionEndTime,
+      );
+      formDataPayload.append("sessionEndDateTime", sessionEndTime);
 
       // 1. Add LC3 WO Image first (optional)
       if (sidebarData.images.lc3WO.file) {

@@ -536,8 +536,66 @@ const Appointments = () => {
 
   const hasActiveFilters = Object.keys(columnFilters).length > 0;
 
-  // Use data directly from server (already paginated)
-  const filteredAppointments = appointments;
+  // Apply column filters to data
+  const filteredAppointments = (() => {
+    // If no column filters are active, use server-paginated data
+    if (!hasActiveFilters) {
+      return appointments;
+    }
+
+    // If column filters are active, use all data and apply filters client-side
+    let filtered =
+      allAppointmentsData.length > 0 ? allAppointmentsData : appointments;
+
+    Object.keys(columnFilters).forEach((filterKey) => {
+      const selectedValues = columnFilters[filterKey];
+      if (selectedValues && selectedValues.length > 0) {
+        filtered = filtered.filter((appt) => {
+          let value;
+
+          // Handle nested walkout object properties
+          if (filterKey === "walkout-status") {
+            value = appt.walkout?.walkoutStatus;
+          } else if (filterKey === "pending-with") {
+            value = appt.walkout?.pendingWith;
+          } else if (filterKey === "on-hold-reasons") {
+            // For array values, check if any selected value is in the array
+            if (
+              appt.walkout?.onHoldReasons &&
+              Array.isArray(appt.walkout.onHoldReasons)
+            ) {
+              return appt.walkout.onHoldReasons.some((reason) =>
+                selectedValues.includes(reason),
+              );
+            }
+            return false;
+          } else if (filterKey === "pending-checks") {
+            // For pending checks status
+            if (appt.walkout?.pendingChecks) {
+              const checks = appt.walkout.pendingChecks;
+              const pendingCount = Object.values(checks).filter(
+                (v) => v === 2,
+              ).length;
+              const completeCount = Object.values(checks).filter(
+                (v) => v === 1,
+              ).length;
+              if (pendingCount > 0) {
+                value = `${pendingCount} Pending`;
+              } else if (completeCount > 0) {
+                value = "Complete";
+              }
+            }
+          } else {
+            value = appt[filterKey];
+          }
+
+          return selectedValues.includes(value);
+        });
+      }
+    });
+
+    return filtered;
+  })();
 
   // Toggle column filter (temporary until OK is clicked)
   const toggleColumnFilter = (columnKey, value) => {
@@ -632,9 +690,16 @@ const Appointments = () => {
     }
   }, [showFilterDropdown]);
 
-  // Calculate total pages based on server response
-  const effectiveTotal = totalCount;
+  // Calculate total pages based on filtered data or server response
+  const effectiveTotal = hasActiveFilters
+    ? filteredAppointments.length
+    : totalCount;
   const totalPages = Math.ceil(effectiveTotal / limit);
+
+  // For client-side filtered data, we need to paginate it manually
+  const paginatedFilteredAppointments = hasActiveFilters
+    ? filteredAppointments.slice((currentPage - 1) * limit, currentPage * limit)
+    : filteredAppointments;
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
@@ -709,10 +774,8 @@ const Appointments = () => {
                   />
                 </div>
               )}
-            </div>
 
-            {/* Search and Clear Buttons */}
-            <div className="filter-right">
+              {/* Search and Clear Buttons - Right after date */}
               <div className="filter-actions">
                 <button
                   className="btn btn-primary btn-sm"
@@ -728,23 +791,17 @@ const Appointments = () => {
                   Clear
                 </button>
               </div>
+            </div>
 
-              {/* Separate Patient ID Search */}
-              <div className="filter-group" style={{ marginTop: "0" }}>
-                <label htmlFor="patientId">
-                  Patient ID Search
-                  <small
-                    style={{
-                      display: "block",
-                      color: "#666",
-                      fontSize: "10px",
-                      fontWeight: "normal",
-                      marginTop: "2px",
-                    }}
-                  >
-                    (Press Enter or Tab)
-                  </small>
-                </label>
+            {/* Patient ID Search - Extreme Right */}
+            <div className="filter-right">
+              <div className="filter-group-inline">
+                <div className="inline-label-wrapper">
+                  <label htmlFor="patientId" className="inline-label">
+                    Patient ID
+                  </label>
+                  <small className="inline-hint">(Press Enter or Tab)</small>
+                </div>
                 <input
                   type="text"
                   id="patientId"
@@ -752,7 +809,7 @@ const Appointments = () => {
                   value={filters.patientId}
                   onChange={handleFilterChange}
                   onKeyDown={handlePatientSearch}
-                  placeholder="Enter Patient ID"
+                  placeholder="Enter patient id"
                   className="filter-input"
                   disabled={loading}
                 />
@@ -1390,7 +1447,7 @@ const Appointments = () => {
                       Loading appointments...
                     </td>
                   </tr>
-                ) : filteredAppointments.length === 0 ? (
+                ) : paginatedFilteredAppointments.length === 0 ? (
                   <tr>
                     <td
                       colSpan={isAdminOrSuper ? "10" : "9"}
@@ -1404,7 +1461,7 @@ const Appointments = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredAppointments.map((appt) => (
+                  paginatedFilteredAppointments.map((appt) => (
                     <tr
                       key={appt._id}
                       onClick={() =>
@@ -1417,12 +1474,7 @@ const Appointments = () => {
                       }
                       style={{ cursor: "pointer" }}
                     >
-                      <td>
-                        {appt.walkout?.walkoutStatus ===
-                        "Walkout not Submitted to LC3"
-                          ? "Pending with office"
-                          : appt["pending-with"] || "-"}
-                      </td>
+                      <td>{appt.walkout?.pendingWith || "-"}</td>
                       {isAdminOrSuper && (
                         <td>
                           <span className="code-badge">
@@ -1553,95 +1605,98 @@ const Appointments = () => {
           </div>
 
           {/* Pagination */}
-          {!loading && filteredAppointments.length > 0 && (
-            <div className="pagination-container">
-              <div className="pagination-info">
-                Showing {(currentPage - 1) * limit + 1} to{" "}
-                {Math.min(currentPage * limit, effectiveTotal)} of{" "}
-                {effectiveTotal} {hasActiveFilters ? "filtered " : ""}
-                appointments
-                {Object.keys(columnFilters).length > 0 && (
-                  <button
-                    className="btn-clear-filters"
-                    onClick={clearAllColumnFilters}
-                    title="Clear all column filters"
-                  >
-                    🗑️ Clear Filters
-                  </button>
-                )}
-              </div>
-
-              <div className="pagination-controls">
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-
-                <div className="pagination-pages">
-                  {currentPage > 2 && (
-                    <>
-                      <button
-                        className="btn btn-sm btn-page"
-                        onClick={() => handlePageChange(1)}
-                      >
-                        1
-                      </button>
-                      {currentPage > 3 && (
-                        <span className="pagination-dots">...</span>
-                      )}
-                    </>
-                  )}
-
-                  {currentPage > 1 && (
+          {!loading &&
+            (hasActiveFilters
+              ? filteredAppointments.length > 0
+              : totalCount > 0) && (
+              <div className="pagination-container">
+                <div className="pagination-info">
+                  Showing {(currentPage - 1) * limit + 1} to{" "}
+                  {Math.min(currentPage * limit, effectiveTotal)} of{" "}
+                  {effectiveTotal} {hasActiveFilters ? "filtered " : ""}
+                  appointments
+                  {Object.keys(columnFilters).length > 0 && (
                     <button
-                      className="btn btn-sm btn-page"
-                      onClick={() => handlePageChange(currentPage - 1)}
+                      className="btn-clear-filters"
+                      onClick={clearAllColumnFilters}
+                      title="Clear all column filters"
                     >
-                      {currentPage - 1}
+                      🗑️ Clear Filters
                     </button>
-                  )}
-
-                  <button className="btn btn-sm btn-page active">
-                    {currentPage}
-                  </button>
-
-                  {currentPage < totalPages && (
-                    <button
-                      className="btn btn-sm btn-page"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      {currentPage + 1}
-                    </button>
-                  )}
-
-                  {currentPage < totalPages - 1 && (
-                    <>
-                      {currentPage < totalPages - 2 && (
-                        <span className="pagination-dots">...</span>
-                      )}
-                      <button
-                        className="btn btn-sm btn-page"
-                        onClick={() => handlePageChange(totalPages)}
-                      >
-                        {totalPages}
-                      </button>
-                    </>
                   )}
                 </div>
 
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
+                <div className="pagination-controls">
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+
+                  <div className="pagination-pages">
+                    {currentPage > 2 && (
+                      <>
+                        <button
+                          className="btn btn-sm btn-page"
+                          onClick={() => handlePageChange(1)}
+                        >
+                          1
+                        </button>
+                        {currentPage > 3 && (
+                          <span className="pagination-dots">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {currentPage > 1 && (
+                      <button
+                        className="btn btn-sm btn-page"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                      >
+                        {currentPage - 1}
+                      </button>
+                    )}
+
+                    <button className="btn btn-sm btn-page active">
+                      {currentPage}
+                    </button>
+
+                    {currentPage < totalPages && (
+                      <button
+                        className="btn btn-sm btn-page"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                      >
+                        {currentPage + 1}
+                      </button>
+                    )}
+
+                    {currentPage < totalPages - 1 && (
+                      <>
+                        {currentPage < totalPages - 2 && (
+                          <span className="pagination-dots">...</span>
+                        )}
+                        <button
+                          className="btn btn-sm btn-page"
+                          onClick={() => handlePageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
     </>
