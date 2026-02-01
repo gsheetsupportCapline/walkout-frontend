@@ -1171,14 +1171,16 @@ button:focus {
 .WF-lc3-question-right {
   flex: 1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  margin-left: 20px;
 }
 
 .WF-rule-unique-id-group,
 .WF-reason-not-run-group {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   min-width: 350px;
 }
 
@@ -1186,6 +1188,8 @@ button:focus {
 .WF-reason-not-run-group .WF-form-label {
   font-size: 11px;
   color: #000000;
+  white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .WF-unique-id-input-row {
@@ -1871,6 +1875,8 @@ button:focus {
   border-radius: 4px;
   line-height: 1.6;
   border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .WF-add-note-section {

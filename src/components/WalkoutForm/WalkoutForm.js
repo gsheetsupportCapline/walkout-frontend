@@ -50,7 +50,14 @@ const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
       </div>
       <div className="WF-note-author">{userName}</div>
       <div className="WF-note-content">
-        {note.content || note.text || note.note || "No content"}
+        {(note.content || note.text || note.note || "No content")
+          .split("\n")
+          .map((line, index, array) => (
+            <React.Fragment key={index}>
+              {line}
+              {index < array.length - 1 && <br />}
+            </React.Fragment>
+          ))}
       </div>
     </div>
   );

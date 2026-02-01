@@ -476,6 +476,8 @@ const Appointments = () => {
       // Handle nested walkout object properties
       if (columnKey === "walkout-status") {
         value = appt.walkout?.walkoutStatus;
+      } else if (columnKey === "wo-submit-lc3") {
+        value = appt.walkout?.isWalkoutSubmittedToLC3;
       } else if (columnKey === "on-hold-reasons") {
         // For array values, add each item separately
         if (
@@ -1486,7 +1488,7 @@ const Appointments = () => {
                         <span className="code-badge">{appt["patient-id"]}</span>
                       </td>
                       <td>{appt["patient-name"]}</td>
-                      <td>{appt["wo-submit-lc3"] || "-"}</td>
+                      <td>{appt.isWalkoutSubmittedToLC3 || "-"}</td>
                       <td>{appt.walkout?.walkoutStatus || "-"}</td>
                       <td>
                         <div className="pending-checks-boxes">
