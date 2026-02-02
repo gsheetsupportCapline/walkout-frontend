@@ -7,9 +7,10 @@
  * Validate LC3 Section
  * @param {Object} lc3Data - LC3 specific data (rule engine, etc.)
  * @param {Object} formData - Main form data containing all LC3 fields
+ * @param {Object} sidebarData - Sidebar data containing images
  * @returns {Object} - Object with field names as keys and true as values for fields with errors
  */
-export const validateLC3Section = (lc3Data, formData) => {
+export const validateLC3Section = (lc3Data, formData, sidebarData = {}) => {
   const errors = {};
 
   // 1. Rule Engine Check - Did LC3 run rules? (mandatory)
@@ -371,6 +372,23 @@ export const validateLC3Section = (lc3Data, formData) => {
   // 8. On Hold Note (newOnHoldNote) - mandatory for LC3 submission
   if (!formData.newOnHoldNote || !formData.newOnHoldNote.trim()) {
     errors.newOnHoldNote = true;
+  }
+
+  // 9. LC3 Walkout Image - conditionally mandatory
+  // Mandatory if walkoutOnHold === 2 (Not on hold/Completing)
+  // Not mandatory if walkoutOnHold === 1 (On hold)
+  // If image link already exists (from previous submission), validation passes
+  if (formData.walkoutOnHold === 2) {
+    const hasNewFile =
+      sidebarData?.images?.lc3WO?.file !== null &&
+      sidebarData?.images?.lc3WO?.file !== undefined;
+    const hasExistingImageId =
+      sidebarData?.images?.lc3WO?.imageId &&
+      sidebarData?.images?.lc3WO?.imageId.trim() !== "";
+
+    if (!hasNewFile && !hasExistingImageId) {
+      errors.lc3WalkoutImage = true;
+    }
   }
 
   return errors;

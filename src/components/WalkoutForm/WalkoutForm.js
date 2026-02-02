@@ -223,7 +223,7 @@ const WalkoutForm = () => {
       totalTime: 0,
       sessionHistory: [],
     },
-    walkoutStatus: "pending", // completed, office-pending, lc3-pending
+    walkoutStatus: "Walkout not Submitted to LC3",
     images: {
       officeWO: { file: null, previewUrl: "", imageId: "", zoom: 100 },
       checkImage: { file: null, previewUrl: "", imageId: "", zoom: 100 },
@@ -553,6 +553,14 @@ const WalkoutForm = () => {
           const existingWalkout = result.data[0];
           setWalkoutId(existingWalkout._id);
           setIsExistingWalkout(true);
+
+          // Load walkout status into sidebar
+          if (existingWalkout.walkoutStatus) {
+            setSidebarData((prev) => ({
+              ...prev,
+              walkoutStatus: existingWalkout.walkoutStatus,
+            }));
+          }
 
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
@@ -1698,6 +1706,13 @@ const WalkoutForm = () => {
       if (type === "officeWO" || type === "checkImage") {
         setImageValidationErrors((prev) => ({ ...prev, [type]: false }));
       }
+      // Clear LC3 validation error for lc3WO image
+      if (type === "lc3WO") {
+        setLc3ValidationErrors((prev) => ({
+          ...prev,
+          lc3WalkoutImage: false,
+        }));
+      }
 
       // console.log(`📁 Image stored locally for ${type}:`, file.name);
     }
@@ -2831,7 +2846,7 @@ const WalkoutForm = () => {
     }
 
     // Validate LC3 section before submitting
-    const errors = validateLC3Section(lc3Data, formData);
+    const errors = validateLC3Section(lc3Data, formData, sidebarData);
     setLc3ValidationErrors(errors);
 
     if (hasValidationErrors(errors)) {
@@ -3413,7 +3428,11 @@ const WalkoutForm = () => {
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
     const hasImage = imageData.file !== null || imageData.imageId !== "";
-    const hasValidationError = imageValidationErrors[type] || false;
+    // Check both office validation errors and LC3 validation errors
+    const hasValidationError =
+      imageValidationErrors[type] ||
+      (type === "lc3WO" && lc3ValidationErrors.lc3WalkoutImage) ||
+      false;
 
     return (
       <div className="WF-image-button-group">
@@ -7812,14 +7831,8 @@ const WalkoutForm = () => {
             {/* Walkout Status */}
             <div className="WF-sidebar-item">
               <label className="WF-sidebar-label">Walkout Status</label>
-              <div
-                className={`WF-status-badge WF-status-${sidebarData.walkoutStatus}`}
-              >
-                {sidebarData.walkoutStatus === "completed"
-                  ? "Completed"
-                  : sidebarData.walkoutStatus === "office-pending"
-                    ? "Office Pending"
-                    : "LC3 Pending"}
+              <div className="WF-status-badge">
+                {sidebarData.walkoutStatus || "Walkout not Submitted to LC3"}
               </div>
             </div>
 
