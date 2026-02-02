@@ -542,7 +542,8 @@ const WalkoutForm = () => {
       if (!appointmentId) return;
 
       try {
-        const API = "http://localhost:5000/api";
+        const API =
+          process.env.REACT_APP_API_URL || "http://localhost:5000/api";
         // Use formRefId to match with appointment ID
         const response = await fetchWithAuth(
           `${API}/walkouts?formRefId=${appointmentId}`,
@@ -1772,7 +1773,7 @@ const WalkoutForm = () => {
 
     // If image was uploaded and we have imageId from backend, use API endpoint
     if (imageData.imageId) {
-      const API = "http://localhost:5000/api";
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
       // Encode imageId for S3 paths (e.g., "walkout/2026/January/Dallas_Office/officeWalkoutSnip/patient_123_1706234567890_image.jpg")
       const encodedId = encodeURIComponent(imageData.imageId);
       return `${API}/walkouts/image/${encodedId}`;
@@ -1942,11 +1943,20 @@ const WalkoutForm = () => {
     setIsRegeneratingOfficeData(true);
 
     try {
-      const API = "http://localhost:5000/api";
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
       const response = await fetchWithAuth(
         `${API}/office-walkout-ai/regenerate/${walkoutId}`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            extractionMode: "manual",
+            patientId: appointment?.["patient-id"] || "",
+            dateOfService: appointment?.dos || "",
+            officeName: officeName || "",
+          }),
         },
       );
 
@@ -2068,11 +2078,20 @@ const WalkoutForm = () => {
     setIsRegeneratingLc3Data(true);
 
     try {
-      const API = "http://localhost:5000/api";
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
       const response = await fetchWithAuth(
         `${API}/lc3-walkout-ai/regenerate/${walkoutId}`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            extractionMode: "manual",
+            patientId: appointment?.["patient-id"] || "",
+            dateOfService: appointment?.dos || "",
+            officeName: officeName || "",
+          }),
         },
       );
 
@@ -2222,7 +2241,7 @@ const WalkoutForm = () => {
       // Clear validation errors if all validations pass
       setOfficeValidationErrors({});
 
-      const API = "http://localhost:5000/api";
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
       // Additional Image Validations
       const isPrimaryMode4 = formData.patientPortionPrimaryMode === 4;

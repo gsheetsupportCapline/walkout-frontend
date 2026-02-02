@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
         return {
           success: false,
           message:
-            "Cannot connect to server. Please check if backend is running on http://localhost:5000",
+            "Cannot connect to server. Please check your network connection or contact support.",
         };
       }
 
