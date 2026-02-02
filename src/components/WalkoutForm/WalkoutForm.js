@@ -10,6 +10,8 @@ import {
   clearValidationError,
   hasValidationErrors,
 } from "./walkoutValidation";
+import LoadingSpinner from "../common/LoadingSpinner";
+import Swal from "sweetalert2";
 
 // Note Item Component to fetch and display user name
 const NoteItem = ({ note, fetchUserName, formatNoteDate }) => {
@@ -174,7 +176,7 @@ const WalkoutForm = () => {
 
   // State for collapsible sections
   const [sections, setSections] = useState({
-    office: true, // Open by default
+    office: false, // Open by default
     lc3: false,
     audit: false,
   });
@@ -203,6 +205,7 @@ const WalkoutForm = () => {
     showUpdateButton: false, // Show update button only when textbox has value and changed
     lastFetchedId: "", // Track last fetched ID to hide button after fetch
   });
+  const [isFetchingRules, setIsFetchingRules] = useState(false); // Loading state for API call
 
   // State for sidebar - Timer, Status, Images
   const [sidebarData, setSidebarData] = useState({
@@ -292,6 +295,7 @@ const WalkoutForm = () => {
   const [isRegeneratingLc3Data, setIsRegeneratingLc3Data] = useState(false); // LC3 regeneration loading state
   const [lc3RegenerationDetails, setLc3RegenerationDetails] = useState(null); // LC3 AI regeneration details
   const [sessionStartTime, setSessionStartTime] = useState(null); // Track when form opens
+  const [isSubmitting, setIsSubmitting] = useState(false); // Track form submission state
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -804,6 +808,21 @@ const WalkoutForm = () => {
                 showUpdateButton: false,
                 lastFetchedId: lc3.ruleEngine.lastFetchedId || "",
               });
+
+              // Load failed rules resolved status if they exist
+              if (
+                lc3.ruleEngine.failedRules &&
+                lc3.ruleEngine.failedRules.length > 0
+              ) {
+                const failedRulesData = {};
+                lc3.ruleEngine.failedRules.forEach((rule, index) => {
+                  if (rule.resolved !== undefined && rule.resolved !== null) {
+                    failedRulesData[`failedRule${index}`] = rule.resolved;
+                  }
+                });
+                // Update formData with failed rules status
+                setFormData((prev) => ({ ...prev, ...failedRulesData }));
+              }
             }
 
             // Load all other LC3 fields into formData
@@ -1500,12 +1519,18 @@ const WalkoutForm = () => {
     }
 
     if (fieldName === "ruleEngineUniqueId") {
-      // Show update button when value changes and is not empty
-      setLc3Data((prev) => ({
-        ...prev,
-        [fieldName]: value,
-        showUpdateButton: value.trim() !== "" && value !== prev.lastFetchedId,
-      }));
+      // Show update button when:
+      // 1. Value is not empty AND
+      // 2. Value is different from last fetched ID
+      // Note: We only check lastFetchedId to ensure failed rules match the current ID
+      setLc3Data((prev) => {
+        const hasChanged = value.trim() !== "" && value !== prev.lastFetchedId;
+        return {
+          ...prev,
+          [fieldName]: value,
+          showUpdateButton: hasChanged,
+        };
+      });
     } else {
       setLc3Data((prev) => ({ ...prev, [fieldName]: value }));
     }
@@ -1518,11 +1543,19 @@ const WalkoutForm = () => {
     const office = appointmentDetails.office;
 
     if (!uniqueId) {
-      alert("Please enter Rule Engine Unique ID");
+      Swal.fire({
+        icon: "warning",
+        title: "Missing ID",
+        text: "Please enter Rule Engine Unique ID",
+        confirmButtonColor: "#f59e0b",
+        confirmButtonText: "OK",
+      });
       return;
     }
 
     // console.log("Fetching rules with:", { patientId, uniqueId, office });
+
+    setIsFetchingRules(true); // Start loading
 
     try {
       const response = await fetch(
@@ -1545,6 +1578,7 @@ const WalkoutForm = () => {
           showUpdateButton: false,
           lastFetchedId: uniqueId,
         }));
+        setIsFetchingRules(false); // Stop loading
         if (result.data.length === 0) {
           // Don't show alert, just update state
           // console.log("No failed rules found");
@@ -1556,10 +1590,19 @@ const WalkoutForm = () => {
           showUpdateButton: false,
           lastFetchedId: uniqueId,
         }));
+        setIsFetchingRules(false); // Stop loading
       }
     } catch (error) {
       console.error("Error fetching failed rules:", error);
-      alert("Failed to fetch rules. Please try again.");
+      setIsFetchingRules(false); // Stop loading on error
+
+      Swal.fire({
+        icon: "error",
+        title: "API Error",
+        text: "Failed to fetch rules. Please try again.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
     }
   };
 
@@ -2143,14 +2186,14 @@ const WalkoutForm = () => {
 
       if (hasValidationErrors(errors)) {
         setOfficeValidationErrors(errors);
-        setNotification({
-          show: true,
-          message: "Please update all the mandatory fields.",
-          type: "error",
+
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: "Please update all the mandatory fields.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
         });
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "error" });
-        }, 4000);
 
         // Scroll to office section
         const officeSection = document.querySelector('[data-section="office"]');
@@ -2181,14 +2224,13 @@ const WalkoutForm = () => {
           formData.lastFourDigitsCheckForte.length !== 4 ||
           !/^\d{4}$/.test(formData.lastFourDigitsCheckForte))
       ) {
-        setNotification({
-          show: true,
-          message: "Please update all the mandatory fields.",
-          type: "error",
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          text: "Please update all the mandatory fields.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
         });
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "error" });
-        }, 3000);
         return;
       }
 
@@ -2200,14 +2242,13 @@ const WalkoutForm = () => {
 
         if (!hasCheckImage) {
           setImageValidationErrors((prev) => ({ ...prev, checkImage: true }));
-          setNotification({
-            show: true,
-            message: "Please update all the mandatory fields.",
-            type: "error",
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: "Please update all the mandatory fields.",
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "OK",
           });
-          setTimeout(() => {
-            setNotification({ show: false, message: "", type: "error" });
-          }, 3000);
           return;
         }
       }
@@ -2220,17 +2261,19 @@ const WalkoutForm = () => {
 
         if (!hasOfficeWO) {
           setImageValidationErrors((prev) => ({ ...prev, officeWO: true }));
-          setNotification({
-            show: true,
-            message: "Please update all the mandatory fields.",
-            type: "error",
+          Swal.fire({
+            icon: "error",
+            title: "Validation Error",
+            text: "Please update all the mandatory fields.",
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "OK",
           });
-          setTimeout(() => {
-            setNotification({ show: false, message: "", type: "error" });
-          }, 3000);
           return;
         }
       }
+
+      // Show loading spinner
+      setIsSubmitting(true);
 
       // Determine walkoutStatus and pendingWith based on conditions
       let walkoutStatus = "";
@@ -2724,10 +2767,23 @@ const WalkoutForm = () => {
         }
 
         // Show success notification
-        setNotification({
-          show: true,
-          message: "Office section submitted successfully!",
-          type: "success",
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Office section submitted successfully!",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+          timer: 2000,
+          timerProgressBar: true,
+        }).then(() => {
+          // Clear form data
+          setFormData({});
+          setWalkoutId(null);
+          setIsExistingWalkout(false);
+          // Navigate back to appointments list
+          navigate(-1); // Go back to previous page
         });
 
         // Save walkoutId after first submit
@@ -2736,51 +2792,41 @@ const WalkoutForm = () => {
           setIsExistingWalkout(true);
           localStorage.setItem(`walkout_${appointmentId}`, result.data._id);
         }
-
-        // Clear form and navigate back after 2 seconds
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "success" });
-          // Clear form data
-          setFormData({});
-          setWalkoutId(null);
-          setIsExistingWalkout(false);
-          // Navigate back to appointments list
-          navigate(-1); // Go back to previous page
-        }, 2000);
       } else {
         console.error("❌ Submit failed:", result);
-        setNotification({
-          show: true,
-          message: result.message || "Failed to submit",
-          type: "error",
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text: result.message || "Failed to submit. Please try again.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
         });
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "error" });
-        }, 3000);
       }
     } catch (error) {
       console.error("Submit error:", error);
-      setNotification({
-        show: true,
-        message: "Network error. Please check your connection.",
-        type: "error",
+      setIsSubmitting(false);
+
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Network error. Please check your connection.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
       });
-      setTimeout(() => {
-        setNotification({ show: false, message: "", type: "error" });
-      }, 3000);
     }
   };
 
   const handleLC3Submit = async () => {
     if (!walkoutId) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "No walkout ID found. Please submit office section first.",
+      Swal.fire({
+        icon: "error",
+        title: "Walkout ID Missing",
+        text: "No walkout ID found. Please submit office section first.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
       });
-      setTimeout(() => {
-        setNotification({ show: false, message: "", type: "" });
-      }, 3000);
       return;
     }
 
@@ -2789,16 +2835,62 @@ const WalkoutForm = () => {
     setLc3ValidationErrors(errors);
 
     if (hasValidationErrors(errors)) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Please fill all mandatory fields highlighted in red.",
-      });
-      setTimeout(() => {
-        setNotification({ show: false, message: "", type: "" });
-      }, 3000);
+      // Check if the specific error is about pending Update button
+      if (errors.updateButtonPending) {
+        setNotification({
+          show: true,
+          message:
+            "Please click the 'Update' button to fetch failed rules before submitting.",
+          type: "error",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "" });
+        }, 4000);
+
+        // Scroll to rule engine section
+        const ruleEngineSection = document.querySelector(
+          '[data-field-id="' + FIELD_IDS.LC3_RUN_RULES + '"]',
+        );
+        if (ruleEngineSection) {
+          ruleEngineSection.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      } else {
+        setNotification({
+          show: true,
+          message: "Please fill all mandatory fields highlighted in red.",
+          type: "error",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "" });
+        }, 4000);
+
+        // Find first error field and scroll to it
+        const errorFieldNames = Object.keys(errors);
+        if (errorFieldNames.length > 0) {
+          const firstErrorName = errorFieldNames[0];
+
+          // Try to find the element by various selectors
+          let errorElement =
+            document.querySelector(`[name="${firstErrorName}"]`) ||
+            document.querySelector(`[data-field-name="${firstErrorName}"]`) ||
+            document.querySelector(`.WF-validation-error`);
+
+          if (errorElement) {
+            errorElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }
+      }
       return;
     }
+
+    // Show loading spinner
+    setIsSubmitting(true);
 
     // Stop timer and save session for LC3 team
     if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
@@ -2939,7 +3031,10 @@ const WalkoutForm = () => {
           didLc3RunRules: lc3Data.didLc3RunRules, // Number (1=Yes, 2=No)
           ruleEngineUniqueId: lc3Data.ruleEngineUniqueId, // String
           reasonForNotRun: lc3Data.reasonForNotRun, // String
-          failedRules: lc3Data.failedRules || [], // Array of {message: String, resolved: Boolean}
+          failedRules: lc3Data.failedRules.map((rule, index) => ({
+            ...rule,
+            resolved: formData[`failedRule${index}`] || null, // Radio button value (1=Yes, 2=No, etc.)
+          })), // Array of {message: String, resolved: Number}
           lastFetchedId: lc3Data.lastFetchedId, // String
         },
 
@@ -3250,10 +3345,23 @@ const WalkoutForm = () => {
           // );
         }
 
-        setNotification({
-          show: true,
-          type: "success",
-          message: result.message || "LC3 section submitted successfully!",
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: result.message || "LC3 section submitted successfully!",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+          timer: 2000,
+          timerProgressBar: true,
+        }).then(() => {
+          // Clear form data
+          setFormData({});
+          setWalkoutId(null);
+          setIsExistingWalkout(false);
+          // Navigate back to appointments list
+          navigate(-1); // Go back to previous page
         });
 
         // Clear the new note field after successful submission
@@ -3269,30 +3377,29 @@ const WalkoutForm = () => {
             }));
           }
         }
-
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "" });
-        }, 3000);
       } else {
-        setNotification({
-          show: true,
-          type: "error",
-          message: result.message || "Failed to submit LC3 section",
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text:
+            result.message || "Failed to submit LC3 section. Please try again.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
         });
-        setTimeout(() => {
-          setNotification({ show: false, message: "", type: "" });
-        }, 3000);
       }
     } catch (error) {
       console.error("❌ Error submitting LC3 section:", error);
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Error submitting LC3 section. Please try again.",
+      setIsSubmitting(false);
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error submitting LC3 section. Please try again.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
       });
-      setTimeout(() => {
-        setNotification({ show: false, message: "", type: "" });
-      }, 3000);
     }
   };
 
@@ -3354,6 +3461,9 @@ const WalkoutForm = () => {
 
   return (
     <div className="WF-walkout-form-container">
+      {/* Loading Spinner Overlay */}
+      {isSubmitting && <LoadingSpinner message="Submitting..." />}
+
       {/* Success/Error Notification */}
       {notification.show && (
         <div
@@ -4688,14 +4798,28 @@ const WalkoutForm = () => {
                                       )
                                     }
                                     placeholder="Enter Unique ID"
+                                    disabled={isFetchingRules}
                                   />
-                                  {lc3Data.showUpdateButton && (
+                                  {(lc3Data.showUpdateButton ||
+                                    isFetchingRules) && (
                                     <button
                                       type="button"
-                                      className="WF-update-button"
+                                      className={`WF-update-button ${
+                                        lc3ValidationErrors.updateButtonPending
+                                          ? "WF-validation-error"
+                                          : ""
+                                      }`}
                                       onClick={fetchFailedRules}
+                                      disabled={isFetchingRules}
                                     >
-                                      Update
+                                      {isFetchingRules ? (
+                                        <span className="WF-button-loading">
+                                          <span className="WF-spinner-small"></span>
+                                          Loading...
+                                        </span>
+                                      ) : (
+                                        "Update"
+                                      )}
                                     </button>
                                   )}
                                 </div>
@@ -4754,15 +4878,16 @@ const WalkoutForm = () => {
                       </div>
                     </div>
 
-                    {/* Failed Rules Section - Only show when Yes is selected and API has been called */}
+                    {/* Failed Rules Section - Show when Yes is selected and failedRules exist */}
                     {(() => {
                       const buttons = getRadioButtons(FIELD_IDS.LC3_RUN_RULES);
                       const yesButton = buttons.find(
                         (btn) => btn.name === "Yes",
                       );
+
                       return (
                         lc3Data.didLc3RunRules === yesButton?.incrementalId &&
-                        lc3Data.lastFetchedId && (
+                        lc3Data.failedRules !== undefined && (
                           <div className="WF-failed-rules-section">
                             {lc3Data.failedRules.length === 0 ? (
                               <p className="WF-no-failed-rules-message">
@@ -4787,7 +4912,13 @@ const WalkoutForm = () => {
                                         }}
                                       />
                                       <div
-                                        className="WF-button-group"
+                                        className={`WF-button-group ${
+                                          lc3ValidationErrors[
+                                            `failedRule${index}`
+                                          ]
+                                            ? "WF-validation-error"
+                                            : ""
+                                        }`}
                                         data-field-id={
                                           FIELD_IDS.LC3_FAILED_RULES_RESOLVED
                                         }

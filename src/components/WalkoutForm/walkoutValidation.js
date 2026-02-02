@@ -22,6 +22,19 @@ export const validateLC3Section = (lc3Data, formData) => {
       if (!lc3Data.ruleEngineUniqueId || !lc3Data.ruleEngineUniqueId.trim()) {
         errors.ruleEngineUniqueId = true;
       }
+      // Check if Update button is visible - means user has changed the ID but hasn't fetched rules yet
+      if (lc3Data.showUpdateButton === true) {
+        errors.updateButtonPending = true; // New error to track pending update
+      }
+      // Check if failed rules exist and all have radio button selected
+      if (lc3Data.failedRules && lc3Data.failedRules.length > 0) {
+        for (let i = 0; i < lc3Data.failedRules.length; i++) {
+          const fieldName = `failedRule${i}`;
+          if (!formData[fieldName]) {
+            errors[fieldName] = true;
+          }
+        }
+      }
     } else if (lc3Data.didLc3RunRules === 2) {
       if (!lc3Data.reasonForNotRun) {
         errors.reasonForNotRun = true;
