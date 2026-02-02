@@ -22,7 +22,6 @@ export async function getGeminiResponse(providerText, hygienistText) {
   try {
     const response = await fetch(`${API_URL}/ai/check-notes`, {
       method: "POST",
-      credentials: "include", // Include cookies for session
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`, // Auth token

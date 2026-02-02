@@ -5,7 +5,7 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // Enable sending cookies with requests
+  withCredentials: false, // Changed to false for production cross-origin requests
   headers: {
     "Content-Type": "application/json",
   },
@@ -92,7 +92,6 @@ export const fetchWithAuth = async (url, options = {}) => {
   try {
     const response = await fetch(url, {
       ...options,
-      credentials: "include", // Enable sending cookies with fetch requests
       headers,
     });
 
