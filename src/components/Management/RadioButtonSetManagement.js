@@ -165,7 +165,7 @@ const RadioButtonSetManagement = () => {
     try {
       const response = await api.post(
         "/radio-buttons/button-sets",
-        setFormData
+        setFormData,
       );
       if (response.data.success) {
         showSuccess("Button set created successfully");
@@ -183,7 +183,7 @@ const RadioButtonSetManagement = () => {
       const setId = selectedSet._id;
       const response = await api.put(
         `/radio-buttons/button-sets/${setId}`,
-        setFormData
+        setFormData,
       );
       if (response.data.success) {
         showSuccess("Button set updated successfully");
@@ -212,7 +212,7 @@ const RadioButtonSetManagement = () => {
     try {
       const response = await api.post(
         `/radio-buttons/button-sets/${selectedSet._id}/buttons`,
-        buttonFormData
+        buttonFormData,
       );
       if (response.data.success) {
         showSuccess("Button added successfully");
@@ -230,7 +230,7 @@ const RadioButtonSetManagement = () => {
     try {
       const response = await api.put(
         `/radio-buttons/button-sets/${selectedSet._id}/buttons/${editingButton._id}`,
-        buttonFormData
+        buttonFormData,
       );
       if (response.data.success) {
         showSuccess("Button updated successfully");
@@ -278,7 +278,7 @@ const RadioButtonSetManagement = () => {
           `/radio-buttons/button-sets/${deleteTarget.id}`,
           {
             data: { deletionReason },
-          }
+          },
         );
         if (response.data.success) {
           showSuccess("Button set archived successfully");
@@ -294,7 +294,7 @@ const RadioButtonSetManagement = () => {
       } else if (deleteTarget.type === "button") {
         const response = await api.delete(
           `/radio-buttons/button-sets/${selectedSet._id}/buttons/${deleteTarget.id}`,
-          { data: { deletionReason } }
+          { data: { deletionReason } },
         );
         if (response.data.success) {
           showSuccess("Button archived successfully");
@@ -359,7 +359,7 @@ const RadioButtonSetManagement = () => {
     try {
       const response = await api.post(
         `/radio-buttons/button-sets/${selectedSet._id}/buttons/bulk`,
-        { buttons: validButtons }
+        { buttons: validButtons },
       );
       if (response.data.success) {
         showSuccess(`${validButtons.length} button(s) added successfully`);
@@ -375,7 +375,7 @@ const RadioButtonSetManagement = () => {
   const copyToClipboard = (text, label = "ID") => {
     navigator.clipboard.writeText(text).then(
       () => showSuccess(`${label} copied to clipboard!`),
-      () => showError(`Failed to copy ${label}`)
+      () => showError(`Failed to copy ${label}`),
     );
   };
 
@@ -401,13 +401,13 @@ const RadioButtonSetManagement = () => {
           if (otherSet.usedIn && otherSet.usedIn.includes(fieldId)) {
             // Remove the field ID from this set
             const updatedReferences = otherSet.usedIn.filter(
-              (id) => id !== fieldId
+              (id) => id !== fieldId,
             );
             await api.put(
               `/radio-buttons/button-sets/${otherSet._id}/used-in`,
               {
                 references: updatedReferences,
-              }
+              },
             );
             console.log(`Removed ${fieldId} from set: ${otherSet.name}`);
           }
@@ -422,7 +422,7 @@ const RadioButtonSetManagement = () => {
       fetchButtonSets(); // Refresh the list
     } catch (err) {
       showError(
-        err.response?.data?.message || "Failed to update field mapping"
+        err.response?.data?.message || "Failed to update field mapping",
       );
     }
   };
@@ -655,49 +655,60 @@ const RadioButtonSetManagement = () => {
 
       {showSetModal && (
         <div className="modal-overlay" onClick={closeSetModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>{selectedSet ? "Edit Button Set" : "Create Button Set"}</h3>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedSet ? "Edit Button Set" : "Create Button Set"}</h2>
+              <button className="modal-close" onClick={closeSetModal}>
+                ×
+              </button>
+            </div>
             <form onSubmit={selectedSet ? handleUpdateSet : handleCreateSet}>
-              <div className="form-group">
-                <label>Name *</label>
-                <input
-                  type="text"
-                  value={setFormData.name}
-                  onChange={(e) =>
-                    setSetFormData({ ...setFormData, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={setFormData.description}
-                  onChange={(e) =>
-                    setSetFormData({
-                      ...setFormData,
-                      description: e.target.value,
-                    })
-                  }
-                  rows="3"
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="setName">Name *</label>
                   <input
-                    type="checkbox"
-                    checked={setFormData.isActive}
+                    type="text"
+                    id="setName"
+                    name="name"
+                    value={setFormData.name}
+                    onChange={(e) =>
+                      setSetFormData({ ...setFormData, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="setDescription">Description</label>
+                  <textarea
+                    id="setDescription"
+                    name="description"
+                    value={setFormData.description}
                     onChange={(e) =>
                       setSetFormData({
                         ...setFormData,
-                        isActive: e.target.checked,
+                        description: e.target.value,
                       })
                     }
+                    rows="3"
                   />
-                  Active
-                </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={setFormData.isActive}
+                      onChange={(e) =>
+                        setSetFormData({
+                          ...setFormData,
+                          isActive: e.target.checked,
+                        })
+                      }
+                    />
+                    Active
+                  </label>
+                </div>
               </div>
-              <div className="modal-actions">
+              <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -719,60 +730,72 @@ const RadioButtonSetManagement = () => {
           className="modal-overlay"
           onClick={() => setShowButtonModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>
-              {editingButton
-                ? "Edit Button"
-                : `Add Button to ${selectedSet?.name}`}
-            </h3>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                {editingButton
+                  ? "Edit Button"
+                  : `Add Button to ${selectedSet?.name}`}
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowButtonModal(false)}
+              >
+                ×
+              </button>
+            </div>
             <form
               onSubmit={editingButton ? handleUpdateButton : handleAddButton}
             >
-              <div className="form-group">
-                <label>Button Name *</label>
-                <input
-                  type="text"
-                  value={buttonFormData.name}
-                  onChange={(e) =>
-                    setButtonFormData({
-                      ...buttonFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="buttonName">Button Name *</label>
                   <input
-                    type="checkbox"
-                    checked={buttonFormData.visibility}
+                    type="text"
+                    id="buttonName"
+                    name="name"
+                    value={buttonFormData.name}
                     onChange={(e) =>
                       setButtonFormData({
                         ...buttonFormData,
-                        visibility: e.target.checked,
+                        name: e.target.value,
                       })
                     }
+                    required
                   />
-                  Visible
-                </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={buttonFormData.visibility}
+                      onChange={(e) =>
+                        setButtonFormData({
+                          ...buttonFormData,
+                          visibility: e.target.checked,
+                        })
+                      }
+                    />
+                    Visible
+                  </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={buttonFormData.isActive}
+                      onChange={(e) =>
+                        setButtonFormData({
+                          ...buttonFormData,
+                          isActive: e.target.checked,
+                        })
+                      }
+                    />
+                    Active
+                  </label>
+                </div>
               </div>
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={buttonFormData.isActive}
-                    onChange={(e) =>
-                      setButtonFormData({
-                        ...buttonFormData,
-                        isActive: e.target.checked,
-                      })
-                    }
-                  />
-                  Active
-                </label>
-              </div>
-              <div className="modal-actions">
+              <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -795,95 +818,105 @@ const RadioButtonSetManagement = () => {
           onClick={() => setShowBulkAddModal(false)}
         >
           <div
-            className="modal-content modal-large"
+            className="modal modal-large"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Bulk Add Buttons to {selectedSet?.name}</h3>
-            <div className="bulk-add-container">
-              <div className="bulk-table-wrapper">
-                <table className="bulk-table">
-                  <thead>
-                    <tr>
-                      <th>Button Name *</th>
-                      <th>Visibility</th>
-                      <th>Active</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bulkButtons.map((button, index) => (
-                      <tr key={index}>
-                        <td>
-                          <input
-                            type="text"
-                            value={button.name}
-                            onChange={(e) =>
-                              handleBulkButtonChange(
-                                index,
-                                "name",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter button name"
-                            className="bulk-input"
-                          />
-                        </td>
-                        <td>
-                          <select
-                            value={button.visibility}
-                            onChange={(e) =>
-                              handleBulkButtonChange(
-                                index,
-                                "visibility",
-                                e.target.value === "true"
-                              )
-                            }
-                            className="bulk-select"
-                          >
-                            <option value="true">Visible</option>
-                            <option value="false">Hidden</option>
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            value={button.isActive}
-                            onChange={(e) =>
-                              handleBulkButtonChange(
-                                index,
-                                "isActive",
-                                e.target.value === "true"
-                              )
-                            }
-                            className="bulk-select"
-                          >
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                          </select>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-danger"
-                            onClick={() => handleRemoveBulkRow(index)}
-                            disabled={bulkButtons.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="modal-header">
+              <h2>Bulk Add Buttons to {selectedSet?.name}</h2>
               <button
-                type="button"
-                className="btn btn-secondary btn-add-row"
-                onClick={handleAddBulkRow}
+                className="modal-close"
+                onClick={() => setShowBulkAddModal(false)}
               >
-                + Add Row
+                ×
               </button>
             </div>
-            <div className="modal-actions">
+            <div className="modal-body">
+              <div className="bulk-add-container">
+                <div className="bulk-table-wrapper">
+                  <table className="bulk-table">
+                    <thead>
+                      <tr>
+                        <th>Button Name *</th>
+                        <th>Visibility</th>
+                        <th>Active</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkButtons.map((button, index) => (
+                        <tr key={index}>
+                          <td>
+                            <input
+                              type="text"
+                              value={button.name}
+                              onChange={(e) =>
+                                handleBulkButtonChange(
+                                  index,
+                                  "name",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Enter button name"
+                              className="bulk-input"
+                            />
+                          </td>
+                          <td>
+                            <select
+                              value={button.visibility}
+                              onChange={(e) =>
+                                handleBulkButtonChange(
+                                  index,
+                                  "visibility",
+                                  e.target.value === "true",
+                                )
+                              }
+                              className="bulk-select"
+                            >
+                              <option value="true">Visible</option>
+                              <option value="false">Hidden</option>
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={button.isActive}
+                              onChange={(e) =>
+                                handleBulkButtonChange(
+                                  index,
+                                  "isActive",
+                                  e.target.value === "true",
+                                )
+                              }
+                              className="bulk-select"
+                            >
+                              <option value="true">Active</option>
+                              <option value="false">Inactive</option>
+                            </select>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-danger"
+                              onClick={() => handleRemoveBulkRow(index)}
+                              disabled={bulkButtons.length === 1}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-add-row"
+                  onClick={handleAddBulkRow}
+                >
+                  + Add Row
+                </button>
+              </div>
+            </div>
+            <div className="modal-footer">
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -908,24 +941,36 @@ const RadioButtonSetManagement = () => {
           className="modal-overlay"
           onClick={() => setShowDeleteModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Confirm Deletion</h3>
-            <p className="warning-text">
-              {deleteTarget?.type === "set"
-                ? "This will archive the entire button set and all its buttons."
-                : "This will archive the selected button."}
-            </p>
-            <div className="form-group">
-              <label>Reason for Deletion *</label>
-              <textarea
-                value={deletionReason}
-                onChange={(e) => setDeletionReason(e.target.value)}
-                placeholder="Please provide a reason for archiving this item..."
-                rows="4"
-                required
-              />
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Deletion</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                ×
+              </button>
             </div>
-            <div className="modal-actions">
+            <div className="modal-body">
+              <p className="warning-text">
+                {deleteTarget?.type === "set"
+                  ? "This will archive the entire button set and all its buttons."
+                  : "This will archive the selected button."}
+              </p>
+              <div className="form-group">
+                <label htmlFor="deletionReason">Reason for Deletion *</label>
+                <textarea
+                  id="deletionReason"
+                  name="deletionReason"
+                  value={deletionReason}
+                  onChange={(e) => setDeletionReason(e.target.value)}
+                  placeholder="Please provide a reason for archiving this item..."
+                  rows="4"
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
               <button
                 type="button"
                 className="btn btn-secondary"

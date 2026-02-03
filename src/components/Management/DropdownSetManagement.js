@@ -643,49 +643,62 @@ const DropdownSetManagement = () => {
 
       {showSetModal && (
         <div className="modal-overlay" onClick={closeSetModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>{selectedSet ? "Edit Dropdown Set" : "Create Dropdown Set"}</h3>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                {selectedSet ? "Edit Dropdown Set" : "Create Dropdown Set"}
+              </h2>
+              <button className="modal-close" onClick={closeSetModal}>
+                ×
+              </button>
+            </div>
             <form onSubmit={selectedSet ? handleUpdateSet : handleCreateSet}>
-              <div className="form-group">
-                <label>Name *</label>
-                <input
-                  type="text"
-                  value={setFormData.name}
-                  onChange={(e) =>
-                    setSetFormData({ ...setFormData, name: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={setFormData.description}
-                  onChange={(e) =>
-                    setSetFormData({
-                      ...setFormData,
-                      description: e.target.value,
-                    })
-                  }
-                  rows="3"
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="setName">Name *</label>
                   <input
-                    type="checkbox"
-                    checked={setFormData.isActive}
+                    type="text"
+                    id="setName"
+                    name="name"
+                    value={setFormData.name}
+                    onChange={(e) =>
+                      setSetFormData({ ...setFormData, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="setDescription">Description</label>
+                  <textarea
+                    id="setDescription"
+                    name="description"
+                    value={setFormData.description}
                     onChange={(e) =>
                       setSetFormData({
                         ...setFormData,
-                        isActive: e.target.checked,
+                        description: e.target.value,
                       })
                     }
+                    rows="3"
                   />
-                  Active
-                </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={setFormData.isActive}
+                      onChange={(e) =>
+                        setSetFormData({
+                          ...setFormData,
+                          isActive: e.target.checked,
+                        })
+                      }
+                    />
+                    Active
+                  </label>
+                </div>
               </div>
-              <div className="modal-actions">
+              <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -707,60 +720,72 @@ const DropdownSetManagement = () => {
           className="modal-overlay"
           onClick={() => setShowOptionModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>
-              {editingOption
-                ? "Edit Option"
-                : `Add Option to ${selectedSet?.name}`}
-            </h3>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                {editingOption
+                  ? "Edit Option"
+                  : `Add Option to ${selectedSet?.name}`}
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowOptionModal(false)}
+              >
+                ×
+              </button>
+            </div>
             <form
               onSubmit={editingOption ? handleUpdateOption : handleAddOption}
             >
-              <div className="form-group">
-                <label>Option Name *</label>
-                <input
-                  type="text"
-                  value={optionFormData.name}
-                  onChange={(e) =>
-                    setOptionFormData({
-                      ...optionFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="optionName">Option Name *</label>
                   <input
-                    type="checkbox"
-                    checked={optionFormData.visibility}
+                    type="text"
+                    id="optionName"
+                    name="name"
+                    value={optionFormData.name}
                     onChange={(e) =>
                       setOptionFormData({
                         ...optionFormData,
-                        visibility: e.target.checked,
+                        name: e.target.value,
                       })
                     }
+                    required
                   />
-                  Visible
-                </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={optionFormData.visibility}
+                      onChange={(e) =>
+                        setOptionFormData({
+                          ...optionFormData,
+                          visibility: e.target.checked,
+                        })
+                      }
+                    />
+                    Visible
+                  </label>
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={optionFormData.isActive}
+                      onChange={(e) =>
+                        setOptionFormData({
+                          ...optionFormData,
+                          isActive: e.target.checked,
+                        })
+                      }
+                    />
+                    Active
+                  </label>
+                </div>
               </div>
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={optionFormData.isActive}
-                    onChange={(e) =>
-                      setOptionFormData({
-                        ...optionFormData,
-                        isActive: e.target.checked,
-                      })
-                    }
-                  />
-                  Active
-                </label>
-              </div>
-              <div className="modal-actions">
+              <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -783,95 +808,105 @@ const DropdownSetManagement = () => {
           onClick={() => setShowBulkAddModal(false)}
         >
           <div
-            className="modal-content modal-large"
+            className="modal modal-large"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Bulk Add Options to {selectedSet?.name}</h3>
-            <div className="bulk-add-container">
-              <div className="bulk-table-wrapper">
-                <table className="bulk-table">
-                  <thead>
-                    <tr>
-                      <th>Option Name *</th>
-                      <th>Visibility</th>
-                      <th>Active</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bulkOptions.map((option, index) => (
-                      <tr key={index}>
-                        <td>
-                          <input
-                            type="text"
-                            value={option.name}
-                            onChange={(e) =>
-                              handleBulkOptionChange(
-                                index,
-                                "name",
-                                e.target.value,
-                              )
-                            }
-                            placeholder="Enter option name"
-                            className="bulk-input"
-                          />
-                        </td>
-                        <td>
-                          <select
-                            value={option.visibility}
-                            onChange={(e) =>
-                              handleBulkOptionChange(
-                                index,
-                                "visibility",
-                                e.target.value === "true",
-                              )
-                            }
-                            className="bulk-select"
-                          >
-                            <option value="true">Visible</option>
-                            <option value="false">Hidden</option>
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            value={option.isActive}
-                            onChange={(e) =>
-                              handleBulkOptionChange(
-                                index,
-                                "isActive",
-                                e.target.value === "true",
-                              )
-                            }
-                            className="bulk-select"
-                          >
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                          </select>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-danger"
-                            onClick={() => handleRemoveBulkRow(index)}
-                            disabled={bulkOptions.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="modal-header">
+              <h2>Bulk Add Options to {selectedSet?.name}</h2>
               <button
-                type="button"
-                className="btn btn-secondary btn-add-row"
-                onClick={handleAddBulkRow}
+                className="modal-close"
+                onClick={() => setShowBulkAddModal(false)}
               >
-                + Add Row
+                ×
               </button>
             </div>
-            <div className="modal-actions">
+            <div className="modal-body">
+              <div className="bulk-add-container">
+                <div className="bulk-table-wrapper">
+                  <table className="bulk-table">
+                    <thead>
+                      <tr>
+                        <th>Option Name *</th>
+                        <th>Visibility</th>
+                        <th>Active</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkOptions.map((option, index) => (
+                        <tr key={index}>
+                          <td>
+                            <input
+                              type="text"
+                              value={option.name}
+                              onChange={(e) =>
+                                handleBulkOptionChange(
+                                  index,
+                                  "name",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Enter option name"
+                              className="bulk-input"
+                            />
+                          </td>
+                          <td>
+                            <select
+                              value={option.visibility}
+                              onChange={(e) =>
+                                handleBulkOptionChange(
+                                  index,
+                                  "visibility",
+                                  e.target.value === "true",
+                                )
+                              }
+                              className="bulk-select"
+                            >
+                              <option value="true">Visible</option>
+                              <option value="false">Hidden</option>
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={option.isActive}
+                              onChange={(e) =>
+                                handleBulkOptionChange(
+                                  index,
+                                  "isActive",
+                                  e.target.value === "true",
+                                )
+                              }
+                              className="bulk-select"
+                            >
+                              <option value="true">Active</option>
+                              <option value="false">Inactive</option>
+                            </select>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-xs btn-danger"
+                              onClick={() => handleRemoveBulkRow(index)}
+                              disabled={bulkOptions.length === 1}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-add-row"
+                  onClick={handleAddBulkRow}
+                >
+                  + Add Row
+                </button>
+              </div>
+            </div>
+            <div className="modal-footer">
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -896,24 +931,36 @@ const DropdownSetManagement = () => {
           className="modal-overlay"
           onClick={() => setShowDeleteModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Confirm Deletion</h3>
-            <p className="warning-text">
-              {deleteTarget?.type === "set"
-                ? "This will archive the entire dropdown set and all its options."
-                : "This will archive the selected option."}
-            </p>
-            <div className="form-group">
-              <label>Reason for Deletion *</label>
-              <textarea
-                value={deletionReason}
-                onChange={(e) => setDeletionReason(e.target.value)}
-                placeholder="Please provide a reason for archiving this item..."
-                rows="4"
-                required
-              />
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Deletion</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                ×
+              </button>
             </div>
-            <div className="modal-actions">
+            <div className="modal-body">
+              <p className="warning-text">
+                {deleteTarget?.type === "set"
+                  ? "This will archive the entire dropdown set and all its options."
+                  : "This will archive the selected option."}
+              </p>
+              <div className="form-group">
+                <label htmlFor="deletionReason">Reason for Deletion *</label>
+                <textarea
+                  id="deletionReason"
+                  name="deletionReason"
+                  value={deletionReason}
+                  onChange={(e) => setDeletionReason(e.target.value)}
+                  placeholder="Please provide a reason for archiving this item..."
+                  rows="4"
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
               <button
                 type="button"
                 className="btn btn-secondary"

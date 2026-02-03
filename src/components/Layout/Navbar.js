@@ -30,7 +30,7 @@ const Navbar = () => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         if (
           showWalkInModal &&
-          event.target.classList.contains("modal-overlay")
+          event.target.classList.contains("walkin-modal-overlay")
         ) {
           setShowWalkInModal(false);
         }
@@ -39,12 +39,6 @@ const Navbar = () => {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showWalkInModal]);
-
-  useEffect(() => {
-    if (showWalkInModal) {
-      fetchOffices();
-    }
   }, [showWalkInModal]);
 
   const fetchOffices = async () => {
@@ -60,6 +54,13 @@ const Navbar = () => {
       showError("Failed to fetch offices");
     }
   };
+
+  useEffect(() => {
+    if (showWalkInModal) {
+      fetchOffices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWalkInModal]);
 
   const handleWalkInChange = (e) => {
     setWalkInData({
@@ -206,64 +207,81 @@ const Navbar = () => {
 
       {/* Walk-in Modal */}
       {showWalkInModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" ref={modalRef}>
-            <div className="modal-header">
-              <h2>Create Walk-in/Unscheduled Appointment</h2>
+        <div className="walkin-modal-overlay" id="walkinModalOverlay">
+          <div className="walkin-modal-content" ref={modalRef}>
+            <div className="walkin-modal-header">
+              <h2 className="walkin-modal-title">
+                Create Walk-in/Unscheduled Appointment
+              </h2>
               <button
-                className="modal-close"
+                className="walkin-modal-close"
                 onClick={() => setShowWalkInModal(false)}
               >
                 ×
               </button>
             </div>
-            <form onSubmit={handleWalkInSubmit} className="modal-form">
-              <div className="form-group">
-                <label htmlFor="patientId">Patient ID *</label>
+            <form onSubmit={handleWalkInSubmit} className="walkin-modal-form">
+              <div className="walkin-form-group">
+                <label htmlFor="walkinPatientId" className="walkin-form-label">
+                  Patient ID *
+                </label>
                 <input
                   type="text"
-                  id="patientId"
+                  id="walkinPatientId"
                   name="patientId"
                   value={walkInData.patientId}
                   onChange={handleWalkInChange}
                   required
                   placeholder="Enter patient ID"
+                  className="walkin-form-input"
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="patientName">Patient Name *</label>
+              <div className="walkin-form-group">
+                <label
+                  htmlFor="walkinPatientName"
+                  className="walkin-form-label"
+                >
+                  Patient Name *
+                </label>
                 <input
                   type="text"
-                  id="patientName"
+                  id="walkinPatientName"
                   name="patientName"
                   value={walkInData.patientName}
                   onChange={handleWalkInChange}
                   required
                   placeholder="Enter patient name"
+                  className="walkin-form-input"
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="dos">Date of Service *</label>
+              <div className="walkin-form-group">
+                <label htmlFor="walkinDos" className="walkin-form-label">
+                  Date of Service *
+                </label>
                 <input
                   type="date"
-                  id="dos"
+                  id="walkinDos"
                   name="dos"
                   value={walkInData.dos}
                   onChange={handleWalkInChange}
                   required
+                  className="walkin-form-input"
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="officeName">Office Name *</label>
+              <div className="walkin-form-group">
+                <label htmlFor="walkinOfficeName" className="walkin-form-label">
+                  Office Name *
+                </label>
                 <select
-                  id="officeName"
+                  id="walkinOfficeName"
                   name="officeName"
                   value={walkInData.officeName}
                   onChange={handleWalkInChange}
                   required
+                  className="walkin-form-select"
                 >
                   <option value="">-- Select Office --</option>
                   {offices.map((office) => (
@@ -274,17 +292,17 @@ const Navbar = () => {
                 </select>
               </div>
 
-              <div className="modal-actions">
+              <div className="walkin-modal-actions">
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="walkin-btn walkin-btn-primary"
                   disabled={loading}
                 >
                   {loading ? "Creating..." : "Create Appointment"}
                 </button>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="walkin-btn walkin-btn-secondary"
                   onClick={() => setShowWalkInModal(false)}
                   disabled={loading}
                 >
