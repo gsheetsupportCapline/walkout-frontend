@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "./Auth.css";
@@ -12,7 +12,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+
+  // Redirect to appointments if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/appointments");
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     setFormData({
