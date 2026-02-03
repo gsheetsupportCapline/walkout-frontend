@@ -536,7 +536,44 @@ const Appointments = () => {
         const selectedValues = columnFilters[filterKey];
         if (selectedValues && selectedValues.length > 0) {
           filteredData = filteredData.filter((appt) => {
-            const value = appt[filterKey];
+            let value;
+
+            // Handle nested walkout object properties (same as in main filter logic)
+            if (filterKey === "walkout-status") {
+              value = appt.walkout?.walkoutStatus;
+            } else if (filterKey === "pending-with") {
+              value = appt.walkout?.pendingWith;
+            } else if (filterKey === "on-hold-reasons") {
+              // For array values, check if any selected value is in the array
+              if (
+                appt.walkout?.onHoldReasons &&
+                Array.isArray(appt.walkout.onHoldReasons)
+              ) {
+                return appt.walkout.onHoldReasons.some((reason) =>
+                  selectedValues.includes(reason),
+                );
+              }
+              return false;
+            } else if (filterKey === "pending-checks") {
+              // For pending checks status
+              if (appt.walkout?.pendingChecks) {
+                const checks = appt.walkout.pendingChecks;
+                const pendingCount = Object.values(checks).filter(
+                  (v) => v === 2,
+                ).length;
+                const completeCount = Object.values(checks).filter(
+                  (v) => v === 1,
+                ).length;
+                if (pendingCount > 0) {
+                  value = `${pendingCount} Pending`;
+                } else if (completeCount > 0) {
+                  value = "Complete";
+                }
+              }
+            } else {
+              value = appt[filterKey];
+            }
+
             return selectedValues.includes(value);
           });
         }
