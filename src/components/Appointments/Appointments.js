@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import api from "../../utils/api";
 import Navbar from "../Layout/Navbar";
+import Swal from "sweetalert2";
 import "./Appointments.css";
 
 const Appointments = () => {
@@ -253,6 +254,80 @@ const Appointments = () => {
     },
     [filters.officeName, filters.patientId, showError, currentPage, limit],
   );
+
+  // Handle No Show/Cancel button click
+  const handleNoShowCancel = async (appointment, e) => {
+    e.stopPropagation(); // Prevent row click
+
+    try {
+      const API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
+      const formData = new FormData();
+      formData.append("formRefId", appointment._id);
+      formData.append("appointmentId", appointment._id);
+      formData.append("patientCame", 2); // 2 = No/Cancel
+      formData.append("walkoutStatus", "No Show/Cancel");
+      formData.append("pendingWith", "No Show/Cancel");
+
+      // Add appointmentInfo (Required)
+      formData.append(
+        "appointmentInfo",
+        JSON.stringify({
+          patientId: appointment["patient-id"] || "",
+          dateOfService: appointment.dos || appointment["dos"] || "",
+          officeName: filters.officeName || "",
+        }),
+      );
+
+      const response = await fetch(`${API_URL}/walkouts/submit-office`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Refresh appointments list
+        if (searchType === "dateRange") {
+          await fetchAppointments();
+        } else {
+          await fetchAppointmentsByPatient();
+        }
+
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Appointment marked as No Show/Cancel successfully!",
+          confirmButtonColor: "#10b981",
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: result.message || "Failed to mark as No Show/Cancel",
+          confirmButtonColor: "#dc2626",
+          timer: 1500,
+          timerProgressBar: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error marking No Show/Cancel:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to mark as No Show/Cancel. Please try again.",
+        confirmButtonColor: "#dc2626",
+        timer: 1500,
+        timerProgressBar: true,
+      });
+    }
+  };
 
   // Load offices on mount
   useEffect(() => {
@@ -1586,14 +1661,7 @@ const Appointments = () => {
                           "Walkout not Submitted to LC3" && (
                           <button
                             className="btn-action-no-show"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // API integration will be added later
-                              console.log(
-                                "No Show/Cancel clicked for:",
-                                appt._id,
-                              );
-                            }}
+                            onClick={(e) => handleNoShowCancel(appt, e)}
                           >
                             No Show/Cancel
                           </button>
