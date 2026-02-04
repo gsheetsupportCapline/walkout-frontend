@@ -446,6 +446,40 @@
 /* Table container positioning */
 .table-container {
   position: relative;
+  overflow-x: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Data Table Styling */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.data-table th {
+  padding: 0.75rem;
+  vertical-align: middle;
+  background: #34495e;
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Pending Checks Boxes */
