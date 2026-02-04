@@ -67,6 +67,10 @@
   font-weight: 500;
   border-radius: 6px;
   transition: all 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .navbar-link:hover {

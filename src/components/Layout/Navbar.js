@@ -135,14 +135,17 @@ const Navbar = () => {
                 <span className="nav-icon">📅</span>
                 Appointments
               </Link>
-              <Link to="/dashboard" className="navbar-link">
+              <Link
+                to="/dashboard"
+                className="navbar-link"
+                style={{ display: "none" }}
+              >
                 <span className="nav-icon">📊</span>
                 Dashboards
               </Link>
               <button
                 className="navbar-link"
                 onClick={() => setShowWalkInModal(true)}
-                style={{ background: "none", border: "none" }}
               >
                 <span className="nav-icon">➕</span>
                 Walk-in/Unscheduled
