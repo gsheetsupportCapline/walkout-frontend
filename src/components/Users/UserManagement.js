@@ -49,7 +49,7 @@ const UserManagement = () => {
         showSuccess(
           `User ${
             newStatus === "active" ? "activated" : "deactivated"
-          } successfully`
+          } successfully`,
         );
         fetchUsers();
       }
@@ -181,7 +181,7 @@ const UserManagement = () => {
                     )}
                   </td>
                   <td>
-                    {isSuperAdmin() ? (
+                    {isSuperAdmin() || currentUser?.role === "admin" ? (
                       <select
                         className="inline-select"
                         value={

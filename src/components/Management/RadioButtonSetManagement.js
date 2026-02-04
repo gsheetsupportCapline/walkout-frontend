@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import "./Management.css";
 import "./RadioButtonSetManagement.css";
@@ -91,6 +92,7 @@ const FIELD_LABELS = {
 
 const RadioButtonSetManagement = () => {
   const { showSuccess, showError } = useToast();
+  const { user } = useAuth();
 
   const [buttonSets, setButtonSets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -434,16 +436,18 @@ const RadioButtonSetManagement = () => {
           <h1>Radio Button Set Management</h1>
           <p>Manage radio button sets and their buttons</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setSelectedSet(null);
-            setSetFormData({ name: "", description: "", isActive: true });
-            setShowSetModal(true);
-          }}
-        >
-          + Create New Set
-        </button>
+        {user?.role === "superAdmin" && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setSelectedSet(null);
+              setSetFormData({ name: "", description: "", isActive: true });
+              setShowSetModal(true);
+            }}
+          >
+            + Create New Set
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -454,9 +458,9 @@ const RadioButtonSetManagement = () => {
             <thead>
               <tr>
                 <th>Set Name</th>
-                <th>Set ID</th>
+                {user?.role === "superAdmin" && <th>Set ID</th>}
                 <th>Buttons Count</th>
-                <th>Used In Field</th>
+                {user?.role === "superAdmin" && <th>Used In Field</th>}
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -464,7 +468,10 @@ const RadioButtonSetManagement = () => {
             <tbody>
               {buttonSets.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="no-data">
+                  <td
+                    colSpan={user?.role === "superAdmin" ? "6" : "4"}
+                    className="no-data"
+                  >
                     No button sets found
                   </td>
                 </tr>
@@ -474,35 +481,39 @@ const RadioButtonSetManagement = () => {
                     <td>
                       <strong>{set.name}</strong>
                     </td>
-                    <td>
-                      <span
-                        className="id-cell"
-                        onClick={() => copyToClipboard(set._id, "Set ID")}
-                        title={`Click to copy: ${set._id}`}
-                      >
-                        {truncateId(set._id)}
-                      </span>
-                    </td>
+                    {user?.role === "superAdmin" && (
+                      <td>
+                        <span
+                          className="id-cell"
+                          onClick={() => copyToClipboard(set._id, "Set ID")}
+                          title={`Click to copy: ${set._id}`}
+                        >
+                          {truncateId(set._id)}
+                        </span>
+                      </td>
+                    )}
                     <td>{set.buttons?.length || 0}</td>
-                    <td>
-                      <select
-                        className="field-id-select"
-                        value={set.usedIn?.[0] || ""}
-                        onChange={(e) =>
-                          handleFieldIdMapping(set._id, e.target.value)
-                        }
-                        title="Map this set to a form field"
-                      >
-                        <option value="">-- Select Field --</option>
-                        {Object.entries(FIELD_LABELS)
-                          .filter(([key]) => key.startsWith("WFRAD_")) // Only radio button fields
-                          .map(([key, label]) => (
-                            <option key={key} value={key}>
-                              {label}
-                            </option>
-                          ))}
-                      </select>
-                    </td>
+                    {user?.role === "superAdmin" && (
+                      <td>
+                        <select
+                          className="field-id-select"
+                          value={set.usedIn?.[0] || ""}
+                          onChange={(e) =>
+                            handleFieldIdMapping(set._id, e.target.value)
+                          }
+                          title="Map this set to a form field"
+                        >
+                          <option value="">-- Select Field --</option>
+                          {Object.entries(FIELD_LABELS)
+                            .filter(([key]) => key.startsWith("WFRAD_")) // Only radio button fields
+                            .map(([key, label]) => (
+                              <option key={key} value={key}>
+                                {label}
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                    )}
                     <td>
                       <span
                         className={`badge ${
@@ -528,13 +539,15 @@ const RadioButtonSetManagement = () => {
                         >
                           Edit
                         </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => openDeleteSetModal(set._id)}
-                          title="Delete Set"
-                        >
-                          Delete
-                        </button>
+                        {user?.role === "superAdmin" && (
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => openDeleteSetModal(set._id)}
+                            title="Delete Set"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
