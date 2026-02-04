@@ -46,9 +46,21 @@ const Signup = () => {
 
   return (
     <div className="auth-container">
+      <div className="auth-background">
+        <div className="gradient-blob blob-1"></div>
+        <div className="gradient-blob blob-2"></div>
+        <div className="gradient-blob blob-3"></div>
+      </div>
+
       <div className="auth-card">
+        <div className="auth-logo">
+          <div className="logo-icon">🦷</div>
+        </div>
+
         <div className="auth-header">
-          <h1>Create Account</h1>
+          <h1>
+            Walkout Tool <span className="version-badge">2.0</span>
+          </h1>
           <p>Sign up to get started</p>
         </div>
 
