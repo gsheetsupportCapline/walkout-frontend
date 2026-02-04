@@ -283,6 +283,7 @@ const WalkoutForm = () => {
   const [userNamesCache, setUserNamesCache] = useState({}); // Cache for user names
   const [lc3ValidationErrors, setLc3ValidationErrors] = useState({}); // LC3 validation errors
   const [officeValidationErrors, setOfficeValidationErrors] = useState({}); // Office validation errors
+  const [auditValidationErrors, setAuditValidationErrors] = useState({}); // Audit validation errors
   const [imageValidationErrors, setImageValidationErrors] = useState({
     officeWO: false,
     checkImage: false,
@@ -1048,6 +1049,26 @@ const WalkoutForm = () => {
             }
 
             // console.log("✅ LC3 section loaded successfully");
+          }
+
+          // Load Audit section data if exists
+          if (existingWalkout.auditSection) {
+            const audit = existingWalkout.auditSection;
+            console.log("📋 Loading Audit section data:", audit);
+
+            // Map backend field names to frontend field names
+            const auditFormData = {
+              // auditAnalysisData is not mapped to form (used internally)
+              discrepancyFound:
+                audit.auditDiscrepancyFoundOtherThanLC3Remarks || null,
+              discrepancyRemarks: audit.auditDiscrepancyRemarks || "",
+              discrepancyFixed: audit.auditDiscrepancyFixedByLC3 || null,
+              lc3Remarks: audit.auditLc3Remarks || "",
+            };
+
+            // Update formData with audit fields
+            setFormData((prev) => ({ ...prev, ...auditFormData }));
+            console.log("✅ Audit section loaded successfully");
           }
 
           // console.log("✅ Existing walkout loaded:", existingWalkout._id);
@@ -3594,10 +3615,127 @@ const WalkoutForm = () => {
     }
   };
 
-  const handleAuditSubmit = () => {
-    // console.log("Audit Section Data:", formData);
-    alert("Audit section submitted successfully!");
-    // TODO: API call to save audit section data
+  const handleAuditSubmit = async () => {
+    if (!walkoutId) {
+      Swal.fire({
+        icon: "error",
+        title: "Walkout ID Missing",
+        text: "No walkout ID found. Please submit office and LC3 sections first.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Validate audit section
+    const errors = {};
+
+    // Check if discrepancyFound is 1 (Yes) and discrepancyRemarks is empty
+    if (
+      formData.discrepancyFound === 1 &&
+      !formData.discrepancyRemarks?.trim()
+    ) {
+      errors.discrepancyRemarks = true;
+    }
+
+    // Check if discrepancyFixed is 1 (Yes) and lc3Remarks is empty
+    if (formData.discrepancyFixed === 1 && !formData.lc3Remarks?.trim()) {
+      errors.lc3Remarks = true;
+    }
+
+    // If there are validation errors, show message and don't submit
+    if (Object.keys(errors).length > 0) {
+      setAuditValidationErrors(errors);
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Please fill in all required remarks fields.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Clear validation errors
+    setAuditValidationErrors({});
+
+    try {
+      // Show loading spinner
+      setIsSubmitting(true);
+
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
+      // Build audit payload
+      const auditPayload = {
+        auditAnalysisData: "", // Blank for now as per user requirement
+        auditDiscrepancyFoundOtherThanLC3Remarks:
+          formData.discrepancyFound || null,
+        auditDiscrepancyRemarks: formData.discrepancyRemarks || "",
+        auditDiscrepancyFixedByLC3: formData.discrepancyFixed || null,
+        auditLc3Remarks: formData.lc3Remarks || "",
+      };
+
+      console.log("📤 Submitting Audit Payload:", auditPayload);
+
+      const response = await fetchWithAuth(
+        `${API}/walkouts/${walkoutId}/audit`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(auditPayload),
+        },
+      );
+
+      const result = await response.json();
+
+      console.log("📥 Audit Backend Response:", result);
+
+      if (response.ok && result.success) {
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: result.message || "Audit section submitted successfully!",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+          timer: 2000,
+          timerProgressBar: true,
+        }).then(() => {
+          // Clear form data
+          setFormData({});
+          setWalkoutId(null);
+          setIsExistingWalkout(false);
+          // Navigate back to appointments list
+          navigate(-1);
+        });
+      } else {
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text:
+            result.message ||
+            "Failed to submit Audit section. Please try again.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error submitting Audit section:", error);
+      setIsSubmitting(false);
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error submitting Audit section. Please try again.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   // Render compact image buttons
@@ -5163,7 +5301,16 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         B. Document Check{" "}
                         <span className="WF-fieldset-subtitle">
-                          (Attachment and Service Based Guidelines)
+                          (
+                          <a
+                            href="https://docs.google.com/spreadsheets/d/1ZhbN8euu7VIVsSUuqA0pSwpQJU5JxtvTgQMwWsHkUcE/edit?gid=1705912886#gid=1705912886"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="WF-guidelines-link"
+                          >
+                            Attachment and Service Based Guidelines
+                          </a>
+                          )
                         </span>
                       </legend>
                       <div
@@ -5518,7 +5665,16 @@ const WalkoutForm = () => {
                       <legend className="WF-legend">
                         C. Attachments Check{" "}
                         <span className="WF-fieldset-subtitle">
-                          (Attachment and Service Based Guidelines)
+                          (
+                          <a
+                            href="https://docs.google.com/spreadsheets/d/1ZhbN8euu7VIVsSUuqA0pSwpQJU5JxtvTgQMwWsHkUcE/edit?gid=1705912886#gid=1705912886"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="WF-guidelines-link"
+                          >
+                            Attachment and Service Based Guidelines
+                          </a>
+                          )
                         </span>
                       </legend>
                       <div
@@ -7842,103 +7998,148 @@ const WalkoutForm = () => {
 
                     {/* Discrepancy Questions */}
                     <div className="WF-audit-questions">
-                      <div className="WF-walkout-form-row">
-                        <label className="WF-walkout-form-label">
-                          Discrepancy Found other than LC3 remarks?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FOUND}
-                        >
-                          {getRadioButtons(
-                            FIELD_IDS.AUDIT_DISCREPANCY_FOUND,
-                          ).map((btn) => (
-                            <button
-                              key={btn._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                btn.name === "No" || btn.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.discrepancyFound === btn.incrementalId
-                                  ? "WF-selected"
+                      {/* Question 1: Discrepancy Found */}
+                      <div className="WF-audit-collapsible-row">
+                        <div className="WF-audit-question-header">
+                          <label className="WF-walkout-form-label">
+                            Discrepancy Found other than LC3 remarks?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className="WF-button-group"
+                            data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FOUND}
+                          >
+                            {getRadioButtons(
+                              FIELD_IDS.AUDIT_DISCREPANCY_FOUND,
+                            ).map((btn) => (
+                              <button
+                                key={btn._id}
+                                type="button"
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
+                                  formData.discrepancyFound ===
+                                  btn.incrementalId
+                                    ? "WF-selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleRadioChange(
+                                    "discrepancyFound",
+                                    btn.incrementalId,
+                                  )
+                                }
+                              >
+                                {btn.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {formData.discrepancyFound === 1 && (
+                          <div className="WF-audit-collapsible-content">
+                            <label className="WF-audit-textarea-label">
+                              Discrepancy Remarks
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <textarea
+                              className={`WF-walkout-form-textarea ${
+                                auditValidationErrors.discrepancyRemarks
+                                  ? "WF-validation-error"
                                   : ""
                               }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "discrepancyFound",
-                                  btn.incrementalId,
-                                )
-                              }
-                            >
-                              {btn.name}
-                            </button>
-                          ))}
-                        </div>
-                        <input
-                          type="text"
-                          className="WF-walkout-form-input"
-                          placeholder="Discrepancy Remarks*"
-                          value={formData.discrepancyRemarks || ""}
-                          onChange={(e) =>
-                            handleDropdownChange(
-                              "discrepancyRemarks",
-                              e.target.value,
-                            )
-                          }
-                        />
+                              placeholder="Enter discrepancy remarks..."
+                              value={formData.discrepancyRemarks || ""}
+                              onChange={(e) => {
+                                handleDropdownChange(
+                                  "discrepancyRemarks",
+                                  e.target.value,
+                                );
+                                // Clear validation error when user types
+                                if (auditValidationErrors.discrepancyRemarks) {
+                                  setAuditValidationErrors((prev) => ({
+                                    ...prev,
+                                    discrepancyRemarks: false,
+                                  }));
+                                }
+                              }}
+                              rows={3}
+                            />
+                          </div>
+                        )}
                       </div>
 
-                      <div className="WF-walkout-form-row">
-                        <label className="WF-walkout-form-label">
-                          Discrepancy Fixed by LC3?
-                          <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        <div
-                          className="WF-button-group"
-                          data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FIXED}
-                        >
-                          {getRadioButtons(
-                            FIELD_IDS.AUDIT_DISCREPANCY_FIXED,
-                          ).map((btn) => (
-                            <button
-                              key={btn._id}
-                              type="button"
-                              className={`WF-radio-button ${
-                                btn.name === "No" || btn.name === "Pending"
-                                  ? "WF-no-or-pending-button"
-                                  : ""
-                              } ${
-                                formData.discrepancyFixed === btn.incrementalId
-                                  ? "WF-selected"
+                      {/* Question 2: Discrepancy Fixed */}
+                      <div className="WF-audit-collapsible-row">
+                        <div className="WF-audit-question-header">
+                          <label className="WF-walkout-form-label">
+                            Discrepancy Fixed by LC3?
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <div
+                            className="WF-button-group"
+                            data-field-id={FIELD_IDS.AUDIT_DISCREPANCY_FIXED}
+                          >
+                            {getRadioButtons(
+                              FIELD_IDS.AUDIT_DISCREPANCY_FIXED,
+                            ).map((btn) => (
+                              <button
+                                key={btn._id}
+                                type="button"
+                                className={`WF-radio-button ${
+                                  btn.name === "No" || btn.name === "Pending"
+                                    ? "WF-no-or-pending-button"
+                                    : ""
+                                } ${
+                                  formData.discrepancyFixed ===
+                                  btn.incrementalId
+                                    ? "WF-selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleRadioChange(
+                                    "discrepancyFixed",
+                                    btn.incrementalId,
+                                  )
+                                }
+                              >
+                                {btn.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {formData.discrepancyFixed === 1 && (
+                          <div className="WF-audit-collapsible-content">
+                            <label className="WF-audit-textarea-label">
+                              LC3 Remarks
+                              <span style={{ color: "#dc2626" }}>*</span>
+                            </label>
+                            <textarea
+                              className={`WF-walkout-form-textarea ${
+                                auditValidationErrors.lc3Remarks
+                                  ? "WF-validation-error"
                                   : ""
                               }`}
-                              onClick={() =>
-                                handleRadioChange(
-                                  "discrepancyFixed",
-                                  btn.incrementalId,
-                                )
-                              }
-                            >
-                              {btn.name}
-                            </button>
-                          ))}
-                        </div>
-                        <input
-                          type="text"
-                          className={`WF-walkout-form-input ${
-                            lc3ValidationErrors.lc3Remarks
-                              ? "WF-validation-error"
-                              : ""
-                          }`}
-                          placeholder="LC3 Remarks*"
-                          value={formData.lc3Remarks || ""}
-                          onChange={(e) =>
-                            handleDropdownChange("lc3Remarks", e.target.value)
-                          }
-                        />
+                              placeholder="Enter LC3 remarks..."
+                              value={formData.lc3Remarks || ""}
+                              onChange={(e) => {
+                                handleDropdownChange(
+                                  "lc3Remarks",
+                                  e.target.value,
+                                );
+                                // Clear validation error when user types
+                                if (auditValidationErrors.lc3Remarks) {
+                                  setAuditValidationErrors((prev) => ({
+                                    ...prev,
+                                    lc3Remarks: false,
+                                  }));
+                                }
+                              }}
+                              rows={3}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

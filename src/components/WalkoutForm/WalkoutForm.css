@@ -1435,7 +1435,7 @@ button:focus {
 .WF-fieldset-subtitle {
   font-size: 10px;
   font-weight: 400;
-  color: #6b7280;
+  color: #ffffff;
   font-style: italic;
 }
 
@@ -2115,6 +2115,126 @@ button:focus {
   margin-top: 16px;
 }
 
+/* Audit Collapsible Row Styles */
+.WF-audit-collapsible-row {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.WF-audit-collapsible-row .WF-audit-question-header {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.WF-audit-collapsible-row .WF-audit-question-header .WF-walkout-form-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  margin: 0 !important;
+  flex: 0 0 280px !important;
+  width: 280px !important;
+}
+
+.WF-audit-collapsible-row .WF-audit-question-header .WF-button-group {
+  background-color: #f3f4f6 !important;
+  border-radius: 18px !important;
+  padding: 2px !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-shrink: 0 !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+}
+
+.WF-audit-collapsible-row
+  .WF-audit-question-header
+  .WF-button-group
+  .WF-radio-button {
+  background-color: transparent !important;
+  color: #6b7280 !important;
+  border: 1px solid transparent !important;
+  padding: 4px 14px !important;
+  border-radius: 16px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+  min-width: 50px !important;
+  text-align: center !important;
+}
+
+.WF-audit-collapsible-row
+  .WF-audit-question-header
+  .WF-button-group
+  .WF-radio-button:hover {
+  color: #374151 !important;
+}
+
+.WF-audit-collapsible-row
+  .WF-audit-question-header
+  .WF-button-group
+  .WF-radio-button.WF-selected {
+  background-color: #1a56db !important;
+  color: white !important;
+  border-color: #1a56db !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.WF-audit-collapsible-row
+  .WF-audit-question-header
+  .WF-button-group
+  .WF-radio-button.WF-selected.WF-no-or-pending-button {
+  background-color: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.WF-audit-collapsible-content {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.WF-audit-textarea-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.WF-walkout-form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1f2937;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.WF-walkout-form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.WF-walkout-form-textarea::placeholder {
+  color: #9ca3af;
+}
+
 /* Validation Error Styles - Only Background Color (Zero Layout Shift) */
 .WF-validation-error {
   background-color: #fee2e2 !important; /* Light red background only */
@@ -2128,6 +2248,18 @@ button:focus {
 .WF-status-toggle.WF-validation-error {
   background-color: #fee2e2 !important; /* Light red background */
   border-radius: 20px;
+}
+
+/* Guidelines Link Styling */
+.WF-guidelines-link {
+  color: #ffffff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.WF-guidelines-link:hover {
+  color: #f97316;
+  text-decoration: underline;
 }
 
 @media (max-width: 576px) {
