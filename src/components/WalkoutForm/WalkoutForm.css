@@ -2147,3 +2147,112 @@ button:focus {
     padding: 12px;
   }
 }
+
+/* On-Hold Addressed Dialog Styles */
+.WF-onhold-dialog {
+  max-width: 650px;
+  width: 90%;
+}
+
+.WF-onhold-dialog .WF-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.WF-onhold-question {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+  white-space: nowrap;
+}
+
+.WF-onhold-radio-group {
+  display: flex;
+  background-color: #f3f4f6;
+  border-radius: 18px;
+  padding: 3px;
+  gap: 0;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.WF-onhold-radio-group .WF-radio-button {
+  flex: 1;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid transparent;
+  padding: 6px 18px;
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+  text-align: center;
+}
+
+.WF-onhold-radio-group .WF-radio-button:hover {
+  color: #374151;
+}
+
+.WF-onhold-radio-group .WF-radio-button.WF-selected {
+  background-color: #1a56db;
+  color: white;
+  border-color: #1a56db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.WF-onhold-radio-group .WF-radio-button.WF-selected.WF-no-or-pending-button {
+  background-color: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.WF-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.WF-modal-btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.WF-modal-btn-primary {
+  background-color: #1a56db;
+  color: white;
+}
+
+.WF-modal-btn-primary:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+
+.WF-modal-btn-primary:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.WF-modal-btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.WF-modal-btn-secondary:hover {
+  background-color: #e5e7eb;
+}

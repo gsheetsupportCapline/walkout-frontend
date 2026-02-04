@@ -174,6 +174,11 @@ const WalkoutForm = () => {
   const [showErrorFound, setShowErrorFound] = useState(false);
   const [showErrorFields, setShowErrorFields] = useState(false);
 
+  // State for On-Hold Addressed Dialog
+  const [showOnHoldDialog, setShowOnHoldDialog] = useState(false);
+  const [onHoldAddressedValue, setOnHoldAddressedValue] = useState(null); // "Yes" or "No"
+  const [pendingSubmitType, setPendingSubmitType] = useState(null); // "office" or "lc3"
+
   // State for collapsible sections
   const [sections, setSections] = useState({
     office: false, // Open by default
@@ -224,6 +229,8 @@ const WalkoutForm = () => {
       sessionHistory: [],
     },
     walkoutStatus: "Walkout not Submitted to LC3",
+    pendingWith: "",
+    isOnHoldAddressed: null,
     images: {
       officeWO: { file: null, previewUrl: "", imageId: "", zoom: 100 },
       checkImage: { file: null, previewUrl: "", imageId: "", zoom: 100 },
@@ -560,6 +567,8 @@ const WalkoutForm = () => {
             setSidebarData((prev) => ({
               ...prev,
               walkoutStatus: existingWalkout.walkoutStatus,
+              pendingWith: existingWalkout.pendingWith || "",
+              isOnHoldAddressed: existingWalkout.isOnHoldAddressed || null,
             }));
           }
 
@@ -2208,6 +2217,24 @@ const WalkoutForm = () => {
     // Disabled old zoom - now using scroll wheel
   };
 
+  // On-Hold Addressed Dialog Handlers
+  const handleOnHoldDialogOK = () => {
+    setShowOnHoldDialog(false);
+
+    // Proceed with the actual submission based on which section triggered the dialog
+    if (pendingSubmitType === "office") {
+      proceedOfficeSubmit();
+    } else if (pendingSubmitType === "lc3") {
+      proceedLC3Submit();
+    }
+  };
+
+  const handleOnHoldDialogCancel = () => {
+    setShowOnHoldDialog(false);
+    setOnHoldAddressedValue(null);
+    setPendingSubmitType(null);
+  };
+
   // Handle form submission
   const handleOfficeSubmit = async () => {
     try {
@@ -2238,6 +2265,53 @@ const WalkoutForm = () => {
         return;
       }
 
+      // Clear validation errors if all validations pass
+      setOfficeValidationErrors({});
+
+      // Check if we need to show On-Hold Addressed dialog
+      // Show dialog ONLY when:
+      // 1. Walkout is already on-hold with office-side reasons
+      // 2. isOnHoldAddressed was "No" or null (meaning issues not addressed yet)
+      const currentPendingWith = sidebarData.pendingWith || "";
+      const isCurrentlyOnHoldWithOffice =
+        currentPendingWith === "Office" ||
+        currentPendingWith === "IV Team & Office";
+
+      const wasIssuePreviouslyNotAddressed =
+        sidebarData.isOnHoldAddressed === "No" ||
+        sidebarData.isOnHoldAddressed === null;
+
+      if (
+        isExistingWalkout &&
+        isCurrentlyOnHoldWithOffice &&
+        wasIssuePreviouslyNotAddressed
+      ) {
+        // Show dialog and wait for user response
+        console.log("🔔 Showing On-Hold Addressed dialog for Office");
+        setPendingSubmitType("office");
+        setShowOnHoldDialog(true);
+        return; // Stop here, will continue in proceedOfficeSubmit after dialog OK
+      }
+
+      // If no dialog needed, proceed directly
+      await proceedOfficeSubmit();
+    } catch (error) {
+      console.error("❌ Office Submit Error:", error);
+      setIsSubmitting(false);
+
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Network error. Please check your connection.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  // Actual Office submission logic (called after validation or dialog OK)
+  const proceedOfficeSubmit = async () => {
+    try {
       // Clear validation errors if all validations pass
       setOfficeValidationErrors({});
 
@@ -2320,25 +2394,49 @@ const WalkoutForm = () => {
       console.log("🔍 Checking conditions:", {
         patientCame: patientCameToAppointment,
         postOpZeroProduction: isPostOpZeroProduction,
+        isOnHoldAddressedValue: onHoldAddressedValue,
+        currentPendingWith: sidebarData.pendingWith,
       });
 
-      // Condition 1: Patient came (1) AND NOT zero production (2)
-      if (patientCameToAppointment === 1 && isPostOpZeroProduction === 2) {
-        walkoutStatus = "Not Started";
-        pendingWith = "Pending with LC3";
-      }
-      // Condition 2: Patient did NOT come (2)
-      else if (patientCameToAppointment === 2) {
-        walkoutStatus = "No Show/Cancel";
-        pendingWith = "No Show/Cancel";
-      }
-      // Condition 3: Patient came (1) AND zero production (1)
-      else if (patientCameToAppointment === 1 && isPostOpZeroProduction === 1) {
-        walkoutStatus = "Completed by Office";
-        pendingWith = "Completed";
-      }
+      // Check if this is a re-submit after addressing on-hold issues
+      const currentPendingWith = sidebarData.pendingWith || "";
+      const isResubmitAfterAddressing = onHoldAddressedValue === "Yes";
 
-      console.log("✅ Determined values:", { walkoutStatus, pendingWith });
+      if (isResubmitAfterAddressing) {
+        // Office has addressed the issues - transition status
+        if (currentPendingWith === "Office") {
+          walkoutStatus = "On Hold – LC3";
+          pendingWith = "LC3";
+        } else if (currentPendingWith === "IV Team & Office") {
+          walkoutStatus = "On Hold – IV Team";
+          pendingWith = "IV Team";
+        }
+        console.log("✅ Status transitioned after addressing:", {
+          walkoutStatus,
+          pendingWith,
+        });
+      } else {
+        // Normal office submit logic
+        // Condition 1: Patient came (1) AND NOT zero production (2)
+        if (patientCameToAppointment === 1 && isPostOpZeroProduction === 2) {
+          walkoutStatus = "Not Started";
+          pendingWith = "Pending with LC3";
+        }
+        // Condition 2: Patient did NOT come (2)
+        else if (patientCameToAppointment === 2) {
+          walkoutStatus = "No Show/Cancel";
+          pendingWith = "No Show/Cancel";
+        }
+        // Condition 3: Patient came (1) AND zero production (1)
+        else if (
+          patientCameToAppointment === 1 &&
+          isPostOpZeroProduction === 1
+        ) {
+          walkoutStatus = "Completed by Office";
+          pendingWith = "Completed";
+        }
+        console.log("✅ Determined values:", { walkoutStatus, pendingWith });
+      }
 
       // Create FormData for multipart/form-data submission
       const formDataPayload = new FormData();
@@ -2349,6 +2447,12 @@ const WalkoutForm = () => {
       }
       if (pendingWith) {
         formDataPayload.append("pendingWith", pendingWith);
+      }
+
+      // Add isOnHoldAddressed if dialog was shown and value selected
+      if (onHoldAddressedValue) {
+        formDataPayload.append("isOnHoldAddressed", onHoldAddressedValue);
+        console.log("📤 Adding isOnHoldAddressed:", onHoldAddressedValue);
       }
 
       // 1. appointmentInfo (Required JSON string for image upload)
@@ -2923,54 +3027,105 @@ const WalkoutForm = () => {
       return;
     }
 
-    // Show loading spinner
-    setIsSubmitting(true);
+    // Check if LC3 is completing the walkout (not putting on hold)
+    const isLC3Completing = formData.walkoutOnHold === 2;
 
-    // Stop timer and save session for LC3 team
-    if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
-      clearInterval(timerInterval);
-
-      const sessionDuration = sidebarData.timer.currentSession.elapsedSeconds;
-      const completedAt = new Date().toISOString();
-      const userName = currentUser.name || currentUser.email || "Unknown User";
-
-      // Create session record
-      const sessionRecord = {
-        user: userName,
-        duration: sessionDuration,
-        completedAt: completedAt,
-        startTime: sidebarData.timer.currentSession.startTime,
-      };
-
-      // Calculate new total time
-      const newTotalTime = sidebarData.timer.totalTime + sessionDuration;
-
-      // Update sidebar with session info
-      setSidebarData((prev) => ({
-        ...prev,
-        timer: {
-          currentSession: {
-            isActive: false,
-            startTime: "",
-            elapsedSeconds: 0,
-          },
-          lastSession: {
-            user: userName,
-            duration: sessionDuration,
-            completedAt: completedAt,
-          },
-          totalTime: newTotalTime,
-          sessionHistory: [...prev.timer.sessionHistory, sessionRecord],
-        },
-      }));
+    // If completing, no need for dialog - proceed directly
+    if (isLC3Completing) {
+      console.log("✅ LC3 completing walkout - no dialog needed");
+      await proceedLC3Submit();
+      return;
     }
 
+    // Check if we need to show On-Hold Addressed dialog for LC3
+    // Case 1: Office has indicated they addressed issues (isOnHoldAddressed = "Yes")
+    const officeClaimsAddressed = sidebarData.isOnHoldAddressed === "Yes";
+    const currentPendingWith = sidebarData.pendingWith || "";
+    const isCurrentlyOnHold =
+      currentPendingWith === "LC3" ||
+      currentPendingWith === "IV Team" ||
+      currentPendingWith === "Office" ||
+      currentPendingWith === "IV Team & Office";
+
+    // Case 2: LC3 is putting walkout on-hold again (walkoutOnHold = 1)
+    const isLC3PuttingOnHold = formData.walkoutOnHold === 1;
+
+    if (officeClaimsAddressed && isCurrentlyOnHold && isLC3PuttingOnHold) {
+      // Pre-fill with "Yes" since office claims they addressed issues
+      console.log(
+        "🔔 Showing On-Hold Addressed dialog for LC3 (pre-filled with Yes - Office addressed)",
+      );
+      setOnHoldAddressedValue("Yes"); // Pre-fill with Yes
+      setPendingSubmitType("lc3");
+      setShowOnHoldDialog(true);
+      return; // Stop here, will continue in proceedLC3Submit after dialog OK
+    } else if (isLC3PuttingOnHold && sidebarData.isOnHoldAddressed === "Yes") {
+      // LC3 is putting on-hold again, but previously it was marked as addressed
+      // Show dialog to confirm if issues are still addressed or not
+      console.log(
+        "🔔 Showing On-Hold Addressed dialog for LC3 (re-checking addressed status)",
+      );
+      setOnHoldAddressedValue("Yes"); // Pre-fill with previous value
+      setPendingSubmitType("lc3");
+      setShowOnHoldDialog(true);
+      return;
+    }
+
+    // If no dialog needed, proceed directly
+    await proceedLC3Submit();
+  };
+
+  // Actual LC3 submission logic (called after validation or dialog OK)
+  const proceedLC3Submit = async () => {
     try {
+      // Show loading spinner
+      setIsSubmitting(true);
+
+      // Stop timer and save session for LC3 team
+      if (isLC3TeamMember() && sidebarData.timer.currentSession.isActive) {
+        clearInterval(timerInterval);
+
+        const sessionDuration = sidebarData.timer.currentSession.elapsedSeconds;
+        const completedAt = new Date().toISOString();
+        const userName =
+          currentUser.name || currentUser.email || "Unknown User";
+
+        // Create session record
+        const sessionRecord = {
+          user: userName,
+          duration: sessionDuration,
+          completedAt: completedAt,
+          startTime: sidebarData.timer.currentSession.startTime,
+        };
+
+        // Calculate new total time
+        const newTotalTime = sidebarData.timer.totalTime + sessionDuration;
+
+        // Update sidebar with session info
+        setSidebarData((prev) => ({
+          ...prev,
+          timer: {
+            currentSession: {
+              isActive: false,
+              startTime: "",
+              elapsedSeconds: 0,
+            },
+            lastSession: {
+              user: userName,
+              duration: sessionDuration,
+              completedAt: completedAt,
+            },
+            totalTime: newTotalTime,
+            sessionHistory: [...prev.timer.sessionHistory, sessionRecord],
+          },
+        }));
+      }
+
       const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
       // Determine walkoutStatus, isOnHoldAddressed, and pendingWith based on LC3 conditions
       let walkoutStatus = "";
-      let isOnHoldAddressed = "no";
+      let isOnHoldAddressed = null; // Will be set based on conditions or dialog
       let pendingWith = "";
 
       // Get the field values
@@ -3012,7 +3167,8 @@ const WalkoutForm = () => {
           pendingWith = "Office";
         }
 
-        isOnHoldAddressed = "no";
+        // Use dialog value if available, otherwise default to "No"
+        isOnHoldAddressed = onHoldAddressedValue || "No";
       }
       // Check if completed (walkoutOnHold = 2)
       else if (walkoutOnHold === 2) {
@@ -3048,7 +3204,8 @@ const WalkoutForm = () => {
         }
 
         pendingWith = "Completed";
-        isOnHoldAddressed = "yes";
+        // When completing, don't send isOnHoldAddressed (set to null/empty)
+        isOnHoldAddressed = null;
       }
 
       console.log("✅ LC3 Determined values:", {
@@ -7940,6 +8097,65 @@ const WalkoutForm = () => {
           </div>
         </div>
       </div>
+
+      {/* On-Hold Addressed Dialog */}
+      {showOnHoldDialog && (
+        <div className="WF-modal-overlay" onClick={handleOnHoldDialogCancel}>
+          <div
+            className="WF-modal-content WF-onhold-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="WF-modal-header">
+              <h3>On-Hold Status Check</h3>
+              <button
+                className="WF-modal-close"
+                onClick={handleOnHoldDialogCancel}
+              >
+                ×
+              </button>
+            </div>
+            <div className="WF-modal-body">
+              <p className="WF-onhold-question">
+                Have all on-hold reasons identified by LC3 been addressed by the
+                office?
+              </p>
+              <div className="WF-button-group WF-onhold-radio-group">
+                <button
+                  type="button"
+                  className={`WF-radio-button ${onHoldAddressedValue === "Yes" ? "WF-selected" : ""}`}
+                  onClick={() => setOnHoldAddressedValue("Yes")}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  className={`WF-radio-button ${onHoldAddressedValue === "No" ? "WF-selected WF-no-or-pending-button" : ""}`}
+                  onClick={() => setOnHoldAddressedValue("No")}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+            <div className="WF-modal-footer">
+              <button
+                type="button"
+                className="WF-modal-btn WF-modal-btn-secondary"
+                onClick={handleOnHoldDialogCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="WF-modal-btn WF-modal-btn-primary"
+                onClick={handleOnHoldDialogOK}
+                disabled={!onHoldAddressedValue}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Upload Modal */}
       {imageModal.isOpen && (
