@@ -69,15 +69,42 @@ const Appointments = () => {
     try {
       const response = await api.get("/offices");
       if (response.data.success) {
-        const activeOffices = response.data.data.filter(
+        let activeOffices = response.data.data.filter(
           (office) => office.isActive && office.visibility === "on",
         );
+
+        // Filter offices for Office team users - show only assigned offices
+        const isOfficeTeamUser = user?.teamName?.some(
+          (team) => team.teamId?.teamName === "Office",
+        );
+
+        if (isOfficeTeamUser && user?.assignedOffice?.length > 0) {
+          const assignedOfficeIds = user.assignedOffice.map((o) => {
+            if (typeof o === "string") return o;
+            if (o.officeId?._id) return o.officeId._id.toString();
+            if (o._id) return o._id.toString();
+            return o.toString();
+          });
+
+          activeOffices = activeOffices.filter((office) =>
+            assignedOfficeIds.includes(office._id.toString()),
+          );
+        }
+
         setOffices(activeOffices);
+
+        // Auto-select if only one office is available
+        if (activeOffices.length === 1 && !filters.officeName) {
+          setFilters((prev) => ({
+            ...prev,
+            officeName: activeOffices[0].officeName,
+          }));
+        }
       }
     } catch (err) {
       console.error("Failed to fetch offices:", err);
     }
-  }, []);
+  }, [user, filters.officeName]);
 
   // Fetch appointments by date range
   const fetchAppointments = useCallback(
@@ -872,7 +899,9 @@ const Appointments = () => {
                   onChange={handleFilterChange}
                   className="filter-select"
                 >
-                  <option value="">Select Office</option>
+                  {offices.length > 1 && (
+                    <option value="">Select Office</option>
+                  )}
                   {offices.map((office) => (
                     <option key={office._id} value={office.officeName}>
                       {office.officeName}

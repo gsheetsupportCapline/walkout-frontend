@@ -368,7 +368,7 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.2s;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .filter-option:hover {
@@ -385,6 +385,7 @@
 .filter-option span {
   flex: 1;
   user-select: none;
+  color: #111827;
 }
 
 .filter-actions-row {

@@ -83,6 +83,13 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     clearToken();
     setUser(null);
+
+    // Clear appointments data from localStorage on logout
+    localStorage.removeItem("appointments_data");
+    localStorage.removeItem("appointments_total");
+    localStorage.removeItem("appointments_filters");
+    localStorage.removeItem("appointments_page");
+    localStorage.removeItem("appointments_searchType");
   };
 
   const updateUser = (userData) => {

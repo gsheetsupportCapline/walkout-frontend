@@ -46,7 +46,7 @@
 }
 
 .data-table thead {
-  background: var(--bg-primary);
+  background: #34495e;
   border-bottom: 2px solid var(--border-color);
   position: sticky;
   top: 0;
@@ -57,12 +57,12 @@
   padding: 0.5rem 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: white;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   white-space: nowrap;
-  background: var(--bg-primary);
+  background: #34495e;
   box-shadow: 0 1px 0 var(--border-color);
 }
 
