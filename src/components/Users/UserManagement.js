@@ -267,7 +267,7 @@ const UserManagement = () => {
                       <div className="office-dropdown-wrapper">
                         <button
                           className="office-count-btn"
-                          onClick={() => {
+                          onClick={(e) => {
                             if (showOfficeDropdown === user._id) {
                               setShowOfficeDropdown(null);
                             } else {
@@ -305,6 +305,17 @@ const UserManagement = () => {
                               );
                               setTempSelectedOffices(currentOfficeIds);
                               setShowOfficeDropdown(user._id);
+
+                              // Position dropdown below button after state update
+                              setTimeout(() => {
+                                const dropdown =
+                                  document.querySelector(".office-dropdown");
+                                if (dropdown) {
+                                  const rect = e.target.getBoundingClientRect();
+                                  dropdown.style.top = `${rect.bottom + 5}px`;
+                                  dropdown.style.left = `${rect.left}px`;
+                                }
+                              }, 0);
                             }
                           }}
                         >
