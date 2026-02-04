@@ -2262,6 +2262,27 @@ button:focus {
   text-decoration: underline;
 }
 
+/* IV Section Disclaimer */
+.WF-iv-disclaimer {
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.WF-iv-disclaimer p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #92400e;
+}
+
+.WF-iv-disclaimer strong {
+  font-weight: 600;
+  color: #78350f;
+}
+
 @media (max-width: 576px) {
   .WF-appointment-info-header h2 {
     font-size: 14px;
@@ -2387,4 +2408,19 @@ button:focus {
 
 .WF-modal-btn-secondary:hover {
   background-color: #e5e7eb;
+}
+
+/* IV Section Fieldset Styling */
+.WF-iv-fieldset .WF-walkout-form-row {
+  margin-bottom: 16px;
+}
+
+.WF-iv-fieldset .WF-walkout-form-dropdown {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.WF-iv-fieldset .WF-walkout-form-textarea {
+  width: 100%;
 }

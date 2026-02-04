@@ -158,6 +158,9 @@ const WalkoutForm = () => {
     // === AUDIT SECTION - RADIO BUTTONS (2) ===
     AUDIT_DISCREPANCY_FOUND: "WFRAD_AUDIT_DISCREPANCY_FOUND",
     AUDIT_DISCREPANCY_FIXED: "WFRAD_AUDIT_DISCREPANCY_FIXED",
+
+    // === IV SECTION - DROPDOWN (1) ===
+    IV_STATUS: "WFDD_IV_STATUS",
   };
 
   // State for office section field dependencies
@@ -184,6 +187,7 @@ const WalkoutForm = () => {
     office: false, // Open by default
     lc3: false,
     audit: false,
+    ivSection: false,
   });
 
   // Walkout state management
@@ -284,6 +288,7 @@ const WalkoutForm = () => {
   const [lc3ValidationErrors, setLc3ValidationErrors] = useState({}); // LC3 validation errors
   const [officeValidationErrors, setOfficeValidationErrors] = useState({}); // Office validation errors
   const [auditValidationErrors, setAuditValidationErrors] = useState({}); // Audit validation errors
+  const [ivValidationErrors, setIvValidationErrors] = useState({}); // IV validation errors
   const [imageValidationErrors, setImageValidationErrors] = useState({
     officeWO: false,
     checkImage: false,
@@ -304,6 +309,7 @@ const WalkoutForm = () => {
   const [lc3RegenerationDetails, setLc3RegenerationDetails] = useState(null); // LC3 AI regeneration details
   const [sessionStartTime, setSessionStartTime] = useState(null); // Track when form opens
   const [isSubmitting, setIsSubmitting] = useState(false); // Track form submission state
+  const [isLoading, setIsLoading] = useState(true); // Track initial data loading
 
   // Submission details - dummy data
   const [submissionDetails] = useState({
@@ -1071,12 +1077,31 @@ const WalkoutForm = () => {
             console.log("✅ Audit section loaded successfully");
           }
 
+          // Load IV section data if exists
+          if (existingWalkout.ivSection) {
+            const iv = existingWalkout.ivSection;
+            console.log("📋 Loading IV section data:", iv);
+
+            // Map backend field names to frontend field names
+            const ivFormData = {
+              ivStatus: iv.ivStatus || null,
+              ivRemarks: iv.ivRemarks || "",
+            };
+
+            // Update formData with IV fields
+            setFormData((prev) => ({ ...prev, ...ivFormData }));
+            console.log("✅ IV section loaded successfully");
+          }
+
           // console.log("✅ Existing walkout loaded:", existingWalkout._id);
         } else {
           // console.log("📝 No existing walkout found, opening blank form");
         }
       } catch (error) {
         console.error("Error checking existing walkout:", error);
+      } finally {
+        // Set loading to false after data is loaded or error occurs
+        setIsLoading(false);
       }
     };
 
@@ -3163,17 +3188,23 @@ const WalkoutForm = () => {
 
       // Check if On Hold (walkoutOnHold = 1)
       if (walkoutOnHold === 1) {
+        // Check if IV section has already been submitted
+        const ivDataExists = formData.ivStatus && formData.ivStatus !== null;
+
         // Check which teams are responsible for on-hold
-        const hasIVTeamReasons = onHoldReasons.some(
-          (reason) => reason === 13 || reason === 142,
-        );
-        const hasOfficeReasons = onHoldReasons.some(
-          (reason) => reason !== 13 && reason !== 142,
-        );
+        // If IV data already submitted, don't re-add IV Team to hold
+        const hasIVTeamReasons = ivDataExists
+          ? false
+          : onHoldReasons.some((reason) => reason === 13);
+        const hasOfficeReasons = onHoldReasons.some((reason) => reason !== 13);
 
         console.log("🔍 On Hold Reasons Analysis:", {
+          onHoldReasons,
+          ivDataExists,
           hasIVTeamReasons,
           hasOfficeReasons,
+          "Reason 13 present?": onHoldReasons.includes(13),
+          "Reason 142 present?": onHoldReasons.includes(142),
         });
 
         // Determine walkoutStatus based on which teams have reasons
@@ -3187,6 +3218,11 @@ const WalkoutForm = () => {
           walkoutStatus = "On Hold – Office";
           pendingWith = "Office";
         }
+
+        console.log("✅ Final Status Determined:", {
+          walkoutStatus,
+          pendingWith,
+        });
 
         // Use dialog value if available, otherwise default to "No"
         isOnHoldAddressed = onHoldAddressedValue || "No";
@@ -3386,18 +3422,7 @@ const WalkoutForm = () => {
           // AI check status
           checkedByAi: formData.checkedByAi || false, // Boolean - indicates if "Check with AI" was performed
         },
-
-        // Additional LC3 Fields
-        lc3Remarks: formData.lc3Remarks, // String - Overall LC3 remarks
       };
-
-      // Add current lc3Remarks to lc3HistoricalNotes array if present
-      if (formData.lc3Remarks && formData.lc3Remarks.trim()) {
-        lc3Payload.lc3HistoricalNotes = [
-          ...(formData.lc3HistoricalNotes || []),
-          formData.lc3Remarks.trim(),
-        ];
-      }
 
       // Add on-hold note if present (backend will add to onHoldNotes array)
       if (formData.newOnHoldNote && formData.newOnHoldNote.trim()) {
@@ -3500,20 +3525,7 @@ const WalkoutForm = () => {
         JSON.stringify(lc3Payload.providerNotes),
       );
 
-      // 8. LC3 Remarks (plain string, optional)
-      if (lc3Payload.lc3Remarks) {
-        formDataPayload.append("lc3Remarks", lc3Payload.lc3Remarks);
-      }
-
-      // 9. LC3 Historical Notes (as JSON string array, optional)
-      if (lc3Payload.lc3HistoricalNotes) {
-        formDataPayload.append(
-          "lc3HistoricalNotes",
-          JSON.stringify(lc3Payload.lc3HistoricalNotes),
-        );
-      }
-
-      // 10. On Hold Note (plain string, optional)
+      // 8. On Hold Note (plain string, optional)
       if (lc3Payload.onHoldNote) {
         formDataPayload.append("onHoldNote", lc3Payload.onHoldNote);
       }
@@ -3738,6 +3750,142 @@ const WalkoutForm = () => {
     }
   };
 
+  const handleIVSubmit = async () => {
+    if (!walkoutId) {
+      Swal.fire({
+        icon: "error",
+        title: "Walkout ID Missing",
+        text: "No walkout ID found. Please submit office and LC3 sections first.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Validate IV section
+    const errors = {};
+
+    // IV Status is mandatory
+    if (!formData.ivStatus) {
+      errors.ivStatus = true;
+    }
+
+    // IV Remarks is mandatory only when IV Status = 6
+    if (formData.ivStatus === 6 && !formData.ivRemarks?.trim()) {
+      errors.ivRemarks = true;
+    }
+
+    // If there are validation errors, show message and don't submit
+    if (Object.keys(errors).length > 0) {
+      setIvValidationErrors(errors);
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Please fill in all required fields.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Clear validation errors
+    setIvValidationErrors({});
+
+    try {
+      // Show loading spinner
+      setIsSubmitting(true);
+
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
+      // Calculate new status after IV submission
+      let newWalkoutStatus = sidebarData.walkoutStatus;
+      let newPendingWith = sidebarData.pendingWith;
+
+      // Status transition logic
+      if (sidebarData.walkoutStatus === "On Hold – IV Team & Office") {
+        // Remove IV Team from hold, keep Office
+        newWalkoutStatus = "On Hold – Office";
+        newPendingWith = "Office";
+      } else if (sidebarData.walkoutStatus === "On Hold – IV Team") {
+        // Remove IV Team from hold, move to LC3
+        newWalkoutStatus = "On Hold – LC3";
+        newPendingWith = "LC3";
+      }
+
+      // Build IV payload
+      const ivPayload = {
+        ivStatus: formData.ivStatus,
+        ivRemarks: formData.ivRemarks || "",
+        walkoutStatus: newWalkoutStatus,
+        pendingWith: newPendingWith,
+      };
+
+      console.log("📤 Submitting IV Payload:", ivPayload);
+
+      const response = await fetchWithAuth(`${API}/walkouts/${walkoutId}/iv`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(ivPayload),
+      });
+
+      const result = await response.json();
+
+      console.log("📥 IV Backend Response:", result);
+
+      if (response.ok && result.success) {
+        setIsSubmitting(false);
+
+        // Update sidebar data with new status
+        setSidebarData((prev) => ({
+          ...prev,
+          walkoutStatus: newWalkoutStatus,
+          pendingWith: newPendingWith,
+        }));
+
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: result.message || "IV section submitted successfully!",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+          timer: 2000,
+          timerProgressBar: true,
+        }).then(() => {
+          // Clear form data
+          setFormData({});
+          setWalkoutId(null);
+          setIsExistingWalkout(false);
+          // Navigate back to appointments list
+          navigate(-1);
+        });
+      } else {
+        setIsSubmitting(false);
+
+        Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text:
+            result.message || "Failed to submit IV section. Please try again.",
+          confirmButtonColor: "#dc2626",
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error submitting IV section:", error);
+      setIsSubmitting(false);
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error submitting IV section. Please try again.",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
   // Render compact image buttons
   const renderImageButtons = (type, label) => {
     const imageData = sidebarData.images[type];
@@ -3794,6 +3942,9 @@ const WalkoutForm = () => {
 
   return (
     <div className="WF-walkout-form-container">
+      {/* Full Screen Loading Overlay - Show while initial data is loading */}
+      {isLoading && <LoadingSpinner message="Loading walkout form..." />}
+
       {/* Loading Spinner Overlay */}
       {isSubmitting && <LoadingSpinner message="Submitting..." />}
 
@@ -7104,6 +7255,65 @@ const WalkoutForm = () => {
                               }
                             />
                           </div>
+
+                          {/* IV Team Review Information - Show when Missing IV selected and IV data submitted */}
+                          {formData.onHoldReasons?.includes(13) &&
+                            formData.ivStatus && (
+                              <div
+                                className="WF-form-group-compact WF-full-width"
+                                style={{ marginTop: "16px", width: "100%" }}
+                              >
+                                <div
+                                  style={{
+                                    padding: "12px",
+                                    backgroundColor: "#f0f9ff",
+                                    border: "1px solid #bae6fd",
+                                    borderRadius: "4px",
+                                    width: "100%",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                      marginBottom: "8px",
+                                      color: "#0369a1",
+                                    }}
+                                  >
+                                    IV Team Review
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      marginBottom: "4px",
+                                      color: "#374151",
+                                    }}
+                                  >
+                                    <strong>IV Status:</strong>{" "}
+                                    {
+                                      getDropdownOptions(
+                                        FIELD_IDS.IV_STATUS,
+                                      ).find(
+                                        (opt) =>
+                                          opt.incrementalId ===
+                                          formData.ivStatus,
+                                      )?.name
+                                    }
+                                  </div>
+                                  {formData.ivRemarks && (
+                                    <div
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#374151",
+                                      }}
+                                    >
+                                      <strong>IV Remarks:</strong>{" "}
+                                      {formData.ivRemarks}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                         </>
                       )}
                     </div>
@@ -8157,6 +8367,118 @@ const WalkoutForm = () => {
                 </div>
               )}
             </div>
+
+            {/* IV Section - Only show when status is "On Hold – IV Team" or "On Hold – IV Team & Office" */}
+            {(sidebarData.walkoutStatus === "On Hold – IV Team" ||
+              sidebarData.walkoutStatus === "On Hold – IV Team & Office") && (
+              <div className="WF-section">
+                <div
+                  className="WF-section-header"
+                  onClick={() => toggleSection("ivSection")}
+                >
+                  <h3>IV Section</h3>
+                  <span className="WF-toggle-icon">
+                    {sections.ivSection ? "−" : "+"}
+                  </span>
+                </div>
+
+                {sections.ivSection && (
+                  <div className="WF-section-content">
+                    <fieldset className="WF-form-fieldset WF-iv-fieldset">
+                      {/* Disclaimer */}
+                      <div className="WF-iv-disclaimer">
+                        <p>
+                          <strong>Notice:</strong> This walkout is on hold due
+                          to missing IV. Please provide the required information
+                          below to proceed.
+                        </p>
+                      </div>
+
+                      {/* IV Status Dropdown */}
+                      <div className="WF-walkout-form-row">
+                        <label className="WF-walkout-form-label">
+                          IV Status
+                          <span style={{ color: "#dc2626" }}>*</span>
+                        </label>
+                        <select
+                          className={`WF-walkout-form-dropdown ${
+                            ivValidationErrors.ivStatus
+                              ? "WF-validation-error"
+                              : ""
+                          }`}
+                          value={formData.ivStatus || ""}
+                          onChange={(e) => {
+                            handleDropdownChange(
+                              "ivStatus",
+                              e.target.value ? parseInt(e.target.value) : null,
+                            );
+                            if (ivValidationErrors.ivStatus) {
+                              setIvValidationErrors((prev) => ({
+                                ...prev,
+                                ivStatus: false,
+                              }));
+                            }
+                          }}
+                          data-field-id={FIELD_IDS.IV_STATUS}
+                        >
+                          <option value="">Select IV Status</option>
+                          {getDropdownOptions(FIELD_IDS.IV_STATUS).map(
+                            (option) => (
+                              <option
+                                key={option._id}
+                                value={option.incrementalId}
+                              >
+                                {option.name}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+
+                      {/* IV Remarks - Show only when IV Status = 6 */}
+                      {formData.ivStatus === 6 && (
+                        <div className="WF-walkout-form-row">
+                          <label className="WF-walkout-form-label">
+                            IV Remarks
+                            <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          <textarea
+                            className={`WF-walkout-form-textarea ${
+                              ivValidationErrors.ivRemarks
+                                ? "WF-validation-error"
+                                : ""
+                            }`}
+                            placeholder="Enter IV remarks..."
+                            value={formData.ivRemarks || ""}
+                            onChange={(e) => {
+                              handleDropdownChange("ivRemarks", e.target.value);
+                              if (ivValidationErrors.ivRemarks) {
+                                setIvValidationErrors((prev) => ({
+                                  ...prev,
+                                  ivRemarks: false,
+                                }));
+                              }
+                            }}
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                    </fieldset>
+
+                    {/* IV Section Submit Button */}
+                    <div className="WF-section-submit">
+                      <button
+                        type="button"
+                        className="WF-submit-button"
+                        onClick={handleIVSubmit}
+                      >
+                        Submit IV Section
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

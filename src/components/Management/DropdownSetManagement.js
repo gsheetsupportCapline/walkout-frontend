@@ -27,6 +27,7 @@ const FIELD_IDS = {
   LC3_ONHOLD_STATUS: "WFDRP_LC3_ONHOLD_STATUS",
   AUDIT_DISCREPANCY_FOUND: "WFRAD_AUDIT_DISCREPANCY",
   AUDIT_DISCREPANCY_FIXED: "WFRAD_AUDIT_FIXED",
+  IV_STATUS: "WFDD_IV_STATUS",
 };
 
 // Field ID Labels for dropdown options - ALL DROPDOWNS
@@ -72,6 +73,9 @@ const FIELD_LABELS = {
   WFDRP_LC3_REASON_INS_DIFF:
     "LC3 - Reason for Difference in Est Insurance (Dropdown)",
   WFDRP_LC3_ONHOLD_REASONS: "LC3 - On Hold Reasons (Dropdown)",
+
+  // === IV SECTION - DROPDOWNS (1) ===
+  WFDD_IV_STATUS: "IV - IV Status (Dropdown)",
 };
 
 const DropdownSetManagement = () => {
@@ -480,7 +484,11 @@ const DropdownSetManagement = () => {
                         >
                           <option value="">-- Select Field --</option>
                           {Object.entries(FIELD_LABELS)
-                            .filter(([key]) => key.startsWith("WFDRP_")) // Only dropdown fields
+                            .filter(
+                              ([key]) =>
+                                key.startsWith("WFDRP_") ||
+                                key.startsWith("WFDD_"),
+                            ) // Dropdown fields
                             .map(([key, label]) => (
                               <option key={key} value={key}>
                                 {label}
