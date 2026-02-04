@@ -259,6 +259,38 @@ const Appointments = () => {
   const handleNoShowCancel = async (appointment, e) => {
     e.stopPropagation(); // Prevent row click
 
+    // Show confirmation dialog with appointment details
+    const result = await Swal.fire({
+      title: "Confirm No Show/Cancel",
+      html: `
+        <div style="text-align: left; font-size: 13px; line-height: 1.4;">
+          <p style="margin: 6px 0;"><strong>Patient Name:</strong> ${appointment["patient-name"] || "N/A"}</p>
+          <p style="margin: 6px 0;"><strong>Patient ID:</strong> ${appointment["patient-id"] || "N/A"}</p>
+          <p style="margin: 6px 0;"><strong>Date of Service:</strong> ${appointment.dos || appointment["dos"] || "N/A"}</p>
+          <p style="margin-top: 12px; color: #dc2626; font-size: 12px;">Are you sure you want to mark this as No Show/Cancel?</p>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, mark it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-compact",
+        title: "swal-compact-title",
+        htmlContainer: "swal-compact-html",
+        confirmButton: "swal-compact-button",
+        cancelButton: "swal-compact-button",
+      },
+      width: "400px",
+    });
+
+    // If user cancels, return early
+    if (!result.isConfirmed) {
+      return;
+    }
+
     try {
       const API_URL =
         process.env.REACT_APP_API_URL || "http://localhost:5000/api";

@@ -556,3 +556,26 @@
     flex: 1;
   }
 }
+
+/* Compact SweetAlert2 styles */
+.swal-compact {
+  padding: 15px !important;
+}
+
+.swal-compact-title {
+  font-size: 16px !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+}
+
+.swal-compact-html {
+  margin: 8px 0 !important;
+  padding: 0 !important;
+  font-size: 13px !important;
+}
+
+.swal-compact-button {
+  font-size: 12px !important;
+  padding: 6px 16px !important;
+  margin: 4px !important;
+}
