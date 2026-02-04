@@ -8580,8 +8580,8 @@ const WalkoutForm = () => {
               {renderImageButtons("lc3WO", "LC3 WO")}
             </div>
 
-            {/* Submission Details */}
-            <div className="WF-sidebar-item">
+            {/* Submission Details - Hidden for now (hardcoded data) */}
+            <div className="WF-sidebar-item" style={{ display: "none" }}>
               <div className="WF-submission-details">
                 <div className="WF-detail-row">
                   <span className="WF-detail-label">

@@ -207,8 +207,7 @@ button:focus {
   padding: 10px 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
-  height: fit-content;
-  max-height: calc(100vh - 80px);
+  height: calc(100vh - 72px);
   overflow-y: auto;
   position: fixed;
   top: 64px;
