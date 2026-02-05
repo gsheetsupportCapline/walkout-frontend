@@ -172,7 +172,7 @@ const Navbar = () => {
               </Link>
               {/* Hide Walk-in/Unscheduled button for LC3 Team users */}
               {!user?.teamName?.some(
-                (team) => team.teamId?.teamName === "LC3 Team"
+                (team) => team.teamId?.teamName === "LC3 Team",
               ) && (
                 <button
                   className="navbar-link"
