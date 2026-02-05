@@ -261,146 +261,167 @@ const UserManagement = () => {
                     )}
                   </td>
                   <td>
-                    {user.teamName &&
-                    user.teamName.length > 0 &&
-                    user.teamName[0].teamId.teamName === "Office" ? (
-                      <div className="office-dropdown-wrapper">
-                        <button
-                          className="office-count-btn"
-                          onClick={(e) => {
-                            if (showOfficeDropdown === user._id) {
-                              setShowOfficeDropdown(null);
-                            } else {
-                              // Initialize temp state with current assigned offices (only IDs)
-                              let currentOfficeIds = [];
-                              if (
-                                user.assignedOffice &&
-                                user.assignedOffice.length > 0
-                              ) {
-                                currentOfficeIds = user.assignedOffice.map(
-                                  (o) => {
-                                    // Handle different formats
-                                    if (typeof o === "string") {
-                                      return o;
-                                    }
-                                    // Handle populated officeId object: { officeId: { _id, officeName, regionId }, _id }
-                                    if (o.officeId?._id) {
-                                      return o.officeId._id.toString();
-                                    }
-                                    // Fallback to direct _id if not populated
-                                    if (o._id) {
-                                      return o._id.toString();
-                                    }
-                                    return o.toString();
-                                  },
-                                );
-                              }
-                              console.log(
-                                "Current Office IDs:",
-                                currentOfficeIds,
-                              );
-                              console.log(
-                                "User assignedOffice:",
-                                user.assignedOffice,
-                              );
-                              setTempSelectedOffices(currentOfficeIds);
-                              setShowOfficeDropdown(user._id);
+                    {(() => {
+                      // Check if user has Office or LC3 Team
+                      const hasOfficeOrLC3Team =
+                        user.teamName &&
+                        user.teamName.length > 0 &&
+                        user.teamName.some((team) => {
+                          const teamName = team.teamId?.teamName?.toLowerCase();
+                          console.log(
+                            `User ${user.userName} - Team: ${team.teamId?.teamName}`,
+                            team,
+                          );
+                          return (
+                            teamName === "office" || teamName === "lc3 team"
+                          );
+                        });
 
-                              // Position dropdown below button after state update
-                              setTimeout(() => {
-                                const dropdown =
-                                  document.querySelector(".office-dropdown");
-                                if (dropdown) {
-                                  const rect = e.target.getBoundingClientRect();
-                                  dropdown.style.top = `${rect.bottom + 5}px`;
-                                  dropdown.style.left = `${rect.left}px`;
+                      console.log(
+                        `User ${user.userName} - Show dropdown: ${hasOfficeOrLC3Team}`,
+                      );
+
+                      return hasOfficeOrLC3Team ? (
+                        <div className="office-dropdown-wrapper">
+                          <button
+                            className="office-count-btn"
+                            onClick={(e) => {
+                              if (showOfficeDropdown === user._id) {
+                                setShowOfficeDropdown(null);
+                              } else {
+                                // Initialize temp state with current assigned offices (only IDs)
+                                let currentOfficeIds = [];
+                                if (
+                                  user.assignedOffice &&
+                                  user.assignedOffice.length > 0
+                                ) {
+                                  currentOfficeIds = user.assignedOffice.map(
+                                    (o) => {
+                                      // Handle different formats
+                                      if (typeof o === "string") {
+                                        return o;
+                                      }
+                                      // Handle populated officeId object: { officeId: { _id, officeName, regionId }, _id }
+                                      if (o.officeId?._id) {
+                                        return o.officeId._id.toString();
+                                      }
+                                      // Fallback to direct _id if not populated
+                                      if (o._id) {
+                                        return o._id.toString();
+                                      }
+                                      return o.toString();
+                                    },
+                                  );
                                 }
-                              }, 0);
-                            }
-                          }}
-                        >
-                          {user.assignedOffice && user.assignedOffice.length > 0
-                            ? `${user.assignedOffice.length} office${user.assignedOffice.length > 1 ? "s" : ""} selected`
-                            : "Select offices"}
-                        </button>
-                        {showOfficeDropdown === user._id && (
-                          <div
-                            className="office-dropdown"
-                            ref={officeDropdownRef}
-                          >
-                            <div className="office-dropdown-header">
-                              <span>Select Offices</span>
-                              <button
-                                onClick={() => setShowOfficeDropdown(null)}
-                              >
-                                ×
-                              </button>
-                            </div>
-                            <div className="office-options">
-                              {offices.map((office) => {
-                                const officeIdStr = office._id.toString();
-                                const isSelected = tempSelectedOffices.some(
-                                  (id) => id.toString() === officeIdStr,
+                                console.log(
+                                  "Current Office IDs:",
+                                  currentOfficeIds,
                                 );
                                 console.log(
-                                  `Office ${office.officeName} (${officeIdStr}): ${isSelected}`,
-                                  tempSelectedOffices,
+                                  "User assignedOffice:",
+                                  user.assignedOffice,
                                 );
-                                return (
-                                  <label
-                                    key={office._id}
-                                    className="office-option"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setTempSelectedOffices([
-                                            ...tempSelectedOffices,
-                                            office._id,
-                                          ]);
-                                        } else {
-                                          setTempSelectedOffices(
-                                            tempSelectedOffices.filter(
-                                              (id) =>
-                                                id.toString() !==
-                                                office._id.toString(),
-                                            ),
-                                          );
-                                        }
-                                      }}
-                                    />
-                                    <span>{office.officeName}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <div className="office-actions-row">
-                              <button
-                                className="btn-office-cancel"
-                                onClick={() => setShowOfficeDropdown(null)}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                className="btn-office-ok"
-                                onClick={() =>
-                                  handleOfficeAssignment(
-                                    user._id,
+                                setTempSelectedOffices(currentOfficeIds);
+                                setShowOfficeDropdown(user._id);
+
+                                // Position dropdown below button after state update
+                                setTimeout(() => {
+                                  const dropdown =
+                                    document.querySelector(".office-dropdown");
+                                  if (dropdown) {
+                                    const rect =
+                                      e.target.getBoundingClientRect();
+                                    dropdown.style.top = `${rect.bottom + 5}px`;
+                                    dropdown.style.left = `${rect.left}px`;
+                                  }
+                                }, 0);
+                              }
+                            }}
+                          >
+                            {user.assignedOffice &&
+                            user.assignedOffice.length > 0
+                              ? `${user.assignedOffice.length} office${user.assignedOffice.length > 1 ? "s" : ""} selected`
+                              : "Select offices"}
+                          </button>
+                          {showOfficeDropdown === user._id && (
+                            <div
+                              className="office-dropdown"
+                              ref={officeDropdownRef}
+                            >
+                              <div className="office-dropdown-header">
+                                <span>Select Offices</span>
+                                <button
+                                  onClick={() => setShowOfficeDropdown(null)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              <div className="office-options">
+                                {offices.map((office) => {
+                                  const officeIdStr = office._id.toString();
+                                  const isSelected = tempSelectedOffices.some(
+                                    (id) => id.toString() === officeIdStr,
+                                  );
+                                  console.log(
+                                    `Office ${office.officeName} (${officeIdStr}): ${isSelected}`,
                                     tempSelectedOffices,
-                                  )
-                                }
-                              >
-                                OK
-                              </button>
+                                  );
+                                  return (
+                                    <label
+                                      key={office._id}
+                                      className="office-option"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setTempSelectedOffices([
+                                              ...tempSelectedOffices,
+                                              office._id,
+                                            ]);
+                                          } else {
+                                            setTempSelectedOffices(
+                                              tempSelectedOffices.filter(
+                                                (id) =>
+                                                  id.toString() !==
+                                                  office._id.toString(),
+                                              ),
+                                            );
+                                          }
+                                        }}
+                                      />
+                                      <span>{office.officeName}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                              <div className="office-actions-row">
+                                <button
+                                  className="btn-office-cancel"
+                                  onClick={() => setShowOfficeDropdown(null)}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  className="btn-office-ok"
+                                  onClick={() =>
+                                    handleOfficeAssignment(
+                                      user._id,
+                                      tempSelectedOffices,
+                                    )
+                                  }
+                                >
+                                  OK
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="no-office-text">-</span>
-                    )}
+                          )}
+                        </div>
+                      ) : (
+                        <span className="no-office-text">-</span>
+                      );
+                    })()}
                   </td>
                   <td>
                     <select

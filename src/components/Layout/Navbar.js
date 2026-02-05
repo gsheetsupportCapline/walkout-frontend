@@ -170,13 +170,18 @@ const Navbar = () => {
                 <span className="nav-icon">📊</span>
                 Dashboards
               </Link>
-              <button
-                className="navbar-link"
-                onClick={() => setShowWalkInModal(true)}
-              >
-                <span className="nav-icon">➕</span>
-                Walk-in/Unscheduled
-              </button>
+              {/* Hide Walk-in/Unscheduled button for LC3 Team users */}
+              {!user?.teamName?.some(
+                (team) => team.teamId?.teamName === "LC3 Team"
+              ) && (
+                <button
+                  className="navbar-link"
+                  onClick={() => setShowWalkInModal(true)}
+                >
+                  <span className="nav-icon">➕</span>
+                  Walk-in/Unscheduled
+                </button>
+              )}
 
               <div className="user-dropdown" ref={dropdownRef}>
                 <button

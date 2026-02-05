@@ -74,12 +74,19 @@ const Appointments = () => {
           (office) => office.isActive && office.visibility === "on",
         );
 
-        // Filter offices for Office team users - show only assigned offices
+        // Filter offices for Office team and LC3 Team users - show only assigned offices
         const isOfficeTeamUser = user?.teamName?.some(
           (team) => team.teamId?.teamName === "Office",
         );
 
-        if (isOfficeTeamUser && user?.assignedOffice?.length > 0) {
+        const isLC3TeamUser = user?.teamName?.some(
+          (team) => team.teamId?.teamName === "LC3 Team",
+        );
+
+        if (
+          (isOfficeTeamUser || isLC3TeamUser) &&
+          user?.assignedOffice?.length > 0
+        ) {
           const assignedOfficeIds = user.assignedOffice.map((o) => {
             if (typeof o === "string") return o;
             if (o.officeId?._id) return o.officeId._id.toString();
