@@ -47,6 +47,7 @@ const Appointments = () => {
   const [columnFilters, setColumnFilters] = useState({});
   const [tempColumnFilters, setTempColumnFilters] = useState({}); // Temporary selections before OK
   const [showFilterDropdown, setShowFilterDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [allAppointmentsData, setAllAppointmentsData] = useState([]); // All data for client-side filtering
   const [pageBeforeFilter, setPageBeforeFilter] = useState(1); // Track page before applying filter
 
@@ -691,7 +692,7 @@ const Appointments = () => {
   };
 
   // Load unique values when filter dropdown opens
-  const handleFilterButtonClick = async (columnKey, dropdownId) => {
+  const handleFilterButtonClick = async (columnKey, dropdownId, event) => {
     if (showFilterDropdown === dropdownId) {
       setShowFilterDropdown(null);
     } else {
@@ -703,6 +704,23 @@ const Appointments = () => {
       // Fetch all data if not already loaded (needed for accurate filtering)
       if (allAppointmentsData.length === 0 && filters.officeName) {
         await fetchAllDataForFiltering();
+      }
+
+      // Calculate position for dropdown
+      if (event) {
+        const button = event.currentTarget;
+        const th = button.closest("th");
+
+        if (th) {
+          const thRect = th.getBoundingClientRect();
+          const buttonRect = button.getBoundingClientRect();
+
+          // Position dropdown below the entire header row
+          setDropdownPosition({
+            top: thRect.bottom + 4,
+            left: buttonRect.left,
+          });
+        }
       }
     }
   };
@@ -849,10 +867,63 @@ const Appointments = () => {
     setCurrentPage(pageBeforeFilter); // Restore page before filter was applied
   };
 
+  // Render filter dropdown outside table
+  const renderFilterDropdown = (columnKey, dropdownId) => {
+    if (showFilterDropdown !== dropdownId) return null;
+
+    return (
+      <div
+        id={dropdownId}
+        className="filter-dropdown"
+        style={{
+          position: "fixed",
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`,
+          zIndex: 99999,
+        }}
+      >
+        <div className="filter-dropdown-header">
+          <span>
+            Filter Options{" "}
+            {tempColumnFilters[columnKey] &&
+              tempColumnFilters[columnKey].length > 0 &&
+              `(${tempColumnFilters[columnKey].length} selected)`}
+          </span>
+        </div>
+        <div className="filter-options">
+          {getUniqueColumnValues(columnKey).map((value) => (
+            <label key={value} className="filter-option">
+              <input
+                type="checkbox"
+                checked={(tempColumnFilters[columnKey] || []).includes(value)}
+                onChange={() => toggleColumnFilter(columnKey, value)}
+              />
+              <span>{value}</span>
+            </label>
+          ))}
+        </div>
+        <div className="filter-actions-row">
+          <button className="btn-filter-cancel" onClick={cancelColumnFilter}>
+            Cancel
+          </button>
+          <button
+            className="btn-filter-ok"
+            onClick={() => applyColumnFilter(columnKey)}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Close filter dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".th-content")) {
+      if (
+        !event.target.closest(".th-content") &&
+        !event.target.closest(".filter-dropdown")
+      ) {
         setShowFilterDropdown(null);
       }
     };
@@ -1007,8 +1078,8 @@ const Appointments = () => {
                       Pending with?
                       <button
                         className="filter-btn"
-                        onClick={() =>
-                          handleFilterButtonClick("pending-with", "pending")
+                        onClick={(e) =>
+                          handleFilterButtonClick("pending-with", "pending", e)
                         }
                         title="Filter"
                       >
@@ -1019,50 +1090,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "pending" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["pending-with"] &&
-                                tempColumnFilters["pending-with"].length > 0 &&
-                                `(${tempColumnFilters["pending-with"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("pending-with").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["pending-with"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter("pending-with", value)
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() => applyColumnFilter("pending-with")}
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   {isAdminOrSuper && (
@@ -1071,7 +1098,9 @@ const Appointments = () => {
                         Date of Service
                         <button
                           className="filter-btn"
-                          onClick={() => handleFilterButtonClick("dos", "dos")}
+                          onClick={(e) =>
+                            handleFilterButtonClick("dos", "dos", e)
+                          }
                           title="Filter"
                         >
                           {columnFilters["dos"] &&
@@ -1081,48 +1110,6 @@ const Appointments = () => {
                             <span className="filter-icon">▽</span>
                           )}
                         </button>
-                        {showFilterDropdown === "dos" && (
-                          <div className="filter-dropdown">
-                            <div className="filter-dropdown-header">
-                              <span>
-                                Filter Options{" "}
-                                {tempColumnFilters["dos"] &&
-                                  tempColumnFilters["dos"].length > 0 &&
-                                  `(${tempColumnFilters["dos"].length} selected)`}
-                              </span>
-                            </div>
-                            <div className="filter-options">
-                              {getUniqueColumnValues("dos").map((value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["dos"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter("dos", value)
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ))}
-                            </div>
-                            <div className="filter-actions-row">
-                              <button
-                                className="btn-filter-cancel"
-                                onClick={cancelColumnFilter}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                className="btn-filter-ok"
-                                onClick={() => applyColumnFilter("dos")}
-                              >
-                                OK
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </th>
                   )}
@@ -1131,8 +1118,8 @@ const Appointments = () => {
                       Patient ID
                       <button
                         className="filter-btn"
-                        onClick={() =>
-                          handleFilterButtonClick("patient-id", "patientId")
+                        onClick={(e) =>
+                          handleFilterButtonClick("patient-id", "patientId", e)
                         }
                         title="Filter"
                       >
@@ -1143,50 +1130,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "patientId" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["patient-id"] &&
-                                tempColumnFilters["patient-id"].length > 0 &&
-                                `(${tempColumnFilters["patient-id"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("patient-id").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["patient-id"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter("patient-id", value)
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() => applyColumnFilter("patient-id")}
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1194,8 +1137,12 @@ const Appointments = () => {
                       Patient Name
                       <button
                         className="filter-btn"
-                        onClick={() =>
-                          handleFilterButtonClick("patient-name", "patientName")
+                        onClick={(e) =>
+                          handleFilterButtonClick(
+                            "patient-name",
+                            "patientName",
+                            e,
+                          )
                         }
                         title="Filter"
                       >
@@ -1206,50 +1153,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "patientName" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["patient-name"] &&
-                                tempColumnFilters["patient-name"].length > 0 &&
-                                `(${tempColumnFilters["patient-name"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("patient-name").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["patient-name"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter("patient-name", value)
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() => applyColumnFilter("patient-name")}
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1257,10 +1160,11 @@ const Appointments = () => {
                       WO Submit To LC3?
                       <button
                         className="filter-btn"
-                        onClick={() =>
+                        onClick={(e) =>
                           handleFilterButtonClick(
                             "wo-submit-lc3",
                             "woSubmitLc3",
+                            e,
                           )
                         }
                         title="Filter"
@@ -1272,50 +1176,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "woSubmitLc3" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["wo-submit-lc3"] &&
-                                tempColumnFilters["wo-submit-lc3"].length > 0 &&
-                                `(${tempColumnFilters["wo-submit-lc3"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("wo-submit-lc3").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["wo-submit-lc3"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter("wo-submit-lc3", value)
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() => applyColumnFilter("wo-submit-lc3")}
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1323,10 +1183,11 @@ const Appointments = () => {
                       Walkout Status
                       <button
                         className="filter-btn"
-                        onClick={() =>
+                        onClick={(e) =>
                           handleFilterButtonClick(
                             "walkout-status",
                             "walkoutStatus",
+                            e,
                           )
                         }
                         title="Filter"
@@ -1338,56 +1199,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "walkoutStatus" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["walkout-status"] &&
-                                tempColumnFilters["walkout-status"].length >
-                                  0 &&
-                                `(${tempColumnFilters["walkout-status"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("walkout-status").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["walkout-status"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter(
-                                        "walkout-status",
-                                        value,
-                                      )
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() =>
-                                applyColumnFilter("walkout-status")
-                              }
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1395,10 +1206,11 @@ const Appointments = () => {
                       Pending Checks(LC3)
                       <button
                         className="filter-btn"
-                        onClick={() =>
+                        onClick={(e) =>
                           handleFilterButtonClick(
                             "pending-checks",
                             "pendingChecks",
+                            e,
                           )
                         }
                         title="Filter"
@@ -1410,56 +1222,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "pendingChecks" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["pending-checks"] &&
-                                tempColumnFilters["pending-checks"].length >
-                                  0 &&
-                                `(${tempColumnFilters["pending-checks"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("pending-checks").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["pending-checks"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter(
-                                        "pending-checks",
-                                        value,
-                                      )
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() =>
-                                applyColumnFilter("pending-checks")
-                              }
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1467,10 +1229,11 @@ const Appointments = () => {
                       On Hold Reasons
                       <button
                         className="filter-btn"
-                        onClick={() =>
+                        onClick={(e) =>
                           handleFilterButtonClick(
                             "on-hold-reasons",
                             "onHoldReasons",
+                            e,
                           )
                         }
                         title="Filter"
@@ -1482,56 +1245,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "onHoldReasons" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["on-hold-reasons"] &&
-                                tempColumnFilters["on-hold-reasons"].length >
-                                  0 &&
-                                `(${tempColumnFilters["on-hold-reasons"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues("on-hold-reasons").map(
-                              (value) => (
-                                <label key={value} className="filter-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={(
-                                      tempColumnFilters["on-hold-reasons"] || []
-                                    ).includes(value)}
-                                    onChange={() =>
-                                      toggleColumnFilter(
-                                        "on-hold-reasons",
-                                        value,
-                                      )
-                                    }
-                                  />
-                                  <span>{value}</span>
-                                </label>
-                              ),
-                            )}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() =>
-                                applyColumnFilter("on-hold-reasons")
-                              }
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>
@@ -1539,10 +1252,11 @@ const Appointments = () => {
                       On-Hold Reasons addressed
                       <button
                         className="filter-btn"
-                        onClick={() =>
+                        onClick={(e) =>
                           handleFilterButtonClick(
                             "on-hold-reasons-addressed",
                             "onHoldReasonsAddressed",
+                            e,
                           )
                         }
                         title="Filter"
@@ -1555,58 +1269,6 @@ const Appointments = () => {
                           <span className="filter-icon">▽</span>
                         )}
                       </button>
-                      {showFilterDropdown === "onHoldReasonsAddressed" && (
-                        <div className="filter-dropdown">
-                          <div className="filter-dropdown-header">
-                            <span>
-                              Filter Options{" "}
-                              {tempColumnFilters["on-hold-reasons-addressed"] &&
-                                tempColumnFilters["on-hold-reasons-addressed"]
-                                  .length > 0 &&
-                                `(${tempColumnFilters["on-hold-reasons-addressed"].length} selected)`}
-                            </span>
-                          </div>
-                          <div className="filter-options">
-                            {getUniqueColumnValues(
-                              "on-hold-reasons-addressed",
-                            ).map((value) => (
-                              <label key={value} className="filter-option">
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    tempColumnFilters[
-                                      "on-hold-reasons-addressed"
-                                    ] || []
-                                  ).includes(value)}
-                                  onChange={() =>
-                                    toggleColumnFilter(
-                                      "on-hold-reasons-addressed",
-                                      value,
-                                    )
-                                  }
-                                />
-                                <span>{value}</span>
-                              </label>
-                            ))}
-                          </div>
-                          <div className="filter-actions-row">
-                            <button
-                              className="btn-filter-cancel"
-                              onClick={cancelColumnFilter}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="btn-filter-ok"
-                              onClick={() =>
-                                applyColumnFilter("on-hold-reasons-addressed")
-                              }
-                            >
-                              OK
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </th>
                   <th>Action</th>
@@ -1866,6 +1528,20 @@ const Appointments = () => {
               </div>
             )}
         </div>
+
+        {/* Filter Dropdowns - Rendered outside table for proper positioning */}
+        {renderFilterDropdown("pending-with", "pending")}
+        {renderFilterDropdown("dos", "dos")}
+        {renderFilterDropdown("patient-id", "patientId")}
+        {renderFilterDropdown("patient-name", "patientName")}
+        {renderFilterDropdown("wo-submit-lc3", "woSubmitLc3")}
+        {renderFilterDropdown("walkout-status", "walkoutStatus")}
+        {renderFilterDropdown("pending-checks", "pendingChecks")}
+        {renderFilterDropdown("on-hold-reasons", "onHoldReasons")}
+        {renderFilterDropdown(
+          "on-hold-reasons-addressed",
+          "onHoldReasonsAddressed",
+        )}
       </div>
     </>
   );
