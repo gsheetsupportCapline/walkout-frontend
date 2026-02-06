@@ -705,6 +705,8 @@ const Appointments = () => {
     } else {
       setShowFilterDropdown(dropdownId);
 
+      const button = event?.currentTarget || null;
+
       // Initialize temp filters with current filters
       setTempColumnFilters({ ...columnFilters });
 
@@ -714,8 +716,7 @@ const Appointments = () => {
       }
 
       // Calculate position for dropdown
-      if (event) {
-        const button = event.currentTarget;
+      if (button) {
         const th = button.closest("th");
 
         if (th) {
