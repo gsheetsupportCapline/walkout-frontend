@@ -190,10 +190,28 @@ const WalkoutForm = () => {
     ivSection: false,
   });
 
+  const getCTTimeString = () => {
+    const now = new Date();
+    return now
+      .toLocaleString("en-CA", {
+        timeZone: "America/Chicago",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(", ", " ");
+  };
+
   // Walkout state management
   const [walkoutId, setWalkoutId] = useState(null);
   const [appointmentId] = useState(appointment?._id || null);
-  const [openTime] = useState(new Date().toISOString());
+  const [officeOpenTime] = useState(() => getCTTimeString());
+  const [lc3OpenTime] = useState(() => getCTTimeString());
+  const [auditOpenTime] = useState(() => getCTTimeString());
   const [isExistingWalkout, setIsExistingWalkout] = useState(false);
 
   // State for radio button sets
@@ -322,25 +340,8 @@ const WalkoutForm = () => {
 
   // Track session start time when component mounts
   useEffect(() => {
-    // Get current time in IST timezone and format as ISO string
-    const getISTTime = () => {
-      const now = new Date();
-      // Format date in IST timezone
-      const istString = now
-        .toLocaleString("en-CA", {
-          timeZone: "Asia/Kolkata",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        })
-        .replace(", ", "T");
-      return istString + ".000Z"; // ISO format
-    };
-    setSessionStartTime(getISTTime());
+    // Session start time should reflect when form was opened
+    setSessionStartTime(getCTTimeString());
   }, []); // Only run once on mount
 
   // Fetch radio button sets
@@ -2546,8 +2547,10 @@ const WalkoutForm = () => {
       if (!isExistingWalkout || !walkoutId) {
         formDataPayload.append("formRefId", appointmentId);
         formDataPayload.append("appointmentId", appointmentId);
-        formDataPayload.append("openTime", openTime);
       }
+
+      // Add Office Section Open Time captured when form opened
+      formDataPayload.append("officeOpenTime", officeOpenTime);
 
       // Add all form fields as-is (backend handles type conversion)
       // console.log(
@@ -3431,25 +3434,8 @@ const WalkoutForm = () => {
 
       // console.log("📤 Submitting LC3 Payload:", lc3Payload);
 
-      // Get current time in IST timezone and format as ISO string
-      const getISTTime = () => {
-        const now = new Date();
-        // Format date in IST timezone
-        const istString = now
-          .toLocaleString("en-CA", {
-            timeZone: "Asia/Kolkata",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-          })
-          .replace(", ", "T");
-        return istString + ".000Z"; // ISO format
-      };
-      const sessionEndTime = getISTTime();
+      // Use current time in CT as session end time
+      const sessionEndTime = getCTTimeString();
 
       // Create FormData for LC3 submission
       const formDataPayload = new FormData();
@@ -3465,7 +3451,16 @@ const WalkoutForm = () => {
         formDataPayload.append("pendingWith", pendingWith);
       }
 
-      // Add session start and end times (both in IST)
+      // Add isCompleted field based on walkoutOnHold value
+      // walkoutOnHold = 1 (Yes, On Hold) → isCompleted = false
+      // walkoutOnHold = 2 (No, Not On Hold) → isCompleted = true
+      const isCompleted = formData.walkoutOnHold === 2;
+      formDataPayload.append("isCompleted", isCompleted);
+
+      // Add LC3 Section Open Time captured when form opened
+      formDataPayload.append("lc3OpenTime", lc3OpenTime);
+
+      // Add session start and end times (both in CT)
       formDataPayload.append(
         "sessionStartDateTime",
         sessionStartTime || sessionEndTime,
@@ -3679,6 +3674,7 @@ const WalkoutForm = () => {
 
       // Build audit payload
       const auditPayload = {
+        auditOpenTime: auditOpenTime,
         auditAnalysisData: "", // Blank for now as per user requirement
         auditDiscrepancyFoundOtherThanLC3Remarks:
           formData.discrepancyFound || null,
