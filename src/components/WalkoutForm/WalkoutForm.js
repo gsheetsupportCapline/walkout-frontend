@@ -276,7 +276,171 @@ const WalkoutForm = () => {
   };
 
   const [currentUser] = useState(getCurrentUser());
+  const getCurrentUserId = () => currentUser?._id || currentUser?.id || "";
   const LC3_TEAM_ID = "692b62d7671d81750966a63c";
+
+  const [initialOfficeSection, setInitialOfficeSection] = useState(null);
+  const [initialLc3Section, setInitialLc3Section] = useState(null);
+  const [initialAuditSection, setInitialAuditSection] = useState(null);
+  const [initialIvSection, setInitialIvSection] = useState(null);
+  const [officeFieldKeys, setOfficeFieldKeys] = useState([]);
+  const [initialWalkoutMeta, setInitialWalkoutMeta] = useState({
+    walkoutStatus: "",
+    pendingWith: "",
+    isOnHoldAddressed: null,
+  });
+
+  const isEmptyHistoryValue = (value) => {
+    if (value === null || value === undefined) return true;
+    if (typeof value === "string" && value.trim() === "") return true;
+    if (Array.isArray(value) && value.length === 0) return true;
+    return false;
+  };
+
+  const getHistoryChanges = (current, initial) => {
+    const changes = {};
+    if (!current || typeof current !== "object") return changes;
+
+    const keys = new Set([
+      ...Object.keys(current),
+      ...(initial ? Object.keys(initial) : []),
+    ]);
+
+    keys.forEach((key) => {
+      const hasCurrent = Object.prototype.hasOwnProperty.call(current, key);
+      const currentValue = hasCurrent ? current[key] : undefined;
+      const initialValue = initial ? initial[key] : undefined;
+
+      if (!hasCurrent) {
+        if (!isEmptyHistoryValue(initialValue)) {
+          changes[key] = null;
+        }
+        return;
+      }
+
+      if (typeof currentValue === "undefined") return;
+
+      const bothObjects =
+        currentValue &&
+        initialValue &&
+        typeof currentValue === "object" &&
+        typeof initialValue === "object";
+
+      const isEqual = bothObjects
+        ? JSON.stringify(currentValue) === JSON.stringify(initialValue)
+        : currentValue === initialValue;
+
+      if (!isEqual) {
+        changes[key] = isEmptyHistoryValue(currentValue) ? null : currentValue;
+      }
+    });
+
+    return changes;
+  };
+
+  const getHistoryChangesFromKeys = (current, initial, keys) => {
+    const changes = {};
+    if (!current || typeof current !== "object" || !Array.isArray(keys)) {
+      return changes;
+    }
+
+    keys.forEach((key) => {
+      const hasCurrent = Object.prototype.hasOwnProperty.call(current, key);
+      const currentValue = hasCurrent ? current[key] : undefined;
+      const initialValue = initial ? initial[key] : undefined;
+
+      if (!hasCurrent) {
+        if (!isEmptyHistoryValue(initialValue)) {
+          changes[key] = null;
+        }
+        return;
+      }
+
+      if (typeof currentValue === "undefined") return;
+
+      const bothObjects =
+        currentValue &&
+        initialValue &&
+        typeof currentValue === "object" &&
+        typeof initialValue === "object";
+
+      const isEqual = bothObjects
+        ? JSON.stringify(currentValue) === JSON.stringify(initialValue)
+        : currentValue === initialValue;
+
+      if (!isEqual) {
+        changes[key] = isEmptyHistoryValue(currentValue) ? null : currentValue;
+      }
+    });
+
+    return changes;
+  };
+
+  const getHistoryChangesCurrentKeys = (current, initial) => {
+    const changes = {};
+    if (!current || typeof current !== "object") return changes;
+
+    const getHistoryDiffValue = (currentValue, initialValue) => {
+      if (typeof currentValue === "undefined") return undefined;
+
+      if (isEmptyHistoryValue(currentValue)) {
+        return isEmptyHistoryValue(initialValue) ? undefined : null;
+      }
+
+      if (Array.isArray(currentValue)) {
+        const isEqual =
+          JSON.stringify(currentValue) === JSON.stringify(initialValue || []);
+        if (isEqual) return undefined;
+        return currentValue;
+      }
+
+      if (currentValue && typeof currentValue === "object") {
+        const nestedChanges = {};
+        Object.keys(currentValue).forEach((nestedKey) => {
+          const nestedDiff = getHistoryDiffValue(
+            currentValue[nestedKey],
+            initialValue ? initialValue[nestedKey] : undefined,
+          );
+          if (typeof nestedDiff !== "undefined") {
+            nestedChanges[nestedKey] = nestedDiff;
+          }
+        });
+
+        return Object.keys(nestedChanges).length > 0
+          ? nestedChanges
+          : undefined;
+      }
+
+      if (currentValue === initialValue) return undefined;
+      return currentValue;
+    };
+
+    Object.keys(current).forEach((key) => {
+      const currentValue = current[key];
+      const diffValue = getHistoryDiffValue(
+        currentValue,
+        initial ? initial[key] : undefined,
+      );
+
+      if (typeof diffValue !== "undefined") {
+        changes[key] = diffValue;
+      }
+    });
+
+    return changes;
+  };
+
+  const buildHistoryEntry = (section, action, changes) => {
+    if (!changes || Object.keys(changes).length === 0) return null;
+
+    return {
+      section,
+      action,
+      changes,
+      clientTime: getCTTimeString(),
+      clientUserId: getCurrentUserId(),
+    };
+  };
 
   // Check if current user is LC3 team member
   const isLC3TeamMember = () => {
@@ -580,6 +744,12 @@ const WalkoutForm = () => {
             }));
           }
 
+          setInitialWalkoutMeta({
+            walkoutStatus: existingWalkout.walkoutStatus || "",
+            pendingWith: existingWalkout.pendingWith || "",
+            isOnHoldAddressed: existingWalkout.isOnHoldAddressed || null,
+          });
+
           // Load all form data from the walkout
           if (existingWalkout.officeSection) {
             // console.log(
@@ -601,7 +771,7 @@ const WalkoutForm = () => {
               officeLastUpdatedAt,
               officeHistoricalNotes,
               lc3HistoricalNotes,
-              onHoldNotes,
+              lc3NotesData,
               _id,
               __v,
               ...validFormFields
@@ -670,6 +840,8 @@ const WalkoutForm = () => {
             }
 
             setFormData(validFormFields);
+            setInitialOfficeSection(validFormFields);
+            setOfficeFieldKeys(Object.keys(validFormFields));
 
             // Debug: Check if historical notes are present
             // console.log(
@@ -689,11 +861,11 @@ const WalkoutForm = () => {
               }));
             }
 
-            // Load LC3 On Hold Notes (for display in office section)
-            if (onHoldNotes && onHoldNotes.length > 0) {
+            // Load LC3 Notes Data (for display in office section)
+            if (lc3NotesData && lc3NotesData.length > 0) {
               setFormData((prev) => ({
                 ...prev,
-                onHoldNotes: onHoldNotes,
+                onHoldNotes: lc3NotesData,
               }));
             }
 
@@ -822,6 +994,7 @@ const WalkoutForm = () => {
           if (existingWalkout.lc3Section) {
             const lc3 = existingWalkout.lc3Section;
             // console.log("📋 Loading LC3 section data:", lc3);
+            setInitialLc3Section(lc3);
 
             // Load Rule Engine data into lc3Data state
             if (lc3.ruleEngine) {
@@ -1019,9 +1192,9 @@ const WalkoutForm = () => {
               lc3FormData.lc3HistoricalNotes = lc3.lc3HistoricalNotes;
             }
 
-            // On Hold Notes (structured notes with user info)
-            if (lc3.onHoldNotes && lc3.onHoldNotes.length > 0) {
-              lc3FormData.onHoldNotes = lc3.onHoldNotes;
+            // LC3 Notes Data (structured notes with user info)
+            if (lc3.lc3NotesData && lc3.lc3NotesData.length > 0) {
+              lc3FormData.onHoldNotes = lc3.lc3NotesData;
             }
 
             // Merge LC3 data into formData
@@ -1063,6 +1236,17 @@ const WalkoutForm = () => {
             const audit = existingWalkout.auditSection;
             console.log("📋 Loading Audit section data:", audit);
 
+            setInitialAuditSection({
+              auditOpenTime: audit.auditOpenTime || "",
+              auditAnalysisData: audit.auditAnalysisData || "",
+              auditDiscrepancyFoundOtherThanLC3Remarks:
+                audit.auditDiscrepancyFoundOtherThanLC3Remarks || null,
+              auditDiscrepancyRemarks: audit.auditDiscrepancyRemarks || "",
+              auditDiscrepancyFixedByLC3:
+                audit.auditDiscrepancyFixedByLC3 || null,
+              auditLc3Remarks: audit.auditLc3Remarks || "",
+            });
+
             // Map backend field names to frontend field names
             const auditFormData = {
               // auditAnalysisData is not mapped to form (used internally)
@@ -1082,6 +1266,13 @@ const WalkoutForm = () => {
           if (existingWalkout.ivSection) {
             const iv = existingWalkout.ivSection;
             console.log("📋 Loading IV section data:", iv);
+
+            setInitialIvSection({
+              ivStatus: iv.ivStatus || null,
+              ivRemarks: iv.ivRemarks || "",
+              walkoutStatus: existingWalkout.walkoutStatus || "",
+              pendingWith: existingWalkout.pendingWith || "",
+            });
 
             // Map backend field names to frontend field names
             const ivFormData = {
@@ -1448,6 +1639,11 @@ const WalkoutForm = () => {
 
         // Calculate ppDifferenceLC3 = expectedPPLC3 - expectedPPOffice
         updated.ppDifferenceLC3 = expectedLC3 - expectedOffice;
+
+        // Clear signed NVD question if difference is not negative
+        if (updated.ppDifferenceOffice >= 0) {
+          updated.signedNVDForDifference = "";
+        }
       }
 
       // Auto-calculate Production Details fields
@@ -1572,6 +1768,21 @@ const WalkoutForm = () => {
         }
       }
 
+      // LC3 Patient Portion payment verification - clear check questions if not Personal Check
+      if (fieldName === "ppPrimaryMode" || fieldName === "ppSecondaryMode") {
+        const primaryMode =
+          fieldName === "ppPrimaryMode" ? value : updated.ppPrimaryMode;
+        const secondaryMode =
+          fieldName === "ppSecondaryMode" ? value : updated.ppSecondaryMode;
+        const isPrimaryCheck = Number(primaryMode) === 4;
+        const isSecondaryCheck = Number(secondaryMode) === 4;
+
+        if (!isPrimaryCheck && !isSecondaryCheck) {
+          updated.verifyCheckMatchesES = "";
+          updated.forteCheckAvailable = "";
+        }
+      }
+
       return updated;
     });
   };
@@ -1581,6 +1792,44 @@ const WalkoutForm = () => {
     // Clear validation error for this field
     if (lc3ValidationErrors[fieldName]) {
       setLc3ValidationErrors((prev) => clearValidationError(prev, fieldName));
+    }
+
+    if (fieldName === "didLc3RunRules") {
+      const buttons = getRadioButtons(FIELD_IDS.LC3_RUN_RULES);
+      const yesButton = buttons.find((btn) => btn.name === "Yes");
+      const noButton = buttons.find((btn) => btn.name === "No");
+
+      setLc3Data((prev) => {
+        const updated = { ...prev, [fieldName]: value };
+
+        if (value === yesButton?.incrementalId) {
+          updated.reasonForNotRun = "";
+        }
+
+        if (value === noButton?.incrementalId) {
+          updated.ruleEngineUniqueId = "";
+          updated.showUpdateButton = false;
+          updated.failedRules = [];
+          updated.lastFetchedId = "";
+        }
+
+        return updated;
+      });
+
+      // Clear failed rule responses when rules are not run
+      if (value !== yesButton?.incrementalId) {
+        setFormData((prev) => {
+          const cleared = { ...prev };
+          Object.keys(cleared).forEach((key) => {
+            if (key.startsWith("failedRule")) {
+              cleared[key] = "";
+            }
+          });
+          return cleared;
+        });
+      }
+
+      return;
     }
 
     if (fieldName === "ruleEngineUniqueId") {
@@ -2377,7 +2626,7 @@ const WalkoutForm = () => {
         isPersonalCheckSelected &&
         (!formData.lastFourDigitsCheckForte ||
           formData.lastFourDigitsCheckForte.length !== 4 ||
-          !/^\d{4}$/.test(formData.lastFourDigitsCheckForte))
+          !/^[a-zA-Z0-9]{4}$/.test(formData.lastFourDigitsCheckForte))
       ) {
         Swal.fire({
           icon: "error",
@@ -2848,6 +3097,61 @@ const WalkoutForm = () => {
       }
       if (formData.narrative !== undefined && formData.narrative !== null) {
         formDataPayload.append("narrative", formData.narrative);
+      }
+
+      const officeKeys = (
+        officeFieldKeys.length > 0 ? officeFieldKeys : Object.keys(formData)
+      ).filter((key) => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.startsWith("lc3")) return false;
+        if (lowerKey.startsWith("iv")) return false;
+        if (lowerKey.startsWith("audit")) return false;
+        if (lowerKey.startsWith("discrepancy")) return false;
+        if (lowerKey.startsWith("noteelement")) return false;
+        if (lowerKey.startsWith("failedrule")) return false;
+        if (lowerKey === "ivstatus" || lowerKey === "ivremarks") return false;
+        if (lowerKey === "lc3remarks") return false;
+        if (lowerKey === "providernotesfromes") return false;
+        if (lowerKey === "hygienistnotesfromes") return false;
+        if (lowerKey === "checkedbyai") return false;
+        if (lowerKey === "newoonholdnote") return false;
+        return true;
+      });
+
+      const officeChanges = getHistoryChangesFromKeys(
+        formData,
+        initialOfficeSection,
+        officeKeys,
+      );
+
+      if (
+        officeOpenTime &&
+        officeOpenTime !== initialOfficeSection?.officeOpenTime
+      ) {
+        officeChanges.officeOpenTime = officeOpenTime;
+      }
+
+      if (walkoutStatus && walkoutStatus !== initialWalkoutMeta.walkoutStatus) {
+        officeChanges.walkoutStatus = walkoutStatus;
+      }
+      if (pendingWith && pendingWith !== initialWalkoutMeta.pendingWith) {
+        officeChanges.pendingWith = pendingWith;
+      }
+      if (
+        onHoldAddressedValue &&
+        onHoldAddressedValue !== initialWalkoutMeta.isOnHoldAddressed
+      ) {
+        officeChanges.isOnHoldAddressed = onHoldAddressedValue;
+      }
+
+      const officeHistoryEntry = buildHistoryEntry(
+        "office",
+        isExistingWalkout && initialOfficeSection ? "update" : "submit",
+        officeChanges,
+      );
+
+      if (officeHistoryEntry) {
+        formDataPayload.append("history", JSON.stringify(officeHistoryEntry));
       }
 
       // console.log("📤 Sending FormData Payload for Office Section");
@@ -3427,9 +3731,9 @@ const WalkoutForm = () => {
         },
       };
 
-      // Add on-hold note if present (backend will add to onHoldNotes array)
+      // Add LC3 notes data if present
       if (formData.newOnHoldNote && formData.newOnHoldNote.trim()) {
-        lc3Payload.onHoldNote = formData.newOnHoldNote.trim();
+        lc3Payload.lc3NotesData = formData.newOnHoldNote.trim();
       }
 
       // console.log("📤 Submitting LC3 Payload:", lc3Payload);
@@ -3466,6 +3770,49 @@ const WalkoutForm = () => {
         sessionStartTime || sessionEndTime,
       );
       formDataPayload.append("sessionEndDateTime", sessionEndTime);
+
+      const lc3Changes = {
+        ...getHistoryChangesCurrentKeys(lc3Payload, initialLc3Section || {}),
+      };
+
+      console.log("🔍 Debug LC3 History:");
+      console.log("lc3Payload:", lc3Payload);
+      console.log("initialLc3Section:", initialLc3Section);
+      console.log("lc3Changes after getHistoryChangesCurrentKeys:", lc3Changes);
+
+      const sessionStart = sessionStartTime || sessionEndTime;
+      if (sessionStart && sessionEndTime) {
+        lc3Changes.session = {
+          start: sessionStart,
+          end: sessionEndTime,
+        };
+      }
+
+      console.log("lc3Changes after adding session:", lc3Changes);
+      if (walkoutStatus && walkoutStatus !== initialWalkoutMeta.walkoutStatus) {
+        lc3Changes.walkoutStatus = walkoutStatus;
+      }
+      if (pendingWith && pendingWith !== initialWalkoutMeta.pendingWith) {
+        lc3Changes.pendingWith = pendingWith;
+      }
+      if (
+        isOnHoldAddressed &&
+        isOnHoldAddressed !== initialWalkoutMeta.isOnHoldAddressed
+      ) {
+        lc3Changes.isOnHoldAddressed = isOnHoldAddressed;
+      }
+      if (lc3OpenTime && lc3OpenTime !== initialLc3Section?.lc3OpenTime) {
+        lc3Changes.lc3OpenTime = lc3OpenTime;
+      }
+      const lc3HistoryEntry = buildHistoryEntry(
+        "lc3",
+        initialLc3Section ? "update" : "submit",
+        lc3Changes,
+      );
+
+      if (lc3HistoryEntry) {
+        formDataPayload.append("history", JSON.stringify(lc3HistoryEntry));
+      }
 
       // 1. Add LC3 WO Image first (optional)
       if (sidebarData.images.lc3WO.file) {
@@ -3520,9 +3867,9 @@ const WalkoutForm = () => {
         JSON.stringify(lc3Payload.providerNotes),
       );
 
-      // 8. On Hold Note (plain string, optional)
-      if (lc3Payload.onHoldNote) {
-        formDataPayload.append("onHoldNote", lc3Payload.onHoldNote);
+      // 8. LC3 Notes Data (plain string, optional)
+      if (lc3Payload.lc3NotesData) {
+        formDataPayload.append("lc3NotesData", lc3Payload.lc3NotesData);
       }
 
       // console.log("📤 Sending to:", `${API}/walkouts/${walkoutId}/lc3`);
@@ -3588,11 +3935,11 @@ const WalkoutForm = () => {
 
         // Update the walkout data if needed
         if (result.data && result.data.lc3Section) {
-          // Update onHoldNotes if they exist in response
-          if (result.data.lc3Section.onHoldNotes) {
+          // Update lc3NotesData if they exist in response
+          if (result.data.lc3Section.lc3NotesData) {
             setFormData((prev) => ({
               ...prev,
-              onHoldNotes: result.data.lc3Section.onHoldNotes,
+              onHoldNotes: result.data.lc3Section.lc3NotesData,
             }));
           }
         }
@@ -3682,6 +4029,20 @@ const WalkoutForm = () => {
         auditDiscrepancyFixedByLC3: formData.discrepancyFixed || null,
         auditLc3Remarks: formData.lc3Remarks || "",
       };
+
+      const auditChanges = getHistoryChanges(
+        auditPayload,
+        initialAuditSection || {},
+      );
+      const auditHistoryEntry = buildHistoryEntry(
+        "audit",
+        initialAuditSection ? "update" : "submit",
+        auditChanges,
+      );
+
+      if (auditHistoryEntry) {
+        auditPayload.history = auditHistoryEntry;
+      }
 
       console.log("📤 Submitting Audit Payload:", auditPayload);
 
@@ -3815,6 +4176,26 @@ const WalkoutForm = () => {
         walkoutStatus: newWalkoutStatus,
         pendingWith: newPendingWith,
       };
+
+      const ivChanges = getHistoryChanges(ivPayload, initialIvSection || {});
+      if (
+        newWalkoutStatus &&
+        newWalkoutStatus !== initialWalkoutMeta.walkoutStatus
+      ) {
+        ivChanges.walkoutStatus = newWalkoutStatus;
+      }
+      if (newPendingWith && newPendingWith !== initialWalkoutMeta.pendingWith) {
+        ivChanges.pendingWith = newPendingWith;
+      }
+      const ivHistoryEntry = buildHistoryEntry(
+        "iv",
+        initialIvSection ? "update" : "submit",
+        ivChanges,
+      );
+
+      if (ivHistoryEntry) {
+        ivPayload.history = ivHistoryEntry;
+      }
 
       console.log("📤 Submitting IV Payload:", ivPayload);
 
@@ -4541,18 +4922,21 @@ const WalkoutForm = () => {
                             <input
                               type="text"
                               maxLength="4"
-                              pattern="\d{4}"
+                              pattern="[A-Za-z0-9]{4}"
                               className={`WF-form-input ${
                                 officeValidationErrors.lastFourDigitsCheckForte
                                   ? "WF-validation-error"
                                   : ""
                               }`}
-                              placeholder="Enter exactly last 4 digits"
+                              placeholder="Enter exactly 4 characters"
                               value={formData.lastFourDigitsCheckForte || ""}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                // Only allow digits
-                                if (value === "" || /^\d+$/.test(value)) {
+                                // Only allow alphanumeric characters
+                                if (
+                                  value === "" ||
+                                  /^[a-zA-Z0-9]+$/.test(value)
+                                ) {
                                   handleDropdownChange(
                                     "lastFourDigitsCheckForte",
                                     value,
@@ -4569,7 +4953,7 @@ const WalkoutForm = () => {
                                     fontSize: "12px",
                                   }}
                                 >
-                                  Must be exactly 4 digits
+                                  Must be exactly 4 characters
                                 </span>
                               )}
                           </div>
@@ -5365,14 +5749,20 @@ const WalkoutForm = () => {
                         (btn) => btn.name === "Yes",
                       );
 
+                      const hasFetchedRules =
+                        lc3Data.lastFetchedId &&
+                        lc3Data.ruleEngineUniqueId === lc3Data.lastFetchedId;
+
                       return (
                         lc3Data.didLc3RunRules === yesButton?.incrementalId &&
                         lc3Data.failedRules !== undefined && (
                           <div className="WF-failed-rules-section">
                             {lc3Data.failedRules.length === 0 ? (
-                              <p className="WF-no-failed-rules-message">
-                                None of the rules failed by the engine!
-                              </p>
+                              hasFetchedRules && (
+                                <p className="WF-no-failed-rules-message">
+                                  None of the rules failed by the engine!
+                                </p>
+                              )
                             ) : (
                               <>
                                 <h4 className="WF-failed-rules-header">
