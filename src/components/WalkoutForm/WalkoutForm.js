@@ -489,6 +489,9 @@ const WalkoutForm = () => {
   const [lc3WalkoutData, setLc3WalkoutData] = useState(null); // Store lc3WalkoutImage data from backend
   const [isRegeneratingLc3Data, setIsRegeneratingLc3Data] = useState(false); // LC3 regeneration loading state
   const [lc3RegenerationDetails, setLc3RegenerationDetails] = useState(null); // LC3 AI regeneration details
+  const [isRegeneratingAnalysisData, setIsRegeneratingAnalysisData] =
+    useState(false); // Analysis regeneration loading state
+  const [analysisData, setAnalysisData] = useState(null); // Parsed analysis data from auditAnalysisData
   const [sessionStartTime, setSessionStartTime] = useState(null); // Track when form opens
   const [isSubmitting, setIsSubmitting] = useState(false); // Track form submission state
   const [isLoading, setIsLoading] = useState(true); // Track initial data loading
@@ -1246,6 +1249,18 @@ const WalkoutForm = () => {
                 audit.auditDiscrepancyFixedByLC3 || null,
               auditLc3Remarks: audit.auditLc3Remarks || "",
             });
+
+            // Parse auditAnalysisData if it exists
+            if (audit.auditAnalysisData) {
+              try {
+                const parsedAnalysis = JSON.parse(audit.auditAnalysisData);
+                setAnalysisData(parsedAnalysis);
+                console.log("✅ Analysis data parsed:", parsedAnalysis);
+              } catch (error) {
+                console.error("❌ Error parsing auditAnalysisData:", error);
+                setAnalysisData(null);
+              }
+            }
 
             // Map backend field names to frontend field names
             const auditFormData = {
@@ -2467,6 +2482,96 @@ const WalkoutForm = () => {
       }, 3000);
     } finally {
       setIsRegeneratingLc3Data(false);
+    }
+  };
+
+  // Regenerate analysis data
+  const handleRegenerateAnalysisData = async () => {
+    if (!walkoutId) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Walkout ID not found. Please save the walkout first.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
+    setIsRegeneratingAnalysisData(true);
+
+    try {
+      const API = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
+      // Call regenerate API
+      const response = await fetchWithAuth(
+        `${API}/analysis/regenerate/${walkoutId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Reload walkout data to get updated analysis
+        const walkoutResponse = await fetchWithAuth(
+          `${API}/walkouts?formRefId=${appointmentId}`,
+        );
+        const walkoutResult = await walkoutResponse.json();
+
+        if (walkoutResult.success && walkoutResult.data.length > 0) {
+          const walkoutData = walkoutResult.data[0];
+
+          // Update analysis data if available
+          if (walkoutData.auditSection?.auditAnalysisData) {
+            try {
+              const parsedAnalysis = JSON.parse(
+                walkoutData.auditSection.auditAnalysisData,
+              );
+              setAnalysisData(parsedAnalysis);
+              console.log("✅ Analysis data updated:", parsedAnalysis);
+            } catch (error) {
+              console.error(
+                "❌ Error parsing updated auditAnalysisData:",
+                error,
+              );
+            }
+          }
+        }
+
+        setNotification({
+          show: true,
+          type: "success",
+          message: result.message || "Analysis data regenerated successfully!",
+        });
+      } else {
+        setNotification({
+          show: true,
+          type: "error",
+          message: result.message || "Failed to regenerate analysis data.",
+        });
+      }
+
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Error regenerating analysis data:", error);
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to regenerate analysis data. Please try again.",
+      });
+      setTimeout(() => {
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+    } finally {
+      setIsRegeneratingAnalysisData(false);
     }
   };
 
@@ -8568,10 +8673,65 @@ const WalkoutForm = () => {
 
                   {/* Analysis Section */}
                   <div className="WF-audit-analysis">
-                    <h4 className="WF-analysis-title">Analysis</h4>
-                    <p className="WF-overall-match-status WF-not-matched">
-                      Overall Not Matched
-                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <h4 className="WF-analysis-title" style={{ margin: 0 }}>
+                        Analysis
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={handleRegenerateAnalysisData}
+                        disabled={isRegeneratingAnalysisData}
+                        title="Regenerate analysis data"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: isRegeneratingAnalysisData
+                            ? "not-allowed"
+                            : "pointer",
+                          padding: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                          opacity: isRegeneratingAnalysisData ? 0.4 : 1,
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            animation: isRegeneratingAnalysisData
+                              ? "spin 1s linear infinite"
+                              : "none",
+                          }}
+                        >
+                          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                        </svg>
+                      </button>
+                    </div>
+                    {analysisData && (
+                      <p
+                        className={`WF-overall-match-status ${
+                          analysisData.overallMatch
+                            ? "WF-matched"
+                            : "WF-not-matched"
+                        }`}
+                      >
+                        Overall{" "}
+                        {analysisData.overallMatch ? "Matched" : "Not Matched"}
+                      </p>
+                    )}
 
                     <table className="WF-audit-table WF-analysis-table">
                       <thead>
@@ -8583,12 +8743,49 @@ const WalkoutForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td>IMP</td>
-                          <td className="WF-match-check">✓</td>
-                          <td className="WF-match-cross">❌</td>
-                          <td className="WF-match-cross">❌</td>
-                        </tr>
+                        {analysisData && analysisData.mergedMatches ? (
+                          analysisData.mergedMatches.map((row, index) => (
+                            <tr key={index}>
+                              <td>{row.Service || ""}</td>
+                              <td
+                                className={
+                                  row.serviceMatch
+                                    ? "WF-match-check"
+                                    : "WF-match-cross"
+                                }
+                              >
+                                {row.serviceMatch ? "✓" : "❌"}
+                              </td>
+                              <td
+                                className={
+                                  row.toothSurfaceMatch
+                                    ? "WF-match-check"
+                                    : "WF-match-cross"
+                                }
+                              >
+                                {row.toothSurfaceMatch ? "✓" : "❌"}
+                              </td>
+                              <td
+                                className={
+                                  row.match
+                                    ? "WF-match-check"
+                                    : "WF-match-cross"
+                                }
+                              >
+                                {row.match ? "✓" : "❌"}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="4"
+                              style={{ textAlign: "center", color: "#6b7280" }}
+                            >
+                              No analysis data available
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
 
