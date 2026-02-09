@@ -324,14 +324,38 @@ const UserManagement = () => {
                                 setTempSelectedOffices(currentOfficeIds);
                                 setShowOfficeDropdown(user._id);
 
-                                // Position dropdown below button after state update
+                                // Position dropdown with smart positioning (above or below based on available space)
                                 setTimeout(() => {
                                   const dropdown =
                                     document.querySelector(".office-dropdown");
                                   if (dropdown) {
                                     const rect =
                                       e.target.getBoundingClientRect();
-                                    dropdown.style.top = `${rect.bottom + 5}px`;
+                                    const dropdownHeight = 400; // max-height from CSS
+                                    const viewportHeight = window.innerHeight;
+                                    const spaceBelow =
+                                      viewportHeight - rect.bottom;
+                                    const spaceAbove = rect.top;
+
+                                    // Check if dropdown should open upward
+                                    if (
+                                      spaceBelow < dropdownHeight &&
+                                      spaceAbove > spaceBelow
+                                    ) {
+                                      // Open upward
+                                      dropdown.style.bottom = `${viewportHeight - rect.top + 5}px`;
+                                      dropdown.style.top = "auto";
+                                      dropdown.classList.add(
+                                        "office-dropdown-up",
+                                      );
+                                    } else {
+                                      // Open downward (default)
+                                      dropdown.style.top = `${rect.bottom + 5}px`;
+                                      dropdown.style.bottom = "auto";
+                                      dropdown.classList.remove(
+                                        "office-dropdown-up",
+                                      );
+                                    }
                                     dropdown.style.left = `${rect.left}px`;
                                   }
                                 }, 0);

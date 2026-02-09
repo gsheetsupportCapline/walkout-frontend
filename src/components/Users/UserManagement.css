@@ -218,6 +218,11 @@
   flex-direction: column;
 }
 
+.office-dropdown.office-dropdown-up {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
 .office-dropdown-header {
   display: flex;
   justify-content: space-between;

@@ -8039,7 +8039,22 @@ const WalkoutForm = () => {
                             a. Procedure Name
                           </span>
                           <span className="WF-checklist-icon">
-                            {noteElements.noteElement1 ? "✓" : "❌"}
+                            {noteElements.noteElement1 ? (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              "❌"
+                            )}
                           </span>
                         </div>
                         <div className="WF-checklist-item">
@@ -8047,7 +8062,22 @@ const WalkoutForm = () => {
                             b. Tooth#/Quads/Arch and Surface (if applicable)
                           </span>
                           <span className="WF-checklist-icon">
-                            {noteElements.noteElement2 ? "✓" : "❌"}
+                            {noteElements.noteElement2 ? (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              "❌"
+                            )}
                           </span>
                         </div>
                         <div className="WF-checklist-item">
@@ -8055,7 +8085,22 @@ const WalkoutForm = () => {
                             c. Provider Name
                           </span>
                           <span className="WF-checklist-icon">
-                            {noteElements.noteElement3 ? "✓" : "❌"}
+                            {noteElements.noteElement3 ? (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              "❌"
+                            )}
                           </span>
                         </div>
                         <div className="WF-checklist-item">
@@ -8063,7 +8108,22 @@ const WalkoutForm = () => {
                             d. Hygienist Name
                           </span>
                           <span className="WF-checklist-icon">
-                            {noteElements.noteElement4 ? "✓" : "❌"}
+                            {noteElements.noteElement4 ? (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              "❌"
+                            )}
                           </span>
                         </div>
                       </div>
@@ -8754,7 +8814,22 @@ const WalkoutForm = () => {
                                     : "WF-match-cross"
                                 }
                               >
-                                {row.serviceMatch ? "✓" : "❌"}
+                                {row.serviceMatch ? (
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#10b981"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                ) : (
+                                  "❌"
+                                )}
                               </td>
                               <td
                                 className={
@@ -8763,7 +8838,22 @@ const WalkoutForm = () => {
                                     : "WF-match-cross"
                                 }
                               >
-                                {row.toothSurfaceMatch ? "✓" : "❌"}
+                                {row.toothSurfaceMatch ? (
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#10b981"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                ) : (
+                                  "❌"
+                                )}
                               </td>
                               <td
                                 className={
@@ -8772,7 +8862,22 @@ const WalkoutForm = () => {
                                     : "WF-match-cross"
                                 }
                               >
-                                {row.match ? "✓" : "❌"}
+                                {row.match ? (
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#10b981"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                ) : (
+                                  "❌"
+                                )}
                               </td>
                             </tr>
                           ))
